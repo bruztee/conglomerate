@@ -1,10 +1,10 @@
-import Header from '@/components/Header'
+import Header from "@/components/Header"
 
 export default function RulesPage() {
   return (
     <>
       <Header isAuthenticated={false} />
-      
+
       <main className="min-h-screen px-4 py-8 sm:px-6 lg:px-8">
         <div className="container mx-auto max-w-4xl">
           <div className="mb-8">
@@ -19,9 +19,7 @@ export default function RulesPage() {
                 <p>
                   Conglomerate Group — це закрита інвестиційна онлайн-платформа для роботи з криптовалютними активами.
                 </p>
-                <p>
-                  Використовуючи платформу, користувач підтверджує, що він:
-                </p>
+                <p>Використовуючи платформу, користувач підтверджує, що він:</p>
                 <ul className="list-disc list-inside space-y-2 ml-4">
                   <li>Досяг повноліття згідно законодавства своєї країни</li>
                   <li>Діє добровільно та усвідомлено</li>
@@ -34,9 +32,7 @@ export default function RulesPage() {
             <section>
               <h2 className="text-2xl font-bold mb-4 text-accent">2. Реєстрація та верифікація</h2>
               <div className="space-y-3 text-gray-light leading-relaxed">
-                <p>
-                  Для використання платформи необхідно пройти реєстрацію:
-                </p>
+                <p>Для використання платформи необхідно пройти реєстрацію:</p>
                 <ul className="list-disc list-inside space-y-2 ml-4">
                   <li>Реєстрація здійснюється за email та номером телефону</li>
                   <li>Обов'язкова верифікація через підтвердження email та SMS-код</li>
@@ -53,30 +49,26 @@ export default function RulesPage() {
                 <p className="font-medium text-foreground">
                   Користувач несе повну відповідальність за свої інвестиційні рішення.
                 </p>
-                <p>
-                  Conglomerate Group не несе відповідальності за:
-                </p>
+                <p>Conglomerate Group не несе відповідальності за:</p>
                 <ul className="list-disc list-inside space-y-2 ml-4">
                   <li>Фінансові втрати, пов'язані з ринковими коливаннями</li>
                   <li>Затримки, викликані роботою блокчейн-мереж</li>
                   <li>Технічні збої третіх сторін (біржі, гаманці)</li>
                   <li>Дії або бездіяльність інших користувачів</li>
                 </ul>
-                <p className="font-medium text-foreground">
-                  Платформа не гарантує фіксований прибуток.
-                </p>
+                <p className="font-medium text-foreground">Платформа не гарантує фіксований прибуток.</p>
               </div>
             </section>
 
             <section>
               <h2 className="text-2xl font-bold mb-4 text-accent">4. Депозити та інвестування</h2>
               <div className="space-y-3 text-gray-light leading-relaxed">
-                <p>
-                  Умови здійснення депозитів:
-                </p>
+                <p>Умови здійснення депозитів:</p>
                 <ul className="list-disc list-inside space-y-2 ml-4">
                   <li>Усі депозити здійснюються виключно через криптовалюту</li>
-                  <li>Мінімальна сума депозиту: $100</li>
+                  <li>
+                    Мінімальна сума депозиту: <span className="font-sans">$100</span>
+                  </li>
                   <li>Кошти зараховуються на внутрішній баланс після підтвердження транзакції</li>
                   <li>Прибуток нараховується автоматично згідно обраного плану</li>
                   <li>Термін інвестування залежить від обраного плану</li>
@@ -87,14 +79,18 @@ export default function RulesPage() {
             <section>
               <h2 className="text-2xl font-bold mb-4 text-accent">5. Виводи та депозити</h2>
               <div className="space-y-3 text-gray-light leading-relaxed">
-                <p>
-                  Правила виводу коштів:
-                </p>
+                <p>Правила виводу коштів:</p>
                 <ul className="list-disc list-inside space-y-2 ml-4">
                   <li>Вивід здійснюється через криптовалюту</li>
-                  <li>Мінімальна сума виводу залежить від обраного методу ($50-$100)</li>
-                  <li>Комісія платформи: 1-2% залежно від методу</li>
-                  <li>Час обробки заявки: 24-48 годин</li>
+                  <li>
+                    Мінімальна сума виводу залежить від обраного методу (<span className="font-sans">$50-$100</span>)
+                  </li>
+                  <li>
+                    Комісія платформи: <span className="font-sans">1-2%</span> залежно від методу
+                  </li>
+                  <li>
+                    Час обробки заявки: <span className="font-sans">24-48</span> годин
+                  </li>
                   <li>Платформа має право запросити додаткову верифікацію</li>
                   <li>Мінімальні та максимальні суми можуть бути змінені адміністрацією</li>
                 </ul>
@@ -107,12 +103,12 @@ export default function RulesPage() {
             <section>
               <h2 className="text-2xl font-bold mb-4 text-accent">6. Реферальна програма</h2>
               <div className="space-y-3 text-gray-light leading-relaxed">
-                <p>
-                  Умови реферальної програми:
-                </p>
+                <p>Умови реферальної програми:</p>
                 <ul className="list-disc list-inside space-y-2 ml-4">
                   <li>Кожен користувач отримує унікальне реферальне посилання</li>
-                  <li>Винагорода: 5% від депозитів залучених користувачів</li>
+                  <li>
+                    Винагорода: <span className="font-sans">5%</span> від депозитів залучених користувачів
+                  </li>
                   <li>Реферальний дохід доступний для виводу на загальних умовах</li>
                   <li>Заборонено використання самореферальних схем</li>
                   <li>Порушення правил реферальної програми призводить до блокування</li>
@@ -123,9 +119,7 @@ export default function RulesPage() {
             <section>
               <h2 className="text-2xl font-bold mb-4 text-accent">7. Обліковий запис</h2>
               <div className="space-y-3 text-gray-light leading-relaxed">
-                <p>
-                  Правила користування обліковим записом:
-                </p>
+                <p>Правила користування обліковим записом:</p>
                 <ul className="list-disc list-inside space-y-2 ml-4">
                   <li>Один користувач може мати лише один обліковий запис</li>
                   <li>Категорично заборонено створення мультиакаунтів</li>
@@ -139,9 +133,7 @@ export default function RulesPage() {
             <section>
               <h2 className="text-2xl font-bold mb-4 text-accent">8. Заборонені дії</h2>
               <div className="space-y-3 text-gray-light leading-relaxed">
-                <p>
-                  Категорично заборонено:
-                </p>
+                <p>Категорично заборонено:</p>
                 <ul className="list-disc list-inside space-y-2 ml-4">
                   <li>Використання ботів, скриптів, автоматизованих систем</li>
                   <li>Спроби зламу або обходу систем безпеки</li>
@@ -161,9 +153,7 @@ export default function RulesPage() {
                 <p className="font-medium text-foreground">
                   Інвестування в криптовалюту пов'язане з високими ризиками.
                 </p>
-                <p>
-                  Користувач підтверджує, що розуміє:
-                </p>
+                <p>Користувач підтверджує, що розуміє:</p>
                 <ul className="list-disc list-inside space-y-2 ml-4">
                   <li>Вартість криптовалют може різко змінюватись</li>
                   <li>Існує ризик повної втрати інвестованих коштів</li>
@@ -179,29 +169,21 @@ export default function RulesPage() {
             <section>
               <h2 className="text-2xl font-bold mb-4 text-accent">10. Зміна умов</h2>
               <div className="space-y-3 text-gray-light leading-relaxed">
-                <p>
-                  Conglomerate Group залишає за собою право змінювати ці правила в будь-який час.
-                </p>
-                <p>
-                  Користувачі будуть повідомлені про значні зміни через:
-                </p>
+                <p>Conglomerate Group залишає за собою право змінювати ці правила в будь-який час.</p>
+                <p>Користувачі будуть повідомлені про значні зміни через:</p>
                 <ul className="list-disc list-inside space-y-2 ml-4">
                   <li>Email повідомлення</li>
                   <li>Сповіщення в особистому кабінеті</li>
                   <li>Оголошення на головній сторінці</li>
                 </ul>
-                <p>
-                  Продовження використання платформи після змін означає згоду з новими умовами.
-                </p>
+                <p>Продовження використання платформи після змін означає згоду з новими умовами.</p>
               </div>
             </section>
 
             <section>
               <h2 className="text-2xl font-bold mb-4 text-accent">11. Контакти та підтримка</h2>
               <div className="space-y-3 text-gray-light leading-relaxed">
-                <p>
-                  Якщо у вас виникли питання або проблеми, зв'яжіться з нашою службою підтримки:
-                </p>
+                <p>Якщо у вас виникли питання або проблеми, зв'яжіться з нашою службою підтримки:</p>
                 <div className="bg-background border border-gray-medium rounded-lg p-4 mt-4">
                   <div className="space-y-2">
                     <div className="flex gap-2">
@@ -219,10 +201,11 @@ export default function RulesPage() {
 
             <div className="pt-8 border-t border-gray-medium">
               <p className="text-sm text-gray-light text-center">
-                Останнє оновлення: 5 січня 2026 року
+                Останнє оновлення: <span className="font-sans">5</span> січня <span className="font-sans">2026</span>{" "}
+                року
               </p>
               <p className="text-sm text-gray-light text-center mt-2">
-                © 2026 Conglomerate Group. Всі права захищені.
+                © <span className="font-sans">2026</span> Conglomerate Group. Всі права захищені.
               </p>
             </div>
           </div>
