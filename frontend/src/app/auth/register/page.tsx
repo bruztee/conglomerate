@@ -1,52 +1,95 @@
 "use client"
 
 import type React from "react"
-import { useState } from "react"
+import { useState, Suspense } from "react"
 import Link from "next/link"
-import { useRouter } from "next/navigation"
+import { useRouter, useSearchParams } from "next/navigation"
 import Header from "@/components/Header"
+import { useAuth } from "@/context/AuthContext"
 
-export default function RegisterPage() {
+function RegisterForm() {
   const router = useRouter()
+  const searchParams = useSearchParams()
+  const { register } = useAuth()
   const [formData, setFormData] = useState({
     email: "",
-    phone: "",
     password: "",
     confirmPassword: "",
+    referralCode: searchParams.get('ref') || "",
   })
-  const [step, setStep] = useState(1)
-  const [verificationCode, setVerificationCode] = useState("")
+  const [error, setError] = useState("")
+  const [loading, setLoading] = useState(false)
+  const [showVerificationMessage, setShowVerificationMessage] = useState(false)
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFormData({
       ...formData,
       [e.target.name]: e.target.value,
     })
+    setError("")
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    setStep(2)
-  }
-
-  const handleVerification = async (e: React.FormEvent) => {
-    e.preventDefault()
-    router.push("/dashboard")
+    
+    if (formData.password !== formData.confirmPassword) {
+      setError("Паролі не співпадають")
+      return
+    }
+    
+    if (formData.password.length < 8) {
+      setError("Пароль має містити мінімум 8 символів")
+      return
+    }
+    
+    setLoading(true)
+    setError("")
+    
+    const result = await register(formData.email, formData.password, formData.referralCode || undefined)
+    
+    if (result.success) {
+      setShowVerificationMessage(true)
+    } else {
+      setError(result.error?.message || "Помилка реєстрації")
+      setLoading(false)
+    }
   }
 
   return (
-    <>
-      <Header isAuthenticated={false} />
-
-      <main className="min-h-screen flex items-center justify-center px-4 py-12">
+    <main className="min-h-screen flex items-center justify-center px-4 py-12">
         <div className="w-full max-w-md">
           <div className="text-center mb-8">
             <h1 className="text-3xl font-bold mb-2">Реєстрація</h1>
             <p className="text-gray-light">Приєднуйтесь до Conglomerate Group</p>
           </div>
 
-          {step === 1 && (
+          {showVerificationMessage ? (
+            <div className="bg-gray-dark border border-gray-medium rounded-lg p-6 space-y-4">
+              <div className="text-center">
+                <div className="text-4xl mb-4">✉️</div>
+                <h2 className="text-xl font-bold mb-2">Перевірте email</h2>
+                <p className="text-gray-light text-sm mb-4">
+                  Ми відправили листа з підтвердженням на {formData.email}
+                </p>
+                <p className="text-gray-light text-xs mb-6">
+                  Після підтвердження email ви зможете увійти в систему
+                </p>
+                <Link 
+                  href="/auth/login"
+                  className="btn-gradient-primary inline-block px-6 py-3 text-foreground font-bold rounded-lg transition-all"
+                >
+                  Перейти до входу
+                </Link>
+              </div>
+            </div>
+          ) : (
             <form onSubmit={handleSubmit} className="bg-gray-dark border border-gray-medium rounded-lg p-6 space-y-4">
+              {error && (
+                <div className="bg-red-900/20 border border-red-500 text-red-400 px-4 py-3 rounded-lg text-sm">
+                  {error}
+                </div>
+              )}
+              
               <div>
                 <label htmlFor="email" className="block text-sm font-medium mb-2 font-sans">
                   Email
@@ -63,17 +106,17 @@ export default function RegisterPage() {
               </div>
 
               <div>
-                <label htmlFor="phone" className="block text-sm font-medium mb-2">
-                  Номер телефону
+                <label htmlFor="referralCode" className="block text-sm font-medium mb-2">
+                  Реферальний код (опціонально)
                 </label>
                 <input
-                  type="tel"
-                  id="phone"
-                  name="phone"
-                  value={formData.phone}
+                  type="text"
+                  id="referralCode"
+                  name="referralCode"
+                  value={formData.referralCode}
                   onChange={handleChange}
                   className="w-full px-4 py-3 bg-background border border-gray-medium rounded-lg focus:outline-none focus:border-silver transition-colors"
-                  placeholder="+380123456789"
+                  placeholder="Введіть код, якщо маєте"
                 />
               </div>
 
@@ -109,9 +152,10 @@ export default function RegisterPage() {
 
               <button
                 type="submit"
-                className="btn-gradient-primary w-full px-4 py-3 text-foreground font-bold rounded-lg transition-all font-sans"
+                disabled={loading}
+                className="btn-gradient-primary w-full px-4 py-3 text-foreground font-bold rounded-lg transition-all font-sans disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                Продовжити
+                {loading ? "Реєстрація..." : "Зареєструватися"}
               </button>
 
               <p className="text-center text-sm text-gray-light mt-4">
@@ -119,59 +163,6 @@ export default function RegisterPage() {
                 <Link href="/auth/login" className="text-silver hover:text-foreground transition-colors font-sans">
                   Увійти
                 </Link>
-              </p>
-            </form>
-          )}
-
-          {step === 2 && (
-            <form
-              onSubmit={handleVerification}
-              className="bg-gray-dark border border-gray-medium rounded-lg p-6 space-y-4"
-            >
-              <div className="text-center mb-6">
-                <div className="text-4xl mb-4">✉️</div>
-                <h2 className="text-xl font-bold mb-2">Верифікація</h2>
-                <p className="text-gray-light text-sm">
-                  Ми відправили коди верифікації на {formData.email} та {formData.phone}
-                </p>
-              </div>
-
-              <div>
-                <label htmlFor="verification" className="block text-sm font-medium mb-2">
-                  Код верифікації
-                </label>
-                <input
-                  type="text"
-                  id="verification"
-                  name="verification"
-                  value={verificationCode}
-                  onChange={(e) => setVerificationCode(e.target.value)}
-                  className="w-full px-4 py-3 bg-background border border-gray-medium rounded-lg focus:outline-none focus:border-silver transition-colors text-center text-2xl tracking-widest"
-                  placeholder="000000"
-                  maxLength={6}
-                />
-              </div>
-
-              <button
-                type="submit"
-                className="btn-gradient-primary w-full px-4 py-3 text-foreground font-bold rounded-lg transition-all font-sans"
-              >
-                Підтвердити
-              </button>
-
-              <button
-                type="button"
-                onClick={() => setStep(1)}
-                className="btn-gradient-secondary w-full px-4 py-3 text-foreground font-medium rounded-lg transition-all font-sans"
-              >
-                Назад
-              </button>
-
-              <p className="text-center text-sm text-gray-light mt-4">
-                Не отримали код?{" "}
-                <button type="button" className="text-silver hover:text-foreground transition-colors font-sans">
-                  Надіслати знову
-                </button>
               </p>
             </form>
           )}
@@ -184,6 +175,22 @@ export default function RegisterPage() {
           </div>
         </div>
       </main>
+  )
+}
+
+export default function RegisterPage() {
+  return (
+    <>
+      <Header isAuthenticated={false} />
+      <Suspense fallback={
+        <main className="min-h-screen flex items-center justify-center px-4 py-12">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-silver mx-auto"></div>
+          </div>
+        </main>
+      }>
+        <RegisterForm />
+      </Suspense>
     </>
   )
 }

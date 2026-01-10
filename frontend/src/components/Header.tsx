@@ -3,6 +3,8 @@
 import Link from "next/link"
 import Image from "next/image"
 import { useState } from "react"
+import { useRouter } from "next/navigation"
+import { useAuth } from "@/context/AuthContext"
 
 interface HeaderProps {
   isAuthenticated?: boolean
@@ -12,6 +14,15 @@ interface HeaderProps {
 
 export default function Header({ isAuthenticated = false, userBalance = 0, userProfit = 0 }: HeaderProps) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
+  const router = useRouter()
+  const { logout, user } = useAuth()
+  
+  const handleLogout = async () => {
+    await logout()
+    router.push('/')
+  }
+  
+  const isLoggedIn = isAuthenticated || !!user
 
   return (
     <header className="sticky top-0 z-50 w-full border-b border-gray-dark/30 backdrop-blur-md">
@@ -25,7 +36,7 @@ export default function Header({ isAuthenticated = false, userBalance = 0, userP
             </Link>
           </div>
 
-          {isAuthenticated && (
+          {isLoggedIn && (
             <>
               <div className="hidden md:flex items-center gap-6">
                 <div className="flex items-center gap-4 px-4 py-2 bg-gray-dark rounded-lg">
@@ -65,6 +76,12 @@ export default function Header({ isAuthenticated = false, userBalance = 0, userP
                   >
                     Профіль
                   </Link>
+                  <button
+                    onClick={handleLogout}
+                    className="btn-gradient-secondary px-4 py-2 text-foreground font-medium rounded transition-all font-sans cursor-pointer"
+                  >
+                    Вихід
+                  </button>
                 </nav>
               </div>
 
@@ -76,7 +93,7 @@ export default function Header({ isAuthenticated = false, userBalance = 0, userP
             </>
           )}
 
-          {!isAuthenticated && (
+          {!isLoggedIn && (
             <div className="flex items-center gap-3">
               <Link
                 href="/auth/login"
@@ -94,7 +111,7 @@ export default function Header({ isAuthenticated = false, userBalance = 0, userP
           )}
         </div>
 
-        {mobileMenuOpen && isAuthenticated && (
+        {mobileMenuOpen && isLoggedIn && (
           <div className="md:hidden py-4 border-t border-gray-dark">
             <div className="flex items-center gap-4 mb-4 p-3 bg-gray-dark rounded-lg font-sans">
               <div className="text-sm">
@@ -132,6 +149,12 @@ export default function Header({ isAuthenticated = false, userBalance = 0, userP
               >
                 Профіль
               </Link>
+              <button
+                onClick={handleLogout}
+                className="btn-gradient-secondary px-4 py-2 text-foreground font-medium rounded transition-all text-center font-sans cursor-pointer"
+              >
+                Вихід
+              </button>
             </nav>
           </div>
         )}

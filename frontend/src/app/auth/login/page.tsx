@@ -5,24 +5,45 @@ import { useState } from "react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import Header from "@/components/Header"
+import { useAuth } from "@/context/AuthContext"
 
 export default function LoginPage() {
   const router = useRouter()
+  const { login } = useAuth()
   const [formData, setFormData] = useState({
     email: "",
     password: "",
   })
+  const [error, setError] = useState("")
+  const [loading, setLoading] = useState(false)
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFormData({
       ...formData,
       [e.target.name]: e.target.value,
     })
+    setError("")
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    router.push("/dashboard")
+    setLoading(true)
+    setError("")
+    
+    const result = await login(formData.email, formData.password)
+    
+    if (result.success) {
+      router.push("/dashboard")
+    } else {
+      // Перевірити чи треба верифікувати email
+      if (result.error?.code === 'EMAIL_NOT_VERIFIED') {
+        router.push(`/auth/verify-email?email=${encodeURIComponent(formData.email)}`)
+        return
+      }
+      
+      setError(result.error?.message || "Помилка входу")
+      setLoading(false)
+    }
   }
 
   return (
@@ -37,6 +58,12 @@ export default function LoginPage() {
           </div>
 
           <form onSubmit={handleSubmit} className="bg-gray-dark border border-gray-medium rounded-lg p-6 space-y-4">
+            {error && (
+              <div className="bg-red-900/20 border border-red-500 text-red-400 px-4 py-3 rounded-lg text-sm">
+                {error}
+              </div>
+            )}
+            
             <div>
               <label htmlFor="email" className="block text-sm font-medium mb-2 font-sans">
                 Email
@@ -79,18 +106,19 @@ export default function LoginPage() {
 
             <button
               type="submit"
-              className="btn-gradient-primary w-full px-4 py-3 text-foreground font-bold rounded-lg transition-all font-sans"
+              disabled={loading}
+              className="btn-gradient-primary w-full px-6 py-3 text-foreground font-bold rounded-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              Увійти
+              {loading ? "Вхід..." : "Увійти"}
             </button>
-
-            <p className="text-center text-sm text-gray-light mt-4">
-              Немає акаунту?{" "}
-              <Link href="/auth/register" className="text-silver hover:text-foreground transition-colors font-sans">
-                Зареєструватися
-              </Link>
-            </p>
           </form>
+
+          <div className="mt-6 text-center text-sm">
+            <span className="text-gray-light">Немає акаунту? </span>
+            <Link href="/auth/register" className="text-silver hover:text-foreground transition-colors font-medium">
+              Зареєструватися
+            </Link>
+          </div>
         </div>
       </main>
     </>

@@ -4,6 +4,7 @@ import { Orbitron, Space_Grotesk, Playfair_Display } from "next/font/google"
 import "./globals.css"
 import AnimatedBackground from "@/components/AnimatedBackground"
 import Footer from "@/components/Footer"
+import { AuthProvider } from "@/context/AuthContext"
 
 const orbitron = Orbitron({
   variable: "--font-heading",
@@ -39,11 +40,13 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className={`${orbitron.variable} ${spaceGrotesk.variable} ${playfair.variable} antialiased`}>
-        <AnimatedBackground />
-        <div className="flex flex-col min-h-screen">
-          <div className="flex-1">{children}</div>
-          <Footer />
-        </div>
+        <AuthProvider>
+          <AnimatedBackground />
+          <div className="flex flex-col min-h-screen">
+            <div className="flex-1">{children}</div>
+            <Footer />
+          </div>
+        </AuthProvider>
       </body>
     </html>
   )

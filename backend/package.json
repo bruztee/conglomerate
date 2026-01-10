@@ -1,0 +1,19 @@
+{
+  "name": "conglomerate-api",
+  "version": "1.0.0",
+  "description": "Conglomerate Investment Platform API - Cloudflare Workers",
+  "main": "src/index.ts",
+  "scripts": {
+    "dev": "wrangler dev",
+    "deploy": "wrangler deploy",
+    "tail": "wrangler tail"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.39.0"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "^4.20231218.0",
+    "wrangler": "^3.78.0",
+    "typescript": "^5.3.3"
+  }
+}
