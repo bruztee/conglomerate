@@ -130,37 +130,17 @@ export async function handleApproveWithdrawal(request: Request, env: Env, withdr
     return errorResponse('UPDATE_FAILED', 'Failed to approve withdrawal', 500);
   }
   
-  const idempotencyKey = `withdrawal_${withdrawalId}`;
+  await logAudit(
+    env,
+    user.id,
+    'withdrawal.approve',
+    'withdrawals',
+    withdrawalId,
+    { amount: withdrawal.amount },
+    request
+  );
   
-  const { error: ledgerError } = await supabase
-    .from('ledger_entries')
-    .insert({
-      account_id: withdrawal.account_id,
-      type: 'withdrawal',
-      amount: withdrawal.amount,
-      direction: 'debit',
-      status: 'posted',
-      ref_table: 'withdrawals',
-      ref_id: withdrawalId,
-      idempotency_key: idempotencyKey,
-      description: 'Withdrawal approved',
-    });
-  
-    if (ledgerError && !ledgerError.message.includes('duplicate')) {
-      return errorResponse('LEDGER_ERROR', 'Failed to create ledger entry', 500);
-    }
-    
-    await logAudit(
-      env,
-      user.id,
-      'withdrawal.approve',
-      'withdrawals',
-      withdrawalId,
-      { amount: withdrawal.amount },
-      request
-    );
-    
-    return jsonResponse({ message: 'Withdrawal approved successfully' });
+  return jsonResponse({ message: 'Withdrawal approved successfully' });
   } catch (error) {
     if (error instanceof Error && error.message === 'FORBIDDEN') {
       return errorResponse('FORBIDDEN', 'Admin access required', 403);

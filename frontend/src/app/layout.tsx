@@ -48,17 +48,9 @@ export default function RootLayout({
     <html lang="uk">
       <body className={`${orbitron.variable} ${spaceGrotesk.variable} ${playfair.variable} antialiased`}>
         <AuthProvider>
-          <AnimatedBackground />
           <ReferralCookieHandler />
           <RootLayoutClient>
-            <div className="flex flex-col min-h-screen">
-              <div className="flex-1">
-                <PhoneVerificationWrapper>
-                  {children}
-                </PhoneVerificationWrapper>
-              </div>
-              <Footer />
-            </div>
+            {children}
           </RootLayoutClient>
         </AuthProvider>
       </body>

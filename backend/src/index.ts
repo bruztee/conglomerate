@@ -1,11 +1,17 @@
 import type { Env } from './types';
 import { corsHeaders, errorResponse } from './utils/response';
 import { handleRegister, handleLogin, handleLogout, handleMe, handleRefreshToken, handleResendVerification, handleForgotPassword, handleResetPassword, handleUpdateEmail, handleUpdatePhone, handleUpdatePassword, handleSetName, handleSendPhoneOTP, handleVerifyPhoneOTP } from './routes/auth';
-import { handleGetWallet, handleGetTransactions } from './routes/wallet';
+import { handleGetWallet } from './routes/wallet';
 import { handleCreateDeposit, handleGetDeposits, handleConfirmDeposit } from './routes/deposits';
 import { handleCreateWithdrawal, handleGetWithdrawals, handleApproveWithdrawal } from './routes/withdrawals';
 import { handleGetPlans, handleCreateInvestment, handleGetInvestments } from './routes/investments';
 import { handleGetReferralStats, handleSetReferralCookie } from './routes/referrals';
+import { handleGetActivePaymentMethods } from './routes/paymentMethods';
+import { handleGetPaymentMethods, handleCreatePaymentMethod, handleUpdatePaymentMethod, handleDeletePaymentMethod } from './routes/admin/paymentMethods';
+import { handleGetUsers, handleUpdateUser, handleSendResetLink } from './routes/admin/users';
+import { handleGetDeposits as handleAdminGetDeposits, handleApproveDeposit, handleRejectDeposit } from './routes/admin/deposits';
+import { handleGetWithdrawals as handleAdminGetWithdrawals, handleApproveWithdrawal as handleAdminApproveWithdrawal, handleRejectWithdrawal, handleMarkWithdrawalSent } from './routes/admin/withdrawals';
+import { handleGetAuditLogs } from './routes/admin/security';
 
 interface RouteHandler {
   (request: Request, env: Env, ...args: string[]): Promise<Response>;
@@ -34,7 +40,6 @@ const routes: Route[] = [
   { method: 'GET', pattern: /^\/api\/auth\/me$/, handler: handleMe },
   
   { method: 'GET', pattern: /^\/api\/wallet$/, handler: handleGetWallet },
-  { method: 'GET', pattern: /^\/api\/transactions$/, handler: handleGetTransactions },
   
   { method: 'POST', pattern: /^\/api\/deposits$/, handler: handleCreateDeposit },
   { method: 'GET', pattern: /^\/api\/deposits$/, handler: handleGetDeposits },
@@ -50,6 +55,34 @@ const routes: Route[] = [
   
   { method: 'GET', pattern: /^\/api\/referrals\/stats$/, handler: handleGetReferralStats },
   { method: 'POST', pattern: /^\/api\/referrals\/set-cookie$/, handler: handleSetReferralCookie },
+  
+  // Public endpoint for active payment methods (for users)
+  { method: 'GET', pattern: /^\/api\/payment-methods$/, handler: handleGetActivePaymentMethods },
+  
+  // Admin routes - Payment Methods
+  { method: 'GET', pattern: /^\/api\/admin\/payment-methods$/, handler: handleGetPaymentMethods },
+  { method: 'POST', pattern: /^\/api\/admin\/payment-methods$/, handler: handleCreatePaymentMethod },
+  { method: 'PUT', pattern: /^\/api\/admin\/payment-methods\/([a-f0-9-]+)$/, handler: handleUpdatePaymentMethod },
+  { method: 'DELETE', pattern: /^\/api\/admin\/payment-methods\/([a-f0-9-]+)$/, handler: handleDeletePaymentMethod },
+  
+  // Admin routes - Users Management
+  { method: 'GET', pattern: /^\/api\/admin\/users$/, handler: handleGetUsers },
+  { method: 'PUT', pattern: /^\/api\/admin\/users\/([a-f0-9-]+)$/, handler: handleUpdateUser },
+  { method: 'POST', pattern: /^\/api\/admin\/users\/([a-f0-9-]+)\/send-reset-link$/, handler: handleSendResetLink },
+  
+  // Admin routes - Deposits Management
+  { method: 'GET', pattern: /^\/api\/admin\/deposits$/, handler: handleAdminGetDeposits },
+  { method: 'POST', pattern: /^\/api\/admin\/deposits\/([a-f0-9-]+)\/approve$/, handler: handleApproveDeposit },
+  { method: 'POST', pattern: /^\/api\/admin\/deposits\/([a-f0-9-]+)\/reject$/, handler: handleRejectDeposit },
+  
+  // Admin routes - Withdrawals Management
+  { method: 'GET', pattern: /^\/api\/admin\/withdrawals$/, handler: handleAdminGetWithdrawals },
+  { method: 'POST', pattern: /^\/api\/admin\/withdrawals\/([a-f0-9-]+)\/approve$/, handler: handleAdminApproveWithdrawal },
+  { method: 'POST', pattern: /^\/api\/admin\/withdrawals\/([a-f0-9-]+)\/reject$/, handler: handleRejectWithdrawal },
+  { method: 'POST', pattern: /^\/api\/admin\/withdrawals\/([a-f0-9-]+)\/mark-sent$/, handler: handleMarkWithdrawalSent },
+  
+  // Security
+  { method: 'GET', pattern: /^\/api\/admin\/security\/audit-logs$/, handler: handleGetAuditLogs },
 ];
 
 export default {

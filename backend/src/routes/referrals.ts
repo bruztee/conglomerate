@@ -69,6 +69,9 @@ export async function handleGetReferralStats(request: Request, env: Env): Promis
       console.log('✅ Generated referral_code:', newReferralCode, 'for user:', user.id);
     }
 
+    // Реферальне посилання з основним доменом
+    const referralLink = `https://conglomerate-g.com/?ref=${profile.referral_code}`;
+
     // Отримати всіх рефералів
     const { data: referrals } = await supabase
       .from('profiles')
@@ -76,30 +79,22 @@ export async function handleGetReferralStats(request: Request, env: Env): Promis
       .eq('referred_by', profile.referral_code)
       .order('created_at', { ascending: false });
 
-    // Отримати статистику бонусів
-    const { data: bonuses } = await supabase
-      .from('ledger_entries')
-      .select('amount, created_at, description')
-      .eq('ref_table', 'profiles')
-      .eq('type', 'referral_bonus')
-      .like('description', `%${profile.referral_code}%`)
-      .order('created_at', { ascending: false });
-
-    const totalEarned = bonuses?.reduce((sum, b) => sum + b.amount, 0) || 0;
+    // TODO: Referral bonuses - implement if needed
+    const totalEarned = 0;
 
     return jsonResponse({
       referral_code: profile.referral_code,
-      referral_link: `https://conglomerate-eight.vercel.app/?ref=${profile.referral_code}`,
+      referral_link: referralLink,
       stats: {
         total_referrals: referrals?.length || 0,
+        active_referrals: referrals?.filter((r: any) => r.id).length || 0,
         total_earned: totalEarned,
       },
       referrals: referrals || [],
-      bonuses: bonuses || [],
     });
-  } catch (error) {
-    console.error('❌ handleGetReferralStats error:', error);
-    return errorResponse('SERVER_ERROR', 'Internal server error', 500);
+  } catch (error: any) {
+    console.error('Get referral stats error:', error);
+    return errorResponse('SERVER_ERROR', error.message || 'Failed to get referral stats', 500);
   }
 }
 

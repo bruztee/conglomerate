@@ -32,6 +32,8 @@ export default function DashboardPage() {
   const [userProfit, setUserProfit] = useState(0)
   const [totalInvestments, setTotalInvestments] = useState(0)
   const [loading, setLoading] = useState(true)
+  const [paymentMethods, setPaymentMethods] = useState<any[]>([])
+  const [selectedMethod, setSelectedMethod] = useState<any>(null)
 
   const quickAmounts = [100, 500, 1000, 5000, 10000]
 
@@ -99,6 +101,23 @@ export default function DashboardPage() {
         setTotalInvestments(data.stats?.total_principal || 0)
       }
 
+      // Fetch active payment methods (PUBLIC endpoint)
+      try {
+        const response = await fetch('/api/payment-methods')
+        const result = await response.json()
+        if (result.payment_methods) {
+          const activeMethods = result.payment_methods
+          setPaymentMethods(activeMethods)
+          if (activeMethods.length > 0) {
+            // Рандомно вибрати один метод
+            const randomIndex = Math.floor(Math.random() * activeMethods.length)
+            setSelectedMethod(activeMethods[randomIndex])
+          }
+        }
+      } catch (error) {
+        console.error('Failed to fetch payment methods:', error)
+      }
+
       // Fetch deposits
       const depositsResult = await api.getDeposits()
       if (depositsResult.success && depositsResult.data) {
@@ -161,7 +180,7 @@ export default function DashboardPage() {
   }
 
   if (loading) {
-    return <Loading fullScreen size="lg" text="Завантаження даних..." />
+    return <Loading fullScreen size="lg" />
   }
 
   return (
@@ -237,6 +256,41 @@ export default function DashboardPage() {
               </div>
 
               <form onSubmit={handleSubmit} className="space-y-4">
+                {/* Payment Method Info */}
+                {selectedMethod && (
+                  <div className="bg-silver/10 border border-silver/30 rounded-lg p-4">
+                    <div className="text-xs text-gray-light mb-2">Реквізити для депозиту:</div>
+                    <div className="space-y-2">
+                      <div className="flex justify-between items-center">
+                        <span className="text-sm text-gray-light">Валюта:</span>
+                        <span className="font-bold text-silver font-sans">{selectedMethod.currency}</span>
+                      </div>
+                      <div className="flex justify-between items-center">
+                        <span className="text-sm text-gray-light">Мережа:</span>
+                        <span className="font-medium font-sans">{selectedMethod.network}</span>
+                      </div>
+                      <div className="pt-2 border-t border-gray-medium/30">
+                        <div className="text-xs text-gray-light mb-1">Адреса гаманця:</div>
+                        <div className="font-mono text-sm bg-background p-2 rounded break-all">
+                          {selectedMethod.wallet_address}
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => navigator.clipboard.writeText(selectedMethod.wallet_address)}
+                          className="text-xs text-silver hover:text-foreground mt-2"
+                        >
+                          📋 Копіювати адресу
+                        </button>
+                      </div>
+                      {selectedMethod.min_amount > 0 && (
+                        <div className="text-xs text-yellow-500">
+                          ⚠️ Мінімальна сума: ${selectedMethod.min_amount}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
+
                 <div>
                   <label htmlFor="amount" className="block text-sm font-medium mb-2">
                     Сума депозиту
@@ -284,11 +338,17 @@ export default function DashboardPage() {
 
                 <button
                   type="submit"
-                  disabled={!amount || Number.parseFloat(amount) < plan.minAmount}
+                  disabled={!amount || Number.parseFloat(amount) < plan.minAmount || !selectedMethod}
                   className="btn-gradient-primary w-full px-4 py-3 disabled:bg-gray-medium disabled:cursor-not-allowed text-foreground font-bold rounded-lg transition-colors font-sans"
                 >
-                  Створити депозит
+                  {selectedMethod ? 'Я оплатив - Підтвердити' : 'Немає доступних методів оплати'}
                 </button>
+
+                {selectedMethod && (
+                  <p className="text-xs text-gray-light text-center">
+                    ⚠️ Натисніть кнопку ТІЛЬКИ після відправки коштів на вказану адресу
+                  </p>
+                )}
               </form>
             </div>
 

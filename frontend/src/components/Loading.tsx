@@ -3,10 +3,9 @@
 interface LoadingProps {
   fullScreen?: boolean
   size?: 'sm' | 'md' | 'lg'
-  text?: string
 }
 
-export default function Loading({ fullScreen = false, size = 'md', text }: LoadingProps) {
+export default function Loading({ fullScreen = false, size = 'md' }: LoadingProps) {
   const sizeClasses = {
     sm: 'w-6 h-6',
     md: 'w-10 h-10',
@@ -14,7 +13,7 @@ export default function Loading({ fullScreen = false, size = 'md', text }: Loadi
   }
 
   const LoadingSpinner = () => (
-    <div className="flex flex-col items-center justify-center gap-6">
+    <div className="flex items-center justify-center">
       <div className={`${sizeClasses[size]} relative`}>
         {/* Outer circle */}
         <div className="absolute inset-0 rounded-full border-[3px] border-gray-medium/20"></div>
@@ -22,18 +21,12 @@ export default function Loading({ fullScreen = false, size = 'md', text }: Loadi
         {/* Spinning gradient ring */}
         <div className="absolute inset-0 rounded-full border-[3px] border-transparent border-t-silver/80 border-r-silver/40 animate-spin"></div>
       </div>
-      
-      {text && (
-        <p className="text-sm text-gray-light/80 font-normal tracking-wide">
-          {text}
-        </p>
-      )}
     </div>
   )
 
   if (fullScreen) {
     return (
-      <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-background">
+      <div className="min-h-screen w-full flex items-center justify-center">
         <LoadingSpinner />
       </div>
     )

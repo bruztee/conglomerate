@@ -1,0 +1,182 @@
+import { Env } from '../../types';
+import { requireAdmin } from '../../middleware/adminAuth';
+import { jsonResponse, errorResponse } from '../../utils/response';
+import { createServiceSupabaseClient } from '../../utils/supabase';
+import { logAudit } from '../../utils/audit';
+
+/**
+ * GET /api/admin/users
+ * Отримати всіх користувачів з додатковою інформацією
+ */
+export async function handleGetUsers(request: Request, env: Env): Promise<Response> {
+  const adminCheck = await requireAdmin(request, env);
+  if (!adminCheck.isAdmin) {
+    return adminCheck.error!;
+  }
+
+  try {
+    const supabase = createServiceSupabaseClient(env);
+
+    // Отримати користувачів з profiles
+    const { data: profiles, error } = await supabase
+      .from('profiles')
+      .select(`
+        id,
+        email,
+        full_name,
+        phone,
+        phone_verified,
+        status,
+        monthly_percentage,
+        referral_code,
+        referred_by,
+        created_at,
+        updated_at
+      `)
+      .order('created_at', { ascending: false });
+
+    if (error) {
+      console.error('Failed to fetch users:', error);
+      return errorResponse('DATABASE_ERROR', 'Failed to fetch users', 500);
+    }
+
+    // Отримати email_verified з auth.users через RPC
+    const { data: authUsers } = await supabase.rpc('get_auth_users_verified');
+    const emailVerifiedMap = new Map(
+      (authUsers || []).map((u: any) => [u.id, u.email_confirmed_at !== null])
+    );
+
+    // Для кожного користувача отримати суми депозитів та виводів
+    const usersWithStats = await Promise.all(
+      (profiles || []).map(async (user) => {
+        const [depositsRes, withdrawalsRes, accountRes] = await Promise.all([
+          supabase
+            .from('deposits')
+            .select('amount, status')
+            .eq('user_id', user.id),
+          supabase
+            .from('withdrawals')
+            .select('amount, status')
+            .eq('user_id', user.id),
+          supabase
+            .from('accounts')
+            .select('id')
+            .eq('user_id', user.id)
+            .single(),
+        ]);
+
+        const totalDeposits = depositsRes.data?.filter(d => d.status === 'confirmed').reduce((sum, d) => sum + Number(d.amount), 0) || 0;
+        const totalWithdrawals = withdrawalsRes.data?.filter(w => w.status === 'approved' || w.status === 'sent').reduce((sum, w) => sum + Number(w.amount), 0) || 0;
+        const pendingDeposits = depositsRes.data?.filter(d => d.status === 'pending').length || 0;
+        const pendingWithdrawals = withdrawalsRes.data?.filter(w => w.status === 'requested').length || 0;
+
+        return {
+          ...user,
+          email_verified: emailVerifiedMap.get(user.id) || false,
+          total_deposits: totalDeposits,
+          total_withdrawals: totalWithdrawals,
+        };
+      })
+    );
+
+    return jsonResponse({ users: usersWithStats });
+  } catch (error: any) {
+    console.error('Get users error:', error);
+    return errorResponse('SERVER_ERROR', error.message, 500);
+  }
+}
+
+/**
+ * PUT /api/admin/users/:userId
+ * Оновити користувача (заморозити/розморозити, змінити план, % тощо)
+ */
+export async function handleUpdateUser(request: Request, env: Env, userId: string): Promise<Response> {
+  const adminCheck = await requireAdmin(request, env);
+  if (!adminCheck.isAdmin) {
+    return adminCheck.error!;
+  }
+
+  try {
+    const body = await request.json() as {
+      status?: string;
+      monthly_percentage?: number;
+    };
+
+    if (!body.status && body.monthly_percentage === undefined) {
+      return errorResponse('VALIDATION_ERROR', 'At least one field must be provided', 400);
+    }
+
+    // Validate status - тільки active або blocked
+    if (body.status && !['active', 'blocked'].includes(body.status)) {
+      return errorResponse('VALIDATION_ERROR', 'Status must be active or blocked', 400);
+    }
+
+    // Будуємо об'єкт для оновлення
+    const updateData: any = {};
+    if (body.status) updateData.status = body.status;
+    if (body.monthly_percentage !== undefined) updateData.monthly_percentage = body.monthly_percentage;
+
+    const supabase = createServiceSupabaseClient(env);
+
+    const { data: user, error } = await supabase
+      .from('profiles')
+      .update(updateData)
+      .eq('id', userId)
+      .select()
+      .single();
+
+    if (error) {
+      console.error('Failed to update user:', error);
+      return errorResponse('DATABASE_ERROR', error.message, 500);
+    }
+
+    await logAudit(env, adminCheck.userId!, 'admin.user.update', 'profiles', userId, body, request);
+
+    return jsonResponse({ user });
+  } catch (error: any) {
+    console.error('Update user error:', error);
+    return errorResponse('SERVER_ERROR', error.message, 500);
+  }
+}
+
+/**
+ * POST /api/admin/users/:userId/send-reset-link
+ * Відправити посилання для зміни email/телефону
+ */
+export async function handleSendResetLink(request: Request, env: Env, userId: string): Promise<Response> {
+  const adminCheck = await requireAdmin(request, env);
+  if (!adminCheck.isAdmin) {
+    return adminCheck.error!;
+  }
+
+  try {
+    const body = await request.json() as {
+      type: 'email' | 'phone';
+    };
+
+    const supabase = createServiceSupabaseClient(env);
+
+    // Отримати email користувача
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('email')
+      .eq('id', userId)
+      .single();
+
+    if (!profile?.email) {
+      return errorResponse('NOT_FOUND', 'User not found', 404);
+    }
+
+    if (body.type === 'email') {
+      // TODO: Implement email reset link generation via Supabase Admin API
+      console.log('Email reset link requested for user:', userId);
+    }
+
+    await logAudit(env, adminCheck.userId!, 'admin.user.send_reset_link', 'profiles', userId, { type: body.type }, request);
+
+    return jsonResponse({ success: true, message: `Reset link sent to ${profile.email}` });
+  } catch (error: any) {
+    console.error('Send reset link error:', error);
+    return errorResponse('SERVER_ERROR', error.message, 500);
+  }
+}

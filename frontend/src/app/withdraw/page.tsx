@@ -176,7 +176,7 @@ export default function WithdrawPage() {
   }
 
   if (loading) {
-    return <Loading fullScreen size="lg" text="Завантаження даних..." />
+    return <Loading fullScreen size="lg" />
   }
 
   if (!user) {

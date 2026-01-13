@@ -229,14 +229,112 @@ class ApiClient {
   }
 
   // Referrals
-  async getReferralStats() {
-    return this.request('/api/referrals/stats');
+  async getReferralStats(): Promise<ApiResponse> {
+    return this.request('/api/referrals/stats', { method: 'GET' });
   }
 
-  async setReferralCookie(referralCode: string) {
-    return this.request(`/api/referrals/set-cookie?ref=${referralCode}`, {
+  async setReferralCookie(refCode: string): Promise<ApiResponse> {
+    return this.request(`/api/referrals/set-cookie?ref=${refCode}`, { method: 'POST' });
+  }
+
+  // ==================== ADMIN API ====================
+
+  // Payment Methods (Admin)
+  async adminGetPaymentMethods(): Promise<ApiResponse> {
+    return this.request('/api/admin/payment-methods', { method: 'GET' });
+  }
+
+  async adminCreatePaymentMethod(data: { currency: string; network: string; wallet_address: string; is_active?: boolean; min_amount?: number }): Promise<ApiResponse> {
+    return this.request('/api/admin/payment-methods', {
       method: 'POST',
+      body: JSON.stringify(data),
     });
+  }
+
+  async adminUpdatePaymentMethod(id: string, data: { currency?: string; network?: string; wallet_address?: string; is_active?: boolean; min_amount?: number }): Promise<ApiResponse> {
+    return this.request(`/api/admin/payment-methods/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    });
+  }
+
+  async adminDeletePaymentMethod(id: string): Promise<ApiResponse> {
+    return this.request(`/api/admin/payment-methods/${id}`, { method: 'DELETE' });
+  }
+
+  // Users Management (Admin)
+  async adminGetUsers(): Promise<ApiResponse> {
+    return this.request('/api/admin/users', { method: 'GET' });
+  }
+
+  async adminUpdateUser(userId: string, data: { status?: string; monthly_percentage?: number }): Promise<ApiResponse> {
+    return this.request(`/api/admin/users/${userId}`, {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    });
+  }
+
+  async adminSendResetLink(userId: string, type: 'email' | 'phone'): Promise<ApiResponse> {
+    return this.request(`/api/admin/users/${userId}/send-reset-link`, {
+      method: 'POST',
+      body: JSON.stringify({ type }),
+    });
+  }
+
+  // Deposits Management (Admin)
+  async adminGetDeposits(status?: string): Promise<ApiResponse> {
+    const url = status ? `/api/admin/deposits?status=${status}` : '/api/admin/deposits';
+    return this.request(url, { method: 'GET' });
+  }
+
+  async adminApproveDeposit(depositId: string, admin_note?: string): Promise<ApiResponse> {
+    return this.request(`/api/admin/deposits/${depositId}/approve`, {
+      method: 'POST',
+      body: JSON.stringify({ admin_note }),
+    });
+  }
+
+  async adminRejectDeposit(depositId: string, admin_note: string): Promise<ApiResponse> {
+    return this.request(`/api/admin/deposits/${depositId}/reject`, {
+      method: 'POST',
+      body: JSON.stringify({ admin_note }),
+    });
+  }
+
+  // Withdrawals Management (Admin)
+  async adminGetWithdrawals(status?: string): Promise<ApiResponse> {
+    const url = status ? `/api/admin/withdrawals?status=${status}` : '/api/admin/withdrawals';
+    return this.request(url, { method: 'GET' });
+  }
+
+  async adminApproveWithdrawal(withdrawalId: string, data: { admin_note?: string; network_fee?: number }): Promise<ApiResponse> {
+    return this.request(`/api/admin/withdrawals/${withdrawalId}/approve`, {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  }
+
+  async adminRejectWithdrawal(withdrawalId: string, admin_note: string): Promise<ApiResponse> {
+    return this.request(`/api/admin/withdrawals/${withdrawalId}/reject`, {
+      method: 'POST',
+      body: JSON.stringify({ admin_note }),
+    });
+  }
+
+  async adminMarkWithdrawalSent(withdrawalId: string, data: { tx_hash?: string; admin_note?: string }): Promise<ApiResponse> {
+    return this.request(`/api/admin/withdrawals/${withdrawalId}/mark-sent`, {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  }
+
+  // Audit Log (Admin) - з обох таблиць auth + public
+  async adminGetAuditLog(filters?: { action?: string; userId?: string; limit?: number }): Promise<ApiResponse> {
+    const params = new URLSearchParams();
+    if (filters?.limit) params.append('limit', filters.limit.toString());
+    
+    const url = `/api/admin/security/audit-logs${params.toString() ? `?${params}` : ''}`;
+    return this.request(url, { method: 'GET' });
   }
 }
 

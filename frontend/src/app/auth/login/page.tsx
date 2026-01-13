@@ -1,46 +1,54 @@
 "use client"
 
 import type React from "react"
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import Link from "next/link"
-import { useRouter } from "next/navigation"
+import { useRouter, useSearchParams } from "next/navigation"
 import Header from "@/components/Header"
 import Loading from "@/components/Loading"
 import { useAuth } from "@/context/AuthContext"
 
 export default function LoginPage() {
   const router = useRouter()
+  const searchParams = useSearchParams()
   const { login } = useAuth()
-  const [formData, setFormData] = useState({
-    email: "",
-    password: "",
-  })
+  const [email, setEmail] = useState("")
+  const [password, setPassword] = useState("")
   const [error, setError] = useState("")
   const [loading, setLoading] = useState(false)
+  const [returnUrl, setReturnUrl] = useState<string | null>(null)
+
+  useEffect(() => {
+    // Отримати returnUrl з query параметрів
+    const url = searchParams.get('returnUrl')
+    if (url) {
+      setReturnUrl(decodeURIComponent(url))
+    }
+  }, [searchParams])
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setFormData({
-      ...formData,
-      [e.target.name]: e.target.value,
-    })
+    if (e.target.name === 'email') {
+      setEmail(e.target.value)
+    } else if (e.target.name === 'password') {
+      setPassword(e.target.value)
+    }
     setError("")
   }
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
-    setLoading(true)
     setError("")
-    
-    const result = await login(formData.email, formData.password)
+    setLoading(true)
+
+    const result = await login(email, password)
     
     if (result.success) {
-      // Тримаємо loading=true і редиректимо - Dashboard покаже свій loading
-      router.push("/dashboard")
-      // НЕ встановлюємо setLoading(false) - loading screen залишається до повного завантаження dashboard
+      // Redirect to returnUrl або dashboard
+      const redirectTo = returnUrl || '/dashboard'
+      router.push(redirectTo)
     } else {
-      // Перевірити чи треба верифікувати email
       if (result.error?.code === 'EMAIL_NOT_VERIFIED') {
-        router.push(`/auth/verify-email?email=${encodeURIComponent(formData.email)}`)
+        router.push(`/auth/verify-email?email=${encodeURIComponent(email)}`)
         return
       }
       
@@ -51,7 +59,7 @@ export default function LoginPage() {
 
   // Показати fullscreen loading під час логіну/редиректу
   if (loading) {
-    return <Loading fullScreen size="lg" text="Вхід..." />
+    return <Loading fullScreen size="lg" />
   }
 
   return (
@@ -80,7 +88,7 @@ export default function LoginPage() {
                 type="email"
                 id="email"
                 name="email"
-                value={formData.email}
+                value={email}
                 onChange={handleChange}
                 className="w-full px-4 py-3 bg-background border border-gray-medium rounded-lg focus:outline-none focus:border-silver transition-colors font-sans"
                 placeholder="your@email.com"
@@ -95,7 +103,7 @@ export default function LoginPage() {
                 type="password"
                 id="password"
                 name="password"
-                value={formData.password}
+                value={password}
                 onChange={handleChange}
                 className="w-full px-4 py-3 bg-background border border-gray-medium rounded-lg focus:outline-none focus:border-silver transition-colors"
                 placeholder="Введіть пароль"

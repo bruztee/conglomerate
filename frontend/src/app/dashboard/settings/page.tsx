@@ -153,7 +153,7 @@ export default function SettingsPage() {
   }
 
   if (pageLoading) {
-    return <Loading fullScreen size="lg" text="Завантаження налаштувань..." />
+    return <Loading fullScreen size="lg" />
   }
 
   return (

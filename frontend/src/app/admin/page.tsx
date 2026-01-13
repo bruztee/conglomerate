@@ -1,7 +1,10 @@
 "use client"
 
-import { useState } from "react"
+import { useEffect, useState } from "react"
+import { api } from "@/lib/api"
+import Loading from "@/components/Loading"
 import Link from "next/link"
+import { WalletIcon, UsersIcon, SecurityIcon, DepositIcon, WithdrawIcon } from "@/components/icons/AdminIcons"
 
 interface User {
   id: string
@@ -36,441 +39,136 @@ interface DepositHistory {
   status: "active" | "completed"
 }
 
-export default function AdminPanel() {
-  const [activeTab, setActiveTab] = useState<"users" | "withdrawals" | "deposits" | "settings">("users")
-  const [profitPercentage, setProfitPercentage] = useState(5)
-  const [minDeposit, setMinDeposit] = useState(100)
-  const [maxDeposit, setMaxDeposit] = useState(100000)
+export default function AdminDashboard() {
+  const [loading, setLoading] = useState(true)
+  const [stats, setStats] = useState({
+    totalUsers: 0,
+    pendingDeposits: 0,
+    pendingWithdrawals: 0,
+    activePaymentMethods: 0,
+  })
 
-  const [users] = useState<User[]>([
-    {
-      id: "1",
-      name: "Іван Петренко",
-      email: "ivan@example.com",
-      balance: 15000,
-      totalDeposits: 20000,
-      totalWithdrawals: 5000,
-      profit: 3250,
-      registeredAt: "2025-12-01",
-      status: "active",
-    },
-    {
-      id: "2",
-      name: "Олена Сидоренко",
-      email: "olena@example.com",
-      balance: 8500,
-      totalDeposits: 10000,
-      totalWithdrawals: 1500,
-      profit: 1850,
-      registeredAt: "2025-11-15",
-      status: "active",
-    },
-  ])
+  useEffect(() => {
+    async function fetchStats() {
+      setLoading(true)
+      try {
+        const [usersRes, depositsRes, withdrawalsRes, methodsRes] = await Promise.all([
+          api.adminGetUsers(),
+          api.adminGetDeposits('pending'),
+          api.adminGetWithdrawals('requested'),
+          api.adminGetPaymentMethods(),
+        ])
 
-  const [withdrawalRequests] = useState<WithdrawalRequest[]>([
-    {
-      id: "1",
-      userId: "1",
-      userName: "Іван Петренко",
-      amount: 1000,
-      method: "USDT (TRC20)",
-      wallet: "TXyz...abc123",
-      status: "pending",
-      date: "2026-01-05",
-    },
-    {
-      id: "2",
-      userId: "2",
-      userName: "Олена Сидоренко",
-      amount: 500,
-      method: "BTC",
-      wallet: "1A1z...def456",
-      status: "pending",
-      date: "2026-01-04",
-    },
-  ])
+        setStats({
+          totalUsers: usersRes.data?.users?.length || 0,
+          pendingDeposits: depositsRes.data?.deposits?.length || 0,
+          pendingWithdrawals: withdrawalsRes.data?.withdrawals?.length || 0,
+          activePaymentMethods: methodsRes.data?.payment_methods?.filter((m: any) => m.is_active).length || 0,
+        })
+      } catch (error) {
+        console.error('Failed to fetch admin stats:', error)
+      } finally {
+        setLoading(false)
+      }
+    }
 
-  const [depositHistory] = useState<DepositHistory[]>([
-    {
-      id: "1",
-      userId: "1",
-      userName: "Іван Петренко",
-      amount: 5000,
-      profit: 1250,
-      date: "2026-01-01",
-      status: "active",
-    },
-    {
-      id: "2",
-      userId: "1",
-      userName: "Іван Петренко",
-      amount: 7500,
-      profit: 2000,
-      date: "2025-12-15",
-      status: "active",
-    },
-    {
-      id: "3",
-      userId: "2",
-      userName: "Олена Сидоренко",
-      amount: 3000,
-      profit: 850,
-      date: "2025-12-20",
-      status: "completed",
-    },
-  ])
+    fetchStats()
+  }, [])
 
-  const handleSaveSettings = () => {
-    console.log("Settings saved:", { profitPercentage, minDeposit, maxDeposit })
+  if (loading) {
+    return <Loading fullScreen size="lg" />
   }
 
   return (
-    <div className="min-h-screen bg-background">
-      <header className="sticky top-0 z-50 bg-gray-dark/95 backdrop-blur border-b border-gray-medium/30">
-        <div className="container mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex h-16 items-center justify-between">
-            <h1 className="text-xl font-bold text-silver font-sans">ADMIN PANEL</h1>
-            <Link href="/" className="text-sm text-gray-light hover:text-foreground transition-colors">
-              ← На головну
-            </Link>
-          </div>
+    <div className="p-8">
+      <div className="mb-8">
+        <h1 className="text-3xl font-bold mb-2">Адмін-панель</h1>
+        <p className="text-gray-light">Огляд та управління платформою</p>
+      </div>
+
+      {/* Stats Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+        <Link href="/admin/users" className="bg-gray-dark border border-gray-medium rounded-lg p-6 hover:border-silver/30 transition-all cursor-pointer">
+          <div className="text-sm text-gray-light mb-2">Всього користувачів</div>
+          <div className="text-3xl font-bold text-foreground font-sans">{stats.totalUsers}</div>
+        </Link>
+
+        <Link href="/admin/deposits" className="bg-gray-dark border border-gray-medium rounded-lg p-6 hover:border-silver/30 transition-all cursor-pointer">
+          <div className="text-sm text-gray-light mb-2">Депозити на підтвердженні</div>
+          <div className="text-3xl font-bold text-yellow-500 font-sans">{stats.pendingDeposits}</div>
+        </Link>
+
+        <Link href="/admin/withdrawals" className="bg-gray-dark border border-gray-medium rounded-lg p-6 hover:border-silver/30 transition-all cursor-pointer">
+          <div className="text-sm text-gray-light mb-2">Виводи на підтвердженні</div>
+          <div className="text-3xl font-bold text-yellow-500 font-sans">{stats.pendingWithdrawals}</div>
+        </Link>
+
+        <Link href="/admin/payment-methods" className="bg-gray-dark border border-gray-medium rounded-lg p-6 hover:border-silver/30 transition-all cursor-pointer">
+          <div className="text-sm text-gray-light mb-2">Активні реквізити</div>
+          <div className="text-3xl font-bold text-silver font-sans">{stats.activePaymentMethods}</div>
+        </Link>
+      </div>
+
+      {/* Quick Actions */}
+      <div className="bg-gray-dark border border-gray-medium rounded-lg p-6">
+        <h2 className="text-xl font-bold mb-4">Швидкі дії</h2>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          <Link
+            href="/admin/users"
+            className="flex items-center gap-3 p-4 bg-background border border-gray-medium rounded-lg hover:border-silver/30 transition-all cursor-pointer"
+          >
+            <div className="text-silver"><UsersIcon /></div>
+            <div>
+              <div className="font-medium">Користувачі</div>
+              <div className="text-xs text-gray-light">Перегляд та управління</div>
+            </div>
+          </Link>
+
+          <Link
+            href="/admin/payment-methods"
+            className="flex items-center gap-3 p-4 bg-background border border-gray-medium rounded-lg hover:border-silver/30 transition-all cursor-pointer"
+          >
+            <div className="text-silver"><WalletIcon /></div>
+            <div>
+              <div className="font-medium">Реквізити</div>
+              <div className="text-xs text-gray-light">Управління гаманцями</div>
+            </div>
+          </Link>
+
+          <Link
+            href="/admin/deposits"
+            className="flex items-center gap-3 p-4 bg-background border border-gray-medium rounded-lg hover:border-silver/30 transition-all cursor-pointer"
+          >
+            <div className="text-silver"><DepositIcon /></div>
+            <div>
+              <div className="font-medium">Депозити</div>
+              <div className="text-xs text-gray-light">Підтвердження та історія</div>
+            </div>
+          </Link>
+
+          <Link
+            href="/admin/withdrawals"
+            className="flex items-center gap-3 p-4 bg-background border border-gray-medium rounded-lg hover:border-silver/30 transition-all cursor-pointer"
+          >
+            <div className="text-silver"><WithdrawIcon /></div>
+            <div>
+              <div className="font-medium">Виводи</div>
+              <div className="text-xs text-gray-light">Обробка запитів</div>
+            </div>
+          </Link>
+
+          <Link
+            href="/admin/security"
+            className="flex items-center gap-3 p-4 bg-background border border-gray-medium rounded-lg hover:border-silver/30 transition-all cursor-pointer"
+          >
+            <div className="text-silver"><SecurityIcon /></div>
+            <div>
+              <div className="font-medium">Безпека</div>
+              <div className="text-xs text-gray-light">Audit log</div>
+            </div>
+          </Link>
         </div>
-      </header>
-
-      <main className="container mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="mb-8">
-          <div className="flex gap-2 border-b border-gray-medium/30">
-            <button
-              onClick={() => setActiveTab("users")}
-              className={`px-6 py-3 font-medium transition-colors ${
-                activeTab === "users" ? "text-silver border-b-2 border-silver" : "text-gray-light hover:text-foreground"
-              }`}
-            >
-              Користувачі
-            </button>
-            <button
-              onClick={() => setActiveTab("withdrawals")}
-              className={`px-6 py-3 font-medium transition-colors ${
-                activeTab === "withdrawals"
-                  ? "text-silver border-b-2 border-silver"
-                  : "text-gray-light hover:text-foreground"
-              }`}
-            >
-              Заявки на вивід
-            </button>
-            <button
-              onClick={() => setActiveTab("deposits")}
-              className={`px-6 py-3 font-medium transition-colors ${
-                activeTab === "deposits"
-                  ? "text-silver border-b-2 border-silver"
-                  : "text-gray-light hover:text-foreground"
-              }`}
-            >
-              Історія депозитів
-            </button>
-            <button
-              onClick={() => setActiveTab("settings")}
-              className={`px-6 py-3 font-medium transition-colors ${
-                activeTab === "settings"
-                  ? "text-silver border-b-2 border-silver"
-                  : "text-gray-light hover:text-foreground"
-              }`}
-            >
-              Налаштування
-            </button>
-          </div>
-        </div>
-
-        {activeTab === "users" && (
-          <div className="space-y-6">
-            <div className="flex justify-between items-center">
-              <h2 className="text-2xl font-bold">
-                Користувачі (<span className="font-sans">{users.length}</span>)
-              </h2>
-            </div>
-
-            <div className="bg-gray-dark/20 border border-gray-medium/30 rounded-lg overflow-hidden">
-              <div className="overflow-x-auto">
-                <table className="w-full">
-                  <thead className="bg-gray-dark/50">
-                    <tr>
-                      <th className="text-left py-4 px-6 text-sm font-medium text-gray-light">Користувач</th>
-                      <th className="text-left py-4 px-6 text-sm font-medium text-gray-light">Баланс</th>
-                      <th className="text-left py-4 px-6 text-sm font-medium text-gray-light">Депозити</th>
-                      <th className="text-left py-4 px-6 text-sm font-medium text-gray-light">Виводи</th>
-                      <th className="text-left py-4 px-6 text-sm font-medium text-gray-light">Профіт</th>
-                      <th className="text-left py-4 px-6 text-sm font-medium text-gray-light">Реєстрація</th>
-                      <th className="text-left py-4 px-6 text-sm font-medium text-gray-light">Статус</th>
-                      <th className="text-left py-4 px-6 text-sm font-medium text-gray-light">Дії</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {users.map((user) => (
-                      <tr key={user.id} className="border-t border-gray-medium/30 hover:bg-gray-dark/30">
-                        <td className="py-4 px-6">
-                          <div>
-                            <div className="font-medium">{user.name}</div>
-                            <div className="text-sm text-gray-light">{user.email}</div>
-                          </div>
-                        </td>
-                        <td className="py-4 px-6 font-medium font-sans">${user.balance.toLocaleString()}</td>
-                        <td className="py-4 px-6 font-medium font-sans">${user.totalDeposits.toLocaleString()}</td>
-                        <td className="py-4 px-6 font-medium font-sans">${user.totalWithdrawals.toLocaleString()}</td>
-                        <td className="py-4 px-6 font-medium text-silver font-sans">${user.profit.toLocaleString()}</td>
-                        <td className="py-4 px-6 text-sm text-gray-light">
-                          {new Date(user.registeredAt).toLocaleDateString("uk-UA")}
-                        </td>
-                        <td className="py-4 px-6">
-                          <span
-                            className={`px-2 py-1 rounded text-xs ${
-                              user.status === "active" ? "bg-green-500/20 text-green-500" : "bg-red-500/20 text-red-500"
-                            }`}
-                          >
-                            {user.status === "active" ? "Активний" : "Заблокований"}
-                          </span>
-                        </td>
-                        <td className="py-4 px-6">
-                          <button className="text-silver hover:text-foreground text-sm">Деталі</button>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {activeTab === "withdrawals" && (
-          <div className="space-y-6">
-            <div className="flex justify-between items-center">
-              <h2 className="text-2xl font-bold">
-                Заявки на вивід (
-                <span className="font-sans">{withdrawalRequests.filter((r) => r.status === "pending").length}</span>)
-              </h2>
-            </div>
-
-            <div className="grid gap-4">
-              {withdrawalRequests.map((request) => (
-                <div key={request.id} className="bg-gray-dark/20 border border-gray-medium/30 rounded-lg p-6">
-                  <div className="grid md:grid-cols-2 gap-6">
-                    <div className="space-y-3">
-                      <div>
-                        <div className="text-sm text-gray-light">Користувач</div>
-                        <div className="font-medium">{request.userName}</div>
-                      </div>
-                      <div>
-                        <div className="text-sm text-gray-light">Сума</div>
-                        <div className="text-2xl font-bold text-silver font-sans">
-                          ${request.amount.toLocaleString()}
-                        </div>
-                      </div>
-                      <div>
-                        <div className="text-sm text-gray-light">Дата</div>
-                        <div>{new Date(request.date).toLocaleDateString("uk-UA")}</div>
-                      </div>
-                    </div>
-                    <div className="space-y-3">
-                      <div>
-                        <div className="text-sm text-gray-light">Метод</div>
-                        <div className="font-medium font-sans">{request.method}</div>
-                      </div>
-                      <div>
-                        <div className="text-sm text-gray-light">Гаманець</div>
-                        <div className="font-mono text-sm">{request.wallet}</div>
-                      </div>
-                      <div>
-                        <div className="text-sm text-gray-light">Статус</div>
-                        <span
-                          className={`inline-block px-2 py-1 rounded text-xs ${
-                            request.status === "pending"
-                              ? "bg-yellow-500/20 text-yellow-500"
-                              : request.status === "approved"
-                                ? "bg-green-500/20 text-green-500"
-                                : "bg-red-500/20 text-red-500"
-                          }`}
-                        >
-                          {request.status === "pending"
-                            ? "Очікує"
-                            : request.status === "approved"
-                              ? "Схвалено"
-                              : "Відхилено"}
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-                  {request.status === "pending" && (
-                    <div className="flex gap-3 mt-6 pt-6 border-t border-gray-medium/30">
-                      <button className="btn-gradient-primary flex-1 px-4 py-2 text-foreground font-medium rounded-lg transition-all font-sans">
-                        Схвалити
-                      </button>
-                      <button className="btn-gradient-secondary flex-1 px-4 py-2 text-foreground font-medium rounded-lg transition-all font-sans">
-                        Відхилити
-                      </button>
-                    </div>
-                  )}
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {activeTab === "deposits" && (
-          <div className="space-y-6">
-            <div className="flex justify-between items-center">
-              <h2 className="text-2xl font-bold">
-                Історія депозитів (<span className="font-sans">{depositHistory.length}</span>)
-              </h2>
-            </div>
-
-            <div className="bg-gray-dark/20 border border-gray-medium/30 rounded-lg overflow-hidden">
-              <div className="overflow-x-auto">
-                <table className="w-full">
-                  <thead className="bg-gray-dark/50">
-                    <tr>
-                      <th className="text-left py-4 px-6 text-sm font-medium text-gray-light">Користувач</th>
-                      <th className="text-left py-4 px-6 text-sm font-medium text-gray-light">Сума</th>
-                      <th className="text-left py-4 px-6 text-sm font-medium text-gray-light">Профіт</th>
-                      <th className="text-left py-4 px-6 text-sm font-medium text-gray-light">Дата</th>
-                      <th className="text-left py-4 px-6 text-sm font-medium text-gray-light">Статус</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {depositHistory.map((deposit) => (
-                      <tr key={deposit.id} className="border-t border-gray-medium/30 hover:bg-gray-dark/30">
-                        <td className="py-4 px-6 font-medium">{deposit.userName}</td>
-                        <td className="py-4 px-6 font-medium font-sans">${deposit.amount.toLocaleString()}</td>
-                        <td className="py-4 px-6 font-medium text-silver font-sans">
-                          ${deposit.profit.toLocaleString()}
-                        </td>
-                        <td className="py-4 px-6 text-sm text-gray-light">
-                          {new Date(deposit.date).toLocaleDateString("uk-UA")}
-                        </td>
-                        <td className="py-4 px-6">
-                          <span
-                            className={`px-2 py-1 rounded text-xs ${
-                              deposit.status === "active"
-                                ? "bg-green-500/20 text-green-500"
-                                : "bg-gray-500/20 text-gray-400"
-                            }`}
-                          >
-                            {deposit.status === "active" ? "Активний" : "Завершений"}
-                          </span>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {activeTab === "settings" && (
-          <div className="space-y-6">
-            <h2 className="text-2xl font-bold">Налаштування платформи</h2>
-
-            <div className="grid md:grid-cols-2 gap-6">
-              <div className="bg-gray-dark/20 border border-gray-medium/30 rounded-lg p-6">
-                <h3 className="text-xl font-bold mb-6">Прибутковість</h3>
-
-                <div className="space-y-4">
-                  <div>
-                    <label htmlFor="profitPercentage" className="block text-sm font-medium mb-2">
-                      Відсоток прибутку (місячний)
-                    </label>
-                    <div className="flex items-center gap-4">
-                      <input
-                        type="number"
-                        id="profitPercentage"
-                        value={profitPercentage}
-                        onChange={(e) => setProfitPercentage(Number.parseFloat(e.target.value))}
-                        className="flex-1 px-4 py-3 bg-background border border-gray-medium rounded-lg focus:outline-none focus:border-silver transition-colors font-sans"
-                        min="0"
-                        max="100"
-                        step="0.1"
-                      />
-                      <span className="text-2xl font-bold text-silver font-sans">{profitPercentage}%</span>
-                    </div>
-                    <p className="text-xs text-gray-light mt-2">Базовий відсоток прибутку для всіх депозитів</p>
-                  </div>
-
-                  <div className="bg-background/50 border border-silver/30 rounded-lg p-4">
-                    <div className="text-sm text-gray-light mb-2">Приклад розрахунку</div>
-                    <div className="space-y-1 text-sm">
-                      <div className="flex justify-between">
-                        <span>
-                          Депозит <span className="font-sans">$1,000</span>:
-                        </span>
-                        <span className="font-bold text-silver font-sans">
-                          ${((1000 * profitPercentage) / 100).toFixed(2)}/міс
-                        </span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span>
-                          Депозит <span className="font-sans">$10,000</span>:
-                        </span>
-                        <span className="font-bold text-silver font-sans">
-                          ${((10000 * profitPercentage) / 100).toFixed(2)}/міс
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              <div className="bg-gray-dark/20 border border-gray-medium/30 rounded-lg p-6">
-                <h3 className="text-xl font-bold mb-6">Ліміти депозитів</h3>
-
-                <div className="space-y-4">
-                  <div>
-                    <label htmlFor="minDeposit" className="block text-sm font-medium mb-2">
-                      Мінімальний депозит
-                    </label>
-                    <div className="relative">
-                      <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-light font-sans">$</span>
-                      <input
-                        type="number"
-                        id="minDeposit"
-                        value={minDeposit}
-                        onChange={(e) => setMinDeposit(Number.parseFloat(e.target.value))}
-                        className="w-full pl-8 pr-4 py-3 bg-background border border-gray-medium rounded-lg focus:outline-none focus:border-silver transition-colors font-sans"
-                        min="0"
-                      />
-                    </div>
-                  </div>
-
-                  <div>
-                    <label htmlFor="maxDeposit" className="block text-sm font-medium mb-2">
-                      Максимальний депозит
-                    </label>
-                    <div className="relative">
-                      <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-light font-sans">$</span>
-                      <input
-                        type="number"
-                        id="maxDeposit"
-                        value={maxDeposit}
-                        onChange={(e) => setMaxDeposit(Number.parseFloat(e.target.value))}
-                        className="w-full pl-8 pr-4 py-3 bg-background border border-gray-medium rounded-lg focus:outline-none focus:border-silver transition-colors font-sans"
-                        min="0"
-                      />
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <div className="flex justify-end">
-              <button
-                onClick={handleSaveSettings}
-                className="btn-gradient-primary px-8 py-3 text-foreground font-bold rounded-lg transition-all font-sans"
-              >
-                Зберегти налаштування
-              </button>
-            </div>
-          </div>
-        )}
-      </main>
+      </div>
     </div>
   )
 }

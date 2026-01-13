@@ -120,51 +120,7 @@ export async function handleConfirmDeposit(request: Request, env: Env, depositId
     return errorResponse('UPDATE_FAILED', 'Failed to confirm deposit', 500);
   }
   
-  const idempotencyKey = `deposit_${depositId}`;
-  
-  const { error: ledgerError } = await supabase
-    .from('ledger_entries')
-    .insert({
-      account_id: deposit.account_id,
-      type: 'deposit',
-      amount: deposit.amount,
-      direction: 'credit',
-      status: 'posted',
-      ref_table: 'deposits',
-      ref_id: depositId,
-      idempotency_key: idempotencyKey,
-      description: `Deposit confirmed - ${deposit.provider}`,
-    });
-  
-  if (ledgerError && !ledgerError.message.includes('duplicate')) {
-    return errorResponse('LEDGER_ERROR', 'Failed to create ledger entry', 500);
-  }
-  
-  const { data: depositUser } = await supabase
-    .from('profiles')
-    .select('referred_by')
-    .eq('id', deposit.user_id)
-    .single();
-  
-    if (depositUser?.referred_by) {
-      await supabase.rpc('apply_referral_bonus', {
-        referrer_user_id: depositUser.referred_by,
-        referee_user_id: deposit.user_id,
-        deposit_amount: deposit.amount,
-      });
-    }
-    
-    await logAudit(
-      env,
-      user.id,
-      'deposit.confirm',
-      'deposits',
-      depositId,
-      { amount: deposit.amount },
-      request
-    );
-    
-    return jsonResponse({ message: 'Deposit confirmed successfully' });
+  return jsonResponse({ deposit });
   } catch (error) {
     if (error instanceof Error && error.message === 'FORBIDDEN') {
       return errorResponse('FORBIDDEN', 'Admin access required', 403);
