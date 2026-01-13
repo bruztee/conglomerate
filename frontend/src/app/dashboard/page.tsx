@@ -5,6 +5,8 @@ import ChartIcon from "@/components/icons/ChartIcon"
 import UserIcon from "@/components/icons/UserIcon"
 import NetworkIcon from "@/components/icons/NetworkIcon"
 import BoltIcon from "@/components/icons/BoltIcon"
+import WarningIcon from "@/components/icons/WarningIcon"
+import CopyIcon from "@/components/icons/CopyIcon"
 
 import { useState, useEffect } from "react"
 import Link from "next/link"
@@ -26,7 +28,7 @@ interface Deposit {
 
 export default function DashboardPage() {
   const router = useRouter()
-  const { user } = useAuth()
+  const { user, loading: authLoading } = useAuth()
   const [amount, setAmount] = useState("")
   const [userBalance, setUserBalance] = useState(0)
   const [userProfit, setUserProfit] = useState(0)
@@ -34,6 +36,17 @@ export default function DashboardPage() {
   const [loading, setLoading] = useState(true)
   const [paymentMethods, setPaymentMethods] = useState<any[]>([])
   const [selectedMethod, setSelectedMethod] = useState<any>(null)
+
+  // Show loading while checking auth
+  if (authLoading) {
+    return <Loading fullScreen size="lg" />
+  }
+
+  // Redirect if not authenticated
+  if (!user) {
+    router.push('/auth/login')
+    return <Loading fullScreen size="lg" />
+  }
 
   const quickAmounts = [100, 500, 1000, 5000, 10000]
 
@@ -272,14 +285,16 @@ export default function DashboardPage() {
                         <button
                           type="button"
                           onClick={() => navigator.clipboard.writeText(selectedMethod.wallet_address)}
-                          className="text-xs text-silver hover:text-foreground mt-2"
+                          className="flex items-center gap-1 text-xs text-silver hover:text-foreground mt-2"
                         >
-                          📋 Копіювати адресу
+                          <CopyIcon className="w-4 h-4" />
+                          Копіювати адресу
                         </button>
                       </div>
                       {selectedMethod.min_amount > 0 && (
-                        <div className="text-xs text-yellow-500">
-                          ⚠️ Мінімальна сума: ${selectedMethod.min_amount}
+                        <div className="flex items-center gap-1 text-xs text-yellow-500">
+                          <WarningIcon className="w-4 h-4" />
+                          Мінімальна сума: ${selectedMethod.min_amount}
                         </div>
                       )}
                     </div>
@@ -340,8 +355,9 @@ export default function DashboardPage() {
                 </button>
 
                 {selectedMethod && (
-                  <p className="text-xs text-gray-light text-center">
-                    ⚠️ Натисніть кнопку ТІЛЬКИ після відправки коштів на вказану адресу
+                  <p className="flex items-center justify-center gap-1 text-xs text-gray-light">
+                    <WarningIcon className="w-4 h-4" />
+                    Натисніть кнопку ТІЛЬКИ після відправки коштів на вказану адресу
                   </p>
                 )}
               </form>

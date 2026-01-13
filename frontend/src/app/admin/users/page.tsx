@@ -1,6 +1,8 @@
 "use client"
 
 import { useEffect, useState } from "react"
+import { useRouter } from "next/navigation"
+import { useAuth } from "@/context/AuthContext"
 import { api } from "@/lib/api"
 import Loading from "@/components/Loading"
 import { CheckIcon, ClockIcon, MinusIcon } from "@/components/icons/AdminIcons"
@@ -20,7 +22,14 @@ interface User {
   total_withdrawals: number
 }
 
-export default function UsersPage() {
+export default function AdminUsersPage() {
+  const router = useRouter()
+  const { user, loading: authLoading } = useAuth()
+
+  if (authLoading) return <Loading />
+  if (!user) { router.push('/auth/login'); return <Loading /> }
+  if (user.role !== 'admin') { router.push('/dashboard'); return <Loading /> }
+
   const [loading, setLoading] = useState(true)
   const [users, setUsers] = useState<User[]>([])
   const [editingUser, setEditingUser] = useState<User | null>(null)

@@ -1,8 +1,11 @@
 "use client"
 
 import { useEffect, useState } from "react"
+import { useRouter } from "next/navigation"
+import { useAuth } from "@/context/AuthContext"
 import { api } from "@/lib/api"
 import Loading from "@/components/Loading"
+import CardIcon from "@/components/icons/CardIcon"
 
 interface PaymentMethod {
   id: string
@@ -14,7 +17,14 @@ interface PaymentMethod {
   created_at: string
 }
 
-export default function PaymentMethodsPage() {
+export default function AdminPaymentMethodsPage() {
+  const router = useRouter()
+  const { user, loading: authLoading } = useAuth()
+
+  if (authLoading) return <Loading />
+  if (!user) { router.push('/auth/login'); return <Loading /> }
+  if (user.role !== 'admin') { router.push('/dashboard'); return <Loading /> }
+
   const [loading, setLoading] = useState(true)
   const [methods, setMethods] = useState<PaymentMethod[]>([])
   const [showModal, setShowModal] = useState(false)
@@ -190,7 +200,9 @@ export default function PaymentMethodsPage() {
 
         {methods.length === 0 && (
           <div className="bg-gray-dark border border-gray-medium rounded-lg p-12 text-center">
-            <div className="text-4xl mb-4">💳</div>
+            <div className="flex justify-center mb-4">
+              <CardIcon className="w-16 h-16 text-silver" />
+            </div>
             <p className="text-gray-light mb-4">Немає доданих реквізитів</p>
             <button
               onClick={() => {

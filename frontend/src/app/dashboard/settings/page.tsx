@@ -4,14 +4,27 @@ import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { useAuth } from "@/context/AuthContext"
 import { api } from "@/lib/api"
+import CheckCircleIcon from "@/components/icons/CheckCircleIcon"
+import WarningIcon from "@/components/icons/WarningIcon"
 import Header from "@/components/Header"
 import Loading from "@/components/Loading"
 import PhoneVerificationPopup from "@/components/PhoneVerificationPopup"
 
 export default function SettingsPage() {
   const router = useRouter()
-  const { user } = useAuth()
+  const { user, loading: authLoading } = useAuth()
   const [activeTab, setActiveTab] = useState<'email' | 'phone' | 'password'>('email')
+
+  // Show loading while checking auth
+  if (authLoading) {
+    return <Loading fullScreen size="lg" />
+  }
+
+  // Redirect if not authenticated
+  if (!user) {
+    router.push('/auth/login')
+    return <Loading fullScreen size="lg" />
+  }
   
   const [emailForm, setEmailForm] = useState({ email: '' })
   const [phoneForm, setPhoneForm] = useState({ phone: '' })
@@ -170,7 +183,7 @@ export default function SettingsPage() {
             <div className="space-y-2 text-gray-light">
               <p><strong>Ім'я:</strong> {userProfile?.full_name || user.full_name || 'Не вказано'}</p>
               <p><strong>Email:</strong> {userProfile?.email || user.email}</p>
-              <p><strong>Телефон:</strong> {userProfile?.phone || user.phone || 'Не вказано'} {userProfile?.phone && (userProfile?.is_phone_verified ? ' ✅' : ' ⚠️ Не верифіковано')}</p>
+              <p className="flex items-center gap-2"><strong>Телефон:</strong> {userProfile?.phone || user.phone || 'Не вказано'} {userProfile?.phone && (userProfile?.is_phone_verified ? <CheckCircleIcon className="w-4 h-4 text-green-400" /> : <span className="flex items-center gap-1 text-yellow-500"><WarningIcon className="w-4 h-4" /> Не верифіковано</span>)}</p>
               <p><strong>Ваш план:</strong> {userProfile?.plan || 'Стандарт'}</p>
               <p><strong>% місячних:</strong> {userProfile?.monthly_percentage || '0'}%</p>
             </div>
@@ -265,7 +278,7 @@ export default function SettingsPage() {
               {userProfile?.phone && (
                 <div className="mb-6 p-4 bg-background/50 rounded-lg border border-gray-medium">
                   <p className="text-sm text-gray-light mb-1">Поточний телефон:</p>
-                  <p className="text-lg font-medium">{userProfile.phone} {userProfile.is_phone_verified ? '✅ Верифіковано' : '⚠️ Не верифіковано'}</p>
+                  <p className="flex items-center gap-2 text-lg font-medium">{userProfile.phone} {userProfile.is_phone_verified ? <span className="flex items-center gap-1 text-green-400"><CheckCircleIcon className="w-5 h-5" /> Верифіковано</span> : <span className="flex items-center gap-1 text-yellow-500"><WarningIcon className="w-5 h-5" /> Не верифіковано</span>}</p>
                 </div>
               )}
               

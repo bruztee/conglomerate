@@ -1,13 +1,13 @@
 "use client"
 
 import type React from "react"
-
 import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { useAuth } from "@/context/AuthContext"
 import { api } from "@/lib/api"
 import Header from "@/components/Header"
 import Loading from "@/components/Loading"
+import WarningIcon from "@/components/icons/WarningIcon"
 
 interface WithdrawalRequest {
   id: string
@@ -31,13 +31,24 @@ interface Deposit {
 
 export default function WithdrawPage() {
   const router = useRouter()
-  const { user } = useAuth()
+  const { user, loading: authLoading } = useAuth()
   
   const [walletAddress, setWalletAddress] = useState("")
   const [selectedMethod, setSelectedMethod] = useState<string | null>(null)
   const [userBalance, setUserBalance] = useState(0)
   const [userProfit, setUserProfit] = useState(0)
   const [loading, setLoading] = useState(true)
+
+  // Show loading while checking auth
+  if (authLoading) {
+    return <Loading fullScreen size="lg" />
+  }
+
+  // Redirect if not authenticated
+  if (!user) {
+    router.push('/auth/login')
+    return <Loading fullScreen size="lg" />
+  }
   const [submitting, setSubmitting] = useState(false)
   const [message, setMessage] = useState('')
   const [error, setError] = useState('')
@@ -320,7 +331,7 @@ export default function WithdrawPage() {
 
                 <div className="bg-silver/10 border border-silver/30 rounded-lg p-4">
                   <div className="flex gap-2 text-xs">
-                    <span className="text-silver">⚠️</span>
+                    <WarningIcon className="w-4 h-4 text-silver flex-shrink-0 mt-0.5" />
                     <p className="text-gray-light">
                       Перевірте правильність адреси гаманця. Кошти, відправлені на невірну адресу, не можуть бути
                       повернені.

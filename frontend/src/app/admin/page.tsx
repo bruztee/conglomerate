@@ -1,6 +1,8 @@
 "use client"
 
 import { useEffect, useState } from "react"
+import { useRouter } from "next/navigation"
+import { useAuth } from "@/context/AuthContext"
 import { api } from "@/lib/api"
 import Loading from "@/components/Loading"
 import Link from "next/link"
@@ -40,6 +42,26 @@ interface DepositHistory {
 }
 
 export default function AdminDashboard() {
+  const router = useRouter()
+  const { user, loading: authLoading } = useAuth()
+
+  // Show loading while checking auth
+  if (authLoading) {
+    return <Loading />
+  }
+
+  // Redirect if not authenticated
+  if (!user) {
+    router.push('/auth/login')
+    return <Loading />
+  }
+
+  // Redirect if not admin (backend also enforces this)
+  if (user.role !== 'admin') {
+    router.push('/dashboard')
+    return <Loading />
+  }
+
   const [loading, setLoading] = useState(true)
   const [stats, setStats] = useState({
     totalUsers: 0,

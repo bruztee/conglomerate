@@ -1,3 +1,7 @@
+"use client"
+
+import { useEffect } from "react"
+import { useRouter } from "next/navigation"
 import Link from "next/link"
 import Image from "next/image"
 import Header from "@/components/Header"
@@ -5,8 +9,24 @@ import ChartIcon from "@/components/icons/ChartIcon"
 import UserIcon from "@/components/icons/UserIcon"
 import NetworkIcon from "@/components/icons/NetworkIcon"
 import BoltIcon from "@/components/icons/BoltIcon"
+import { useAuth } from "@/context/AuthContext"
+import Loading from "@/components/Loading"
 
 export default function Home() {
+  const router = useRouter()
+  const { user, loading: authLoading } = useAuth()
+
+  // Show loading while checking auth
+  if (authLoading) {
+    return <Loading fullScreen size="lg" />
+  }
+
+  // Redirect to dashboard if already logged in
+  if (user) {
+    router.push('/dashboard')
+    return <Loading fullScreen size="lg" />
+  }
+
   return (
     <>
       <Header isAuthenticated={false} />

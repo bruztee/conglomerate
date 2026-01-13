@@ -6,6 +6,7 @@ import { Suspense } from "react"
 import Header from "@/components/Header"
 import Link from "next/link"
 import { api } from "@/lib/api"
+import EmailIcon from "@/components/icons/EmailIcon"
 
 function VerifyEmailContent() {
   const searchParams = useSearchParams()
@@ -39,7 +40,9 @@ function VerifyEmailContent() {
     <main className="min-h-screen flex items-center justify-center px-4 py-12">
       <div className="w-full max-w-md">
         <div className="bg-gray-dark border border-gray-medium rounded-lg p-8 text-center">
-          <div className="text-4xl mb-4">✉️</div>
+          <div className="flex justify-center mb-4">
+            <EmailIcon className="w-16 h-16 text-silver" />
+          </div>
           <h1 className="text-2xl font-bold mb-2">Підтвердіть email</h1>
           <p className="text-gray-light mb-6">
             Ми відправили листа з підтвердженням на <strong>{email}</strong>

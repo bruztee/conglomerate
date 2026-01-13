@@ -4,6 +4,9 @@ import { useEffect, useState, Suspense } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
 import Header from "@/components/Header"
 import Link from "next/link"
+import HourglassIcon from "@/components/icons/HourglassIcon"
+import CheckCircleIcon from "@/components/icons/CheckCircleIcon"
+import ErrorIcon from "@/components/icons/ErrorIcon"
 
 function VerifyContent() {
   const router = useRouter()
@@ -32,7 +35,9 @@ function VerifyContent() {
           <div className="bg-gray-dark border border-gray-medium rounded-lg p-8 text-center">
             {status === 'loading' && (
               <>
-                <div className="text-4xl mb-4">⏳</div>
+                <div className="flex justify-center mb-4">
+                  <HourglassIcon className="w-16 h-16 text-silver" />
+                </div>
                 <h1 className="text-2xl font-bold mb-2">Верифікація...</h1>
                 <p className="text-gray-light">Зачекайте, будь ласка</p>
               </>
@@ -40,7 +45,9 @@ function VerifyContent() {
             
             {status === 'success' && (
               <>
-                <div className="text-4xl mb-4">✅</div>
+                <div className="flex justify-center mb-4">
+                  <CheckCircleIcon className="w-16 h-16 text-green-400" />
+                </div>
                 <h1 className="text-2xl font-bold mb-2 text-green-400">Успішно!</h1>
                 <p className="text-gray-light mb-6">{message}</p>
                 <p className="text-sm text-gray-light mb-6">
@@ -57,7 +64,9 @@ function VerifyContent() {
             
             {status === 'error' && (
               <>
-                <div className="text-4xl mb-4">❌</div>
+                <div className="flex justify-center mb-4">
+                  <ErrorIcon className="w-16 h-16 text-red-400" />
+                </div>
                 <h1 className="text-2xl font-bold mb-2 text-red-400">Помилка</h1>
                 <p className="text-gray-light mb-6">{message}</p>
                 <Link 

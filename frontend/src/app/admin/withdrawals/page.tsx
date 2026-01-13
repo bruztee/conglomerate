@@ -1,9 +1,12 @@
 "use client"
 
 import { useEffect, useState } from "react"
+import { useRouter } from "next/navigation"
+import { useAuth } from "@/context/AuthContext"
 import { api } from "@/lib/api"
 import Loading from "@/components/Loading"
 import { CheckIcon, XIcon } from "@/components/icons/AdminIcons"
+import WarningIcon from "@/components/icons/WarningIcon"
 
 interface Withdrawal {
   id: string
@@ -22,7 +25,14 @@ interface Withdrawal {
   }
 }
 
-export default function WithdrawalsPage() {
+export default function AdminWithdrawalsPage() {
+  const router = useRouter()
+  const { user, loading: authLoading } = useAuth()
+
+  if (authLoading) return <Loading />
+  if (!user) { router.push('/auth/login'); return <Loading /> }
+  if (user.role !== 'admin') { router.push('/dashboard'); return <Loading /> }
+
   const [loading, setLoading] = useState(true)
   const [tab, setTab] = useState<'pending' | 'history'>('pending')
   const [withdrawals, setWithdrawals] = useState<Withdrawal[]>([])
@@ -304,8 +314,9 @@ export default function WithdrawalsPage() {
                     step="0.01"
                     placeholder="Тільки комісія мережі (не мінімальна сума)"
                   />
-                  <p className="text-xs text-gray-light mt-1">
-                    ⚠️ Вказуйте тільки комісію мережі. Мінімальної суми виводу немає.
+                  <p className="flex items-center gap-1 text-xs text-gray-light mt-1">
+                    <WarningIcon className="w-3 h-3 flex-shrink-0" />
+                    Вказуйте тільки комісію мережі. Мінімальної суми виводу немає.
                   </p>
                 </div>
               )}

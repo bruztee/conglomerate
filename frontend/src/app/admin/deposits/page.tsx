@@ -1,6 +1,8 @@
 "use client"
 
 import { useEffect, useState } from "react"
+import { useRouter } from "next/navigation"
+import { useAuth } from "@/context/AuthContext"
 import { api } from "@/lib/api"
 import Loading from "@/components/Loading"
 import { CheckIcon, XIcon } from "@/components/icons/AdminIcons"
@@ -25,7 +27,14 @@ interface Deposit {
   } | null
 }
 
-export default function DepositsPage() {
+export default function AdminDepositsPage() {
+  const router = useRouter()
+  const { user, loading: authLoading } = useAuth()
+
+  if (authLoading) return <Loading />
+  if (!user) { router.push('/auth/login'); return <Loading /> }
+  if (user.role !== 'admin') { router.push('/dashboard'); return <Loading /> }
+
   const [loading, setLoading] = useState(true)
   const [tab, setTab] = useState<'pending' | 'history'>('pending')
   const [deposits, setDeposits] = useState<Deposit[]>([])

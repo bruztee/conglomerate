@@ -11,7 +11,7 @@ import { useAuth } from "@/context/AuthContext"
 export default function LoginPage() {
   const router = useRouter()
   const searchParams = useSearchParams()
-  const { login } = useAuth()
+  const { login, user, loading: authLoading } = useAuth()
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
   const [error, setError] = useState("")
@@ -25,6 +25,17 @@ export default function LoginPage() {
       setReturnUrl(decodeURIComponent(url))
     }
   }, [searchParams])
+
+  // Show loading while checking auth
+  if (authLoading) {
+    return <Loading fullScreen size="lg" />
+  }
+
+  // Redirect to dashboard if already logged in
+  if (user) {
+    router.push('/dashboard')
+    return <Loading fullScreen size="lg" />
+  }
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.name === 'email') {

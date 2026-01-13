@@ -4,6 +4,12 @@ import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { useAuth } from "@/context/AuthContext"
 import { api } from "@/lib/api"
+import EmailIcon from "@/components/icons/EmailIcon"
+import MoneyIcon from "@/components/icons/MoneyIcon"
+import TelegramIcon from "@/components/icons/TelegramIcon"
+import ShareIcon from "@/components/icons/ShareIcon"
+import BoltIcon from "@/components/icons/BoltIcon"
+import RefreshIcon from "@/components/icons/RefreshIcon"
 import Header from "@/components/Header"
 import Loading from "@/components/Loading"
 
@@ -19,7 +25,7 @@ interface Referral {
 
 export default function ReferralPage() {
   const router = useRouter()
-  const { user } = useAuth()
+  const { user, loading: authLoading } = useAuth()
   
   const [userBalance, setUserBalance] = useState(0)
   const [userProfit, setUserProfit] = useState(0)
@@ -160,15 +166,21 @@ export default function ReferralPage() {
 
               <div className="grid sm:grid-cols-3 gap-4">
                 <button className="btn-gradient-secondary p-4 rounded-lg transition-all text-center">
-                  <div className="text-2xl mb-2">📧</div>
+                  <div className="flex justify-center mb-2">
+                    <EmailIcon className="w-8 h-8 text-silver" />
+                  </div>
                   <div className="text-sm font-medium font-sans">Email</div>
                 </button>
                 <button className="btn-gradient-secondary p-4 rounded-lg transition-all text-center">
-                  <div className="text-2xl mb-2">💬</div>
+                  <div className="flex justify-center mb-2">
+                    <TelegramIcon className="w-8 h-8 text-silver" />
+                  </div>
                   <div className="text-sm font-medium font-sans">Telegram</div>
                 </button>
                 <button className="btn-gradient-secondary p-4 rounded-lg transition-all text-center">
-                  <div className="text-2xl mb-2">🔗</div>
+                  <div className="flex justify-center mb-2">
+                    <ShareIcon className="w-8 h-8 text-silver" />
+                  </div>
                   <div className="text-sm font-medium font-sans">Соцмережі</div>
                 </button>
               </div>
@@ -179,7 +191,7 @@ export default function ReferralPage() {
 
               <div className="space-y-4 text-sm">
                 <div className="flex gap-3">
-                  <span className="text-silver">💰</span>
+                  <MoneyIcon className="w-5 h-5 text-silver flex-shrink-0 mt-0.5" />
                   <div>
                     <div className="font-medium mb-1">
                       <span className="font-sans">5%</span> від депозитів
@@ -191,7 +203,7 @@ export default function ReferralPage() {
                 </div>
 
                 <div className="flex gap-3">
-                  <span className="text-silver">🔄</span>
+                  <RefreshIcon className="w-5 h-5 text-silver flex-shrink-0 mt-0.5" />
                   <div>
                     <div className="font-medium mb-1">Довічна винагорода</div>
                     <div className="text-gray-light">Заробляйте з кожного депозиту без обмежень</div>
@@ -199,7 +211,7 @@ export default function ReferralPage() {
                 </div>
 
                 <div className="flex gap-3">
-                  <span className="text-silver">⚡</span>
+                  <BoltIcon className="w-5 h-5 text-silver flex-shrink-0 mt-0.5" />
                   <div>
                     <div className="font-medium mb-1">Миттєве нарахування</div>
                     <div className="text-gray-light">Бонус нараховується автоматично</div>
@@ -207,7 +219,7 @@ export default function ReferralPage() {
                 </div>
 
                 <div className="flex gap-3">
-                  <span className="text-silver">💸</span>
+                  <MoneyIcon className="w-5 h-5 text-silver flex-shrink-0 mt-0.5" />
                   <div>
                     <div className="font-medium mb-1">Вільний вивід</div>
                     <div className="text-gray-light">Виводьте заробіток у будь-який час</div>

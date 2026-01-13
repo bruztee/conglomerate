@@ -1,17 +1,31 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import Header from "@/components/Header"
 import { api } from "@/lib/api"
+import { useAuth } from "@/context/AuthContext"
+import Loading from "@/components/Loading"
 
 export default function ForgotPasswordPage() {
   const router = useRouter()
+  const { user, loading: authLoading } = useAuth()
   const [email, setEmail] = useState("")
   const [loading, setLoading] = useState(false)
   const [message, setMessage] = useState("")
   const [error, setError] = useState("")
+
+  // Show loading while checking auth
+  if (authLoading) {
+    return <Loading fullScreen size="lg" />
+  }
+
+  // Redirect to dashboard if already logged in
+  if (user) {
+    router.push('/dashboard')
+    return <Loading fullScreen size="lg" />
+  }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()

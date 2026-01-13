@@ -1,16 +1,18 @@
 "use client"
 
 import type React from "react"
-import { useState, Suspense } from "react"
+import { useState, useEffect, Suspense } from "react"
 import Link from "next/link"
 import { useRouter, useSearchParams } from "next/navigation"
 import Header from "@/components/Header"
 import { useAuth } from "@/context/AuthContext"
+import EmailIcon from "@/components/icons/EmailIcon"
+import Loading from "@/components/Loading"
 
 function RegisterForm() {
   const router = useRouter()
   const searchParams = useSearchParams()
-  const { register } = useAuth()
+  const { register, user, loading: authLoading } = useAuth()
   const [formData, setFormData] = useState({
     email: "",
     password: "",
@@ -20,6 +22,25 @@ function RegisterForm() {
   const [error, setError] = useState("")
   const [loading, setLoading] = useState(false)
   const [showVerificationMessage, setShowVerificationMessage] = useState(false)
+
+  // Show loading while checking auth  
+  if (authLoading) {
+    return (
+      <main className="min-h-screen flex items-center justify-center">
+        <Loading size="lg" />
+      </main>
+    )
+  }
+
+  // Redirect to dashboard if already logged in
+  if (user) {
+    router.push('/dashboard')
+    return (
+      <main className="min-h-screen flex items-center justify-center">
+        <Loading size="lg" />
+      </main>
+    )
+  }
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFormData({
@@ -66,7 +87,9 @@ function RegisterForm() {
           {showVerificationMessage ? (
             <div className="bg-gray-dark border border-gray-medium rounded-lg p-6 space-y-4">
               <div className="text-center">
-                <div className="text-4xl mb-4">✉️</div>
+                <div className="flex justify-center mb-4">
+                  <EmailIcon className="w-16 h-16 text-silver" />
+                </div>
                 <h2 className="text-xl font-bold mb-2">Перевірте email</h2>
                 <p className="text-gray-light text-sm mb-4">
                   Ми відправили листа з підтвердженням на {formData.email}

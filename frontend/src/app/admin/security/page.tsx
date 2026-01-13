@@ -1,9 +1,12 @@
 "use client"
 
 import { useEffect, useState } from "react"
+import { useRouter } from "next/navigation"
+import { useAuth } from "@/context/AuthContext"
 import { api } from "@/lib/api"
 import Loading from "@/components/Loading"
 import { CheckIcon, XIcon, EditIcon, KeyIcon, DotIcon } from "@/components/icons/AdminIcons"
+import LockIcon from "@/components/icons/LockIcon"
 
 interface AuditLog {
   id: string
@@ -18,7 +21,14 @@ interface AuditLog {
   actor_user_id: string | null
 }
 
-export default function SecurityPage() {
+export default function AdminSecurityPage() {
+  const router = useRouter()
+  const { user, loading: authLoading } = useAuth()
+
+  if (authLoading) return <Loading />
+  if (!user) { router.push('/auth/login'); return <Loading /> }
+  if (user.role !== 'admin') { router.push('/dashboard'); return <Loading /> }
+
   const [loading, setLoading] = useState(true)
   const [logs, setLogs] = useState<AuditLog[]>([])
   const [filters, setFilters] = useState({
@@ -204,7 +214,9 @@ export default function SecurityPage() {
 
         {logs.length === 0 && (
           <div className="p-12 text-center text-gray-light">
-            <div className="text-4xl mb-4">🔒</div>
+            <div className="flex justify-center mb-4">
+              <LockIcon className="w-16 h-16 text-silver" />
+            </div>
             <p>Логи відсутні або не знайдено за заданими фільтрами</p>
           </div>
         )}

@@ -7,27 +7,30 @@ interface LoadingProps {
 
 export default function Loading({ fullScreen = false, size = 'md' }: LoadingProps) {
   const sizeClasses = {
-    sm: 'w-6 h-6',
-    md: 'w-10 h-10',
-    lg: 'w-14 h-14'
+    sm: 'w-8 h-8',
+    md: 'w-16 h-16',
+    lg: 'w-24 h-24'
   }
 
   const LoadingSpinner = () => (
     <div className="flex items-center justify-center">
-      <div className={`${sizeClasses[size]} relative`}>
-        {/* Outer circle */}
-        <div className="absolute inset-0 rounded-full border-[3px] border-gray-medium/20"></div>
-        
-        {/* Spinning gradient ring */}
-        <div className="absolute inset-0 rounded-full border-[3px] border-transparent border-t-silver/80 border-r-silver/40 animate-spin"></div>
-      </div>
+      <div className={`${sizeClasses[size]} animate-spin rounded-full border-4 border-gray-medium border-t-transparent`}></div>
     </div>
   )
 
   if (fullScreen) {
     return (
-      <div className="min-h-screen w-full flex items-center justify-center">
-        <LoadingSpinner />
+      <div className="min-h-screen w-full flex items-center justify-center relative overflow-hidden">
+        {/* Background layers matching site design */}
+        <div className="gradient-layer-1 pointer-events-none" />
+        <div className="gradient-layer-2 pointer-events-none" />
+        <div className="gradient-layer-3 pointer-events-none" />
+        <div className="noise-overlay pointer-events-none" />
+        
+        {/* Spinner on top */}
+        <div className="relative z-10">
+          <LoadingSpinner />
+        </div>
       </div>
     )
   }

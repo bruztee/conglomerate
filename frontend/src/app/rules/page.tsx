@@ -1,4 +1,7 @@
+import Link from "next/link"
 import Header from "@/components/Header"
+import EmailIcon from "@/components/icons/EmailIcon"
+import TelegramIcon from "@/components/icons/TelegramIcon"
 
 export default function RulesPage() {
   return (
@@ -186,12 +189,12 @@ export default function RulesPage() {
                 <p>Якщо у вас виникли питання або проблеми, зв'яжіться з нашою службою підтримки:</p>
                 <div className="bg-background border border-gray-medium rounded-lg p-4 mt-4">
                   <div className="space-y-2">
-                    <div className="flex gap-2">
-                      <span className="text-accent">📧</span>
+                    <div className="flex items-center gap-2">
+                      <EmailIcon className="w-5 h-5 text-accent" />
                       <span>Email: support@conglomerate.com</span>
                     </div>
-                    <div className="flex gap-2">
-                      <span className="text-accent">💬</span>
+                    <div className="flex items-center gap-2">
+                      <TelegramIcon className="w-5 h-5 text-accent" />
                       <span>Telegram: @conglomerate_support</span>
                     </div>
                   </div>
