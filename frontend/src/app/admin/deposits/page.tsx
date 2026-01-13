@@ -51,7 +51,7 @@ export default function DepositsPage() {
         setDeposits(depositsData)
       }
     } catch (error) {
-      console.error('Failed to fetch deposits:', error)
+      // Silent fail
     } finally {
       setLoading(false)
     }

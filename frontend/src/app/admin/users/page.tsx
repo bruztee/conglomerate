@@ -42,7 +42,7 @@ export default function UsersPage() {
         setUsers(result.data.users || [])
       }
     } catch (error) {
-      console.error('Failed to fetch users:', error)
+      // Silent fail
     } finally {
       setLoading(false)
     }

@@ -91,7 +91,7 @@ export default function WithdrawPage() {
           setWithdrawalHistory(historyData)
         }
       } catch (err) {
-        console.error('Failed to fetch data:', err)
+        // Silent fail
       } finally {
         setLoading(false)
       }

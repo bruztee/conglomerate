@@ -66,7 +66,7 @@ export default function AdminDashboard() {
           activePaymentMethods: methodsRes.data?.payment_methods?.filter((m: any) => m.is_active).length || 0,
         })
       } catch (error) {
-        console.error('Failed to fetch admin stats:', error)
+        // Silent fail
       } finally {
         setLoading(false)
       }

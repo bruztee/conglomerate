@@ -28,11 +28,9 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         if (user.role === 'admin') {
           setIsAdmin(true)
         } else {
-          console.warn('Access denied: user is not admin')
           router.push('/dashboard')
         }
       } catch (error) {
-        console.error('Admin check failed:', error)
         router.push('/dashboard')
       } finally {
         setChecking(false)

@@ -4,7 +4,7 @@ import { jsonResponse, errorResponse } from '../../utils/response';
 import { createServiceSupabaseClient } from '../../utils/supabase';
 
 /**
- * GET /api/admin/security/audit-logs
+ * GET /admin/security/audit-logs
  * Отримати audit logs з обох таблиць: auth.audit_log_entries + public.audit_log
  */
 export async function handleGetAuditLogs(request: Request, env: Env): Promise<Response> {

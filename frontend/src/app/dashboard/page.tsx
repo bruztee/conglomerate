@@ -50,7 +50,7 @@ export default function DashboardPage() {
   }
 
   const handleWithdraw = (depositId: string) => {
-    console.log("[v0] Withdrawing deposit:", depositId)
+    // Withdraw logic
   }
 
   const getStatusLabel = (status: Deposit["status"]) => {
@@ -102,20 +102,15 @@ export default function DashboardPage() {
       }
 
       // Fetch active payment methods (PUBLIC endpoint)
-      try {
-        const response = await fetch('/api/payment-methods')
-        const result = await response.json()
-        if (result.payment_methods) {
-          const activeMethods = result.payment_methods
-          setPaymentMethods(activeMethods)
-          if (activeMethods.length > 0) {
-            // Рандомно вибрати один метод
-            const randomIndex = Math.floor(Math.random() * activeMethods.length)
-            setSelectedMethod(activeMethods[randomIndex])
-          }
+      const paymentMethodsResponse = await api.getActivePaymentMethods()
+      if (paymentMethodsResponse.success && paymentMethodsResponse.data?.payment_methods) {
+        const activeMethods = paymentMethodsResponse.data.payment_methods
+        setPaymentMethods(activeMethods)
+        if (activeMethods.length > 0) {
+          // Рандомно вибрати один метод
+          const randomIndex = Math.floor(Math.random() * activeMethods.length)
+          setSelectedMethod(activeMethods[randomIndex])
         }
-      } catch (error) {
-        console.error('Failed to fetch payment methods:', error)
       }
 
       // Fetch deposits

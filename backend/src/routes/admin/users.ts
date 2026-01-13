@@ -5,7 +5,7 @@ import { createServiceSupabaseClient } from '../../utils/supabase';
 import { logAudit } from '../../utils/audit';
 
 /**
- * GET /api/admin/users
+ * GET /admin/users
  * Отримати всіх користувачів з додатковою інформацією
  */
 export async function handleGetUsers(request: Request, env: Env): Promise<Response> {
@@ -87,7 +87,7 @@ export async function handleGetUsers(request: Request, env: Env): Promise<Respon
 }
 
 /**
- * PUT /api/admin/users/:userId
+ * PUT /admin/users/:userId
  * Оновити користувача (заморозити/розморозити, змінити план, % тощо)
  */
 export async function handleUpdateUser(request: Request, env: Env, userId: string): Promise<Response> {
@@ -140,7 +140,7 @@ export async function handleUpdateUser(request: Request, env: Env, userId: strin
 }
 
 /**
- * POST /api/admin/users/:userId/send-reset-link
+ * POST /admin/users/:userId/send-reset-link
  * Відправити посилання для зміни email/телефону
  */
 export async function handleSendResetLink(request: Request, env: Env, userId: string): Promise<Response> {

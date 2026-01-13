@@ -52,7 +52,7 @@ export default function WithdrawalsPage() {
         setWithdrawals(withdrawalsData)
       }
     } catch (error) {
-      console.error('Failed to fetch withdrawals:', error)
+      // Silent fail
     } finally {
       setLoading(false)
     }

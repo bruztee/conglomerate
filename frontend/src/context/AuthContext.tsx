@@ -45,7 +45,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         api.setAccessToken(null);
       }
     } catch (error) {
-      console.error('RefreshUser error:', error);
       // Не очищаємо токен при помилці мережі - можливо тимчасова проблема
     }
   };
@@ -54,14 +53,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     let isMounted = true;
     
     const initAuth = async () => {
-      // НОВИЙ ПІДХІД: httpOnly cookie встановлюється сервером
-      // Просто робимо /me запит - cookie відправиться автоматично через credentials: 'include'
-      console.log('🔍 Auth init: Fetching user from server...');
-      
       try {
         await refreshUser();
       } catch (error) {
-        console.error('Auth init error:', error);
+        // Silent fail on init
       }
       
       // Тільки оновлюємо стан якщо компонент ще змонтований

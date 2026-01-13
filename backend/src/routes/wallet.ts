@@ -4,7 +4,7 @@ import { jsonResponse, errorResponse } from '../utils/response';
 import { requireAuth } from '../utils/auth';
 
 /**
- * GET /api/wallet
+ * GET /wallet
  * Отримати баланс та статистику користувача
  */
 export async function handleGetWallet(request: Request, env: Env): Promise<Response> {

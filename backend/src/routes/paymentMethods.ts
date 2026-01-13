@@ -3,7 +3,7 @@ import { jsonResponse, errorResponse } from '../utils/response';
 import { createServiceSupabaseClient } from '../utils/supabase';
 
 /**
- * GET /api/payment-methods
+ * GET /payment-methods/active
  * Публічний endpoint для отримання ТІЛЬКИ активних payment methods
  * Використовується користувачами для вибору методу депозиту
  */

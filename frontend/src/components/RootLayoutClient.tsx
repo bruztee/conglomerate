@@ -21,8 +21,6 @@ export default function RootLayoutClient({ children }: { children: React.ReactNo
     if (loading) return
 
     const isPublicPath = publicPaths.some(path => pathname.startsWith(path))
-    
-    console.log(' Auth check:', { pathname, user: !!user, isPublicPath, loading })
 
     // Якщо це публічний шлях - не редиректимо
     if (isPublicPath) {
@@ -38,12 +36,8 @@ export default function RootLayoutClient({ children }: { children: React.ReactNo
 
     // Якщо немає user після loading - значить немає валідної сесії
     if (!user) {
-      console.log('❌ No user after loading, redirecting to login with returnUrl');
-      // Додати returnUrl для повернення на цю сторінку після логіну
       const returnUrl = encodeURIComponent(pathname)
       router.replace(`/auth/login?returnUrl=${returnUrl}`)
-    } else {
-      console.log('✅ User authenticated, staying on page');
     }
   }, [loading, user, pathname, router])
 

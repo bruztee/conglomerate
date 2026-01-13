@@ -43,7 +43,7 @@ export default function PaymentMethodsPage() {
         setMethods(result.data.payment_methods || [])
       }
     } catch (error) {
-      console.error('Failed to fetch payment methods:', error)
+      // Silent fail
     } finally {
       setLoading(false)
     }

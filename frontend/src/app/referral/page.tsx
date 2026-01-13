@@ -72,7 +72,7 @@ export default function ReferralPage() {
           setReferrals(referralsData)
         }
       } catch (err) {
-        console.error('Failed to fetch referral data:', err)
+        // Silent fail
       } finally {
         setLoading(false)
       }

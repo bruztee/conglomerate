@@ -5,7 +5,7 @@ import { createServiceSupabaseClient } from '../../utils/supabase';
 import { logAudit } from '../../utils/audit';
 
 /**
- * GET /api/admin/withdrawals
+ * GET /admin/withdrawals
  * Отримати всі виводи (pending першими, потім історія)
  */
 export async function handleGetWithdrawals(request: Request, env: Env): Promise<Response> {
@@ -50,7 +50,7 @@ export async function handleGetWithdrawals(request: Request, env: Env): Promise<
 }
 
 /**
- * POST /api/admin/withdrawals/:withdrawalId/approve
+ * POST /admin/withdrawals/:withdrawalId/approve
  * Підтвердити вивід (тільки комісія мережі, без мінімальної суми)
  */
 export async function handleApproveWithdrawal(request: Request, env: Env, withdrawalId: string): Promise<Response> {
@@ -108,7 +108,7 @@ export async function handleApproveWithdrawal(request: Request, env: Env, withdr
 }
 
 /**
- * POST /api/admin/withdrawals/:withdrawalId/reject
+ * POST /admin/withdrawals/:withdrawalId/reject
  * Відхилити вивід
  */
 export async function handleRejectWithdrawal(request: Request, env: Env, withdrawalId: string): Promise<Response> {
@@ -167,7 +167,7 @@ export async function handleRejectWithdrawal(request: Request, env: Env, withdra
 }
 
 /**
- * POST /api/admin/withdrawals/:withdrawalId/mark-sent
+ * POST /admin/withdrawals/:withdrawalId/mark-sent
  * Позначити вивід як відправлений
  */
 export async function handleMarkWithdrawalSent(request: Request, env: Env, withdrawalId: string): Promise<Response> {

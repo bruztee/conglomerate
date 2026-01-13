@@ -38,7 +38,7 @@ export default function SecurityPage() {
         setLogs(result.data.logs || [])
       }
     } catch (error) {
-      console.error('Failed to fetch audit logs:', error)
+      // Silent fail
     } finally {
       setLoading(false)
     }

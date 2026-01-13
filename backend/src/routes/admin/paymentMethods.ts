@@ -5,7 +5,7 @@ import { createServiceSupabaseClient } from '../../utils/supabase';
 import { logAudit } from '../../utils/audit';
 
 /**
- * GET /api/admin/payment-methods
+ * GET /admin/payment-methods
  * Отримати всі payment methods (для адміна)
  */
 export async function handleGetPaymentMethods(request: Request, env: Env): Promise<Response> {
@@ -35,7 +35,7 @@ export async function handleGetPaymentMethods(request: Request, env: Env): Promi
 }
 
 /**
- * POST /api/admin/payment-methods
+ * POST /admin/payment-methods
  * Створити новий payment method
  */
 export async function handleCreatePaymentMethod(request: Request, env: Env): Promise<Response> {
@@ -87,7 +87,7 @@ export async function handleCreatePaymentMethod(request: Request, env: Env): Pro
 }
 
 /**
- * PUT /api/admin/payment-methods/:id
+ * PUT /admin/payment-methods/:id
  * Оновити payment method
  */
 export async function handleUpdatePaymentMethod(request: Request, env: Env, methodId: string): Promise<Response> {
@@ -136,7 +136,7 @@ export async function handleUpdatePaymentMethod(request: Request, env: Env, meth
 }
 
 /**
- * DELETE /api/admin/payment-methods/:id
+ * DELETE /admin/payment-methods/:id
  * Видалити payment method
  */
 export async function handleDeletePaymentMethod(request: Request, env: Env, methodId: string): Promise<Response> {

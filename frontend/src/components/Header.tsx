@@ -85,6 +85,14 @@ export default function Header({ isAuthenticated = false }: HeaderProps) {
                   >
                     Рефералка
                   </Link>
+                  {user?.role === 'admin' && (
+                    <Link
+                      href="/admin"
+                      className="btn-gradient-primary px-4 py-2 text-foreground font-medium rounded transition-colors font-sans"
+                    >
+                      CRM
+                    </Link>
+                  )}
                   <Link
                     href="/dashboard/settings"
                     className="btn-gradient-secondary px-4 py-2 text-foreground font-medium rounded transition-colors font-sans"
@@ -158,6 +166,14 @@ export default function Header({ isAuthenticated = false }: HeaderProps) {
               >
                 Рефералка
               </Link>
+              {user?.role === 'admin' && (
+                <Link
+                  href="/admin"
+                  className="btn-gradient-primary px-4 py-2 text-foreground font-medium rounded transition-colors text-center font-sans"
+                >
+                  CRM
+                </Link>
+              )}
               <Link
                 href="/dashboard/settings"
                 className="btn-gradient-secondary px-4 py-2 text-foreground font-medium rounded transition-colors text-center font-sans"

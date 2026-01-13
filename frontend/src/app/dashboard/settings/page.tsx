@@ -139,7 +139,7 @@ export default function SettingsPage() {
           setUserProfile(data.user)
         }
       } catch (err) {
-        console.error('Failed to fetch user profile:', err)
+        // Silent fail
       } finally {
         setPageLoading(false)
       }

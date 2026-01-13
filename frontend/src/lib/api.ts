@@ -21,10 +21,7 @@ class ApiClient {
   }
 
   setAccessToken(token: string | null) {
-    // DEPRECATED: Тепер НЕ використовується
-    // httpOnly cookie встановлюється ТІЛЬКИ сервером через Set-Cookie header
-    // Ця функція залишається для сумісності але нічого не робить
-    console.log('⚠️ setAccessToken is deprecated - using httpOnly cookies only');
+    // Deprecated: using httpOnly cookies
   }
 
   private async request<T>(
@@ -72,14 +69,14 @@ class ApiClient {
 
   // Auth
   async register(email: string, password: string, referralCode?: string) {
-    return this.request('/api/auth/register', {
+    return this.request('/auth/register', {
       method: 'POST',
       body: JSON.stringify({ email, password, referral_code: referralCode }),
     });
   }
 
   async login(email: string, password: string) {
-    const response = await this.request<{ user: any; session: any }>('/api/auth/login', {
+    const response = await this.request<{ user: any; session: any }>('/auth/login', {
       method: 'POST',
       body: JSON.stringify({ email, password }),
     });
@@ -91,18 +88,18 @@ class ApiClient {
   }
 
   async logout() {
-    const response = await this.request('/api/auth/logout', { method: 'POST' });
+    const response = await this.request('/auth/logout', { method: 'POST' });
     // httpOnly cookies очищуються СЕРВЕРОМ через Set-Cookie
     return response;
   }
 
   async me() {
-    return this.request('/api/auth/me', { method: 'GET' });
+    return this.request('/auth/me', { method: 'GET' });
   }
 
   async refreshToken() {
     // refresh_token читається з httpOnly cookie автоматично
-    const response = await this.request<{ session: any }>('/api/auth/refresh', {
+    const response = await this.request<{ session: any }>('/auth/refresh', {
       method: 'POST',
       body: JSON.stringify({}), // Empty body - token читається з cookie на backend
     });
@@ -113,67 +110,67 @@ class ApiClient {
   }
 
   async getMe() {
-    return this.request('/api/auth/me');
+    return this.request('/auth/me');
   }
 
   async resendVerification(email: string) {
-    return this.request('/api/auth/resend-verification', {
+    return this.request('/auth/resend-verification', {
       method: 'POST',
       body: JSON.stringify({ email }),
     });
   }
 
   async forgotPassword(email: string) {
-    return this.request('/api/auth/forgot-password', {
+    return this.request('/auth/forgot-password', {
       method: 'POST',
       body: JSON.stringify({ email }),
     });
   }
 
   async resetPassword(password: string, access_token: string) {
-    return this.request('/api/auth/reset-password', {
+    return this.request('/auth/reset-password', {
       method: 'POST',
       body: JSON.stringify({ password, access_token }),
     });
   }
 
   async updateEmail(email: string) {
-    return this.request('/api/auth/update-email', {
+    return this.request('/auth/update-email', {
       method: 'PUT',
       body: JSON.stringify({ email }),
     });
   }
 
   async updatePhone(phone: string) {
-    return this.request('/api/auth/update-phone', {
+    return this.request('/auth/update-phone', {
       method: 'PUT',
       body: JSON.stringify({ phone }),
     });
   }
 
   async updatePassword(password: string) {
-    return this.request('/api/auth/update-password', {
+    return this.request('/auth/update-password', {
       method: 'PUT',
       body: JSON.stringify({ password }),
     });
   }
 
   async setName(full_name: string) {
-    return this.request('/api/auth/set-name', {
+    return this.request('/auth/set-name', {
       method: 'POST',
       body: JSON.stringify({ full_name }),
     });
   }
 
   async sendPhoneOTP(phone: string) {
-    return this.request('/api/auth/send-phone-otp', {
+    return this.request('/auth/send-phone-otp', {
       method: 'POST',
       body: JSON.stringify({ phone }),
     });
   }
 
   async verifyPhoneOTP(phone: string, token: string) {
-    return this.request('/api/auth/verify-phone-otp', {
+    return this.request('/auth/verify-phone-otp', {
       method: 'POST',
       body: JSON.stringify({ phone, token }),
     });
@@ -181,48 +178,48 @@ class ApiClient {
 
   // Wallet
   async getWallet() {
-    return this.request('/api/wallet');
+    return this.request('/wallet');
   }
 
   async getTransactions(limit = 50, offset = 0) {
-    return this.request(`/api/transactions?limit=${limit}&offset=${offset}`);
+    return this.request(`/transactions?limit=${limit}&offset=${offset}`);
   }
 
   // Deposits
   async createDeposit(amount: number, provider = 'manual', paymentDetails = {}) {
-    return this.request('/api/deposits', {
+    return this.request('/deposits', {
       method: 'POST',
       body: JSON.stringify({ amount, provider, payment_details: paymentDetails }),
     });
   }
 
   async getDeposits() {
-    return this.request('/api/deposits');
+    return this.request('/deposits');
   }
 
   // Investments
   async getInvestmentPlans() {
-    return this.request('/api/investment-plans');
+    return this.request('/investment-plans');
   }
 
   async createInvestment(planId: string, amount: number) {
-    return this.request('/api/investments', {
+    return this.request('/investments', {
       method: 'POST',
       body: JSON.stringify({ plan_id: planId, amount }),
     });
   }
 
   async getInvestments() {
-    return this.request('/api/investments');
+    return this.request('/investments');
   }
 
   // Withdrawals
   async getWithdrawals() {
-    return this.request('/api/withdrawals');
+    return this.request('/withdrawals');
   }
 
   async createWithdrawal(amount: number, method: string, details: any) {
-    return this.request('/api/withdrawals', {
+    return this.request('/withdrawals', {
       method: 'POST',
       body: JSON.stringify({ amount, method, details }),
     });
@@ -230,52 +227,57 @@ class ApiClient {
 
   // Referrals
   async getReferralStats(): Promise<ApiResponse> {
-    return this.request('/api/referrals/stats', { method: 'GET' });
+    return this.request('/referrals/stats', { method: 'GET' });
   }
 
   async setReferralCookie(refCode: string): Promise<ApiResponse> {
-    return this.request(`/api/referrals/set-cookie?ref=${refCode}`, { method: 'POST' });
+    return this.request(`/referrals/set-cookie?ref=${refCode}`, { method: 'POST' });
+  }
+
+  // Payment Methods (Public)
+  async getActivePaymentMethods(): Promise<ApiResponse> {
+    return this.request('/payment-methods/active', { method: 'GET' });
   }
 
   // ==================== ADMIN API ====================
 
   // Payment Methods (Admin)
   async adminGetPaymentMethods(): Promise<ApiResponse> {
-    return this.request('/api/admin/payment-methods', { method: 'GET' });
+    return this.request('/admin/payment-methods', { method: 'GET' });
   }
 
   async adminCreatePaymentMethod(data: { currency: string; network: string; wallet_address: string; is_active?: boolean; min_amount?: number }): Promise<ApiResponse> {
-    return this.request('/api/admin/payment-methods', {
+    return this.request('/admin/payment-methods', {
       method: 'POST',
       body: JSON.stringify(data),
     });
   }
 
   async adminUpdatePaymentMethod(id: string, data: { currency?: string; network?: string; wallet_address?: string; is_active?: boolean; min_amount?: number }): Promise<ApiResponse> {
-    return this.request(`/api/admin/payment-methods/${id}`, {
+    return this.request(`/admin/payment-methods/${id}`, {
       method: 'PUT',
       body: JSON.stringify(data),
     });
   }
 
   async adminDeletePaymentMethod(id: string): Promise<ApiResponse> {
-    return this.request(`/api/admin/payment-methods/${id}`, { method: 'DELETE' });
+    return this.request(`/admin/payment-methods/${id}`, { method: 'DELETE' });
   }
 
   // Users Management (Admin)
   async adminGetUsers(): Promise<ApiResponse> {
-    return this.request('/api/admin/users', { method: 'GET' });
+    return this.request('/admin/users', { method: 'GET' });
   }
 
   async adminUpdateUser(userId: string, data: { status?: string; monthly_percentage?: number }): Promise<ApiResponse> {
-    return this.request(`/api/admin/users/${userId}`, {
+    return this.request(`/admin/users/${userId}`, {
       method: 'PUT',
       body: JSON.stringify(data),
     });
   }
 
   async adminSendResetLink(userId: string, type: 'email' | 'phone'): Promise<ApiResponse> {
-    return this.request(`/api/admin/users/${userId}/send-reset-link`, {
+    return this.request(`/admin/users/${userId}/send-reset-link`, {
       method: 'POST',
       body: JSON.stringify({ type }),
     });
@@ -283,19 +285,19 @@ class ApiClient {
 
   // Deposits Management (Admin)
   async adminGetDeposits(status?: string): Promise<ApiResponse> {
-    const url = status ? `/api/admin/deposits?status=${status}` : '/api/admin/deposits';
+    const url = status ? `/admin/deposits?status=${status}` : '/admin/deposits';
     return this.request(url, { method: 'GET' });
   }
 
   async adminApproveDeposit(depositId: string, admin_note?: string): Promise<ApiResponse> {
-    return this.request(`/api/admin/deposits/${depositId}/approve`, {
+    return this.request(`/admin/deposits/${depositId}/approve`, {
       method: 'POST',
       body: JSON.stringify({ admin_note }),
     });
   }
 
   async adminRejectDeposit(depositId: string, admin_note: string): Promise<ApiResponse> {
-    return this.request(`/api/admin/deposits/${depositId}/reject`, {
+    return this.request(`/admin/deposits/${depositId}/reject`, {
       method: 'POST',
       body: JSON.stringify({ admin_note }),
     });
@@ -303,26 +305,26 @@ class ApiClient {
 
   // Withdrawals Management (Admin)
   async adminGetWithdrawals(status?: string): Promise<ApiResponse> {
-    const url = status ? `/api/admin/withdrawals?status=${status}` : '/api/admin/withdrawals';
+    const url = status ? `/admin/withdrawals?status=${status}` : '/admin/withdrawals';
     return this.request(url, { method: 'GET' });
   }
 
   async adminApproveWithdrawal(withdrawalId: string, data: { admin_note?: string; network_fee?: number }): Promise<ApiResponse> {
-    return this.request(`/api/admin/withdrawals/${withdrawalId}/approve`, {
+    return this.request(`/admin/withdrawals/${withdrawalId}/approve`, {
       method: 'POST',
       body: JSON.stringify(data),
     });
   }
 
   async adminRejectWithdrawal(withdrawalId: string, admin_note: string): Promise<ApiResponse> {
-    return this.request(`/api/admin/withdrawals/${withdrawalId}/reject`, {
+    return this.request(`/admin/withdrawals/${withdrawalId}/reject`, {
       method: 'POST',
       body: JSON.stringify({ admin_note }),
     });
   }
 
   async adminMarkWithdrawalSent(withdrawalId: string, data: { tx_hash?: string; admin_note?: string }): Promise<ApiResponse> {
-    return this.request(`/api/admin/withdrawals/${withdrawalId}/mark-sent`, {
+    return this.request(`/admin/withdrawals/${withdrawalId}/mark-sent`, {
       method: 'POST',
       body: JSON.stringify(data),
     });
@@ -333,7 +335,7 @@ class ApiClient {
     const params = new URLSearchParams();
     if (filters?.limit) params.append('limit', filters.limit.toString());
     
-    const url = `/api/admin/security/audit-logs${params.toString() ? `?${params}` : ''}`;
+    const url = `/admin/security/audit-logs${params.toString() ? `?${params}` : ''}`;
     return this.request(url, { method: 'GET' });
   }
 }

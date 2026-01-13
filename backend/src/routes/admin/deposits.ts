@@ -5,7 +5,7 @@ import { createServiceSupabaseClient } from '../../utils/supabase';
 import { logAudit } from '../../utils/audit';
 
 /**
- * GET /api/admin/deposits
+ * GET /admin/deposits
  * Отримати всі депозити (pending першими, потім історія)
  */
 export async function handleGetDeposits(request: Request, env: Env): Promise<Response> {
@@ -49,7 +49,7 @@ export async function handleGetDeposits(request: Request, env: Env): Promise<Res
 }
 
 /**
- * POST /api/admin/deposits/:depositId/approve
+ * POST /admin/deposits/:depositId/approve
  * Підтвердити депозит (зарахувати кошти)
  */
 export async function handleApproveDeposit(request: Request, env: Env, depositId: string): Promise<Response> {
@@ -106,7 +106,7 @@ export async function handleApproveDeposit(request: Request, env: Env, depositId
 }
 
 /**
- * POST /api/admin/deposits/:depositId/reject
+ * POST /admin/deposits/:depositId/reject
  * Відхилити депозит
  */
 export async function handleRejectDeposit(request: Request, env: Env, depositId: string): Promise<Response> {
