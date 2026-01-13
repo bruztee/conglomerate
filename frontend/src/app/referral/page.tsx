@@ -1,7 +1,11 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
+import { useRouter } from "next/navigation"
+import { useAuth } from "@/context/AuthContext"
+import { api } from "@/lib/api"
 import Header from "@/components/Header"
+import Loading from "@/components/Loading"
 
 interface Referral {
   id: string
@@ -14,61 +18,95 @@ interface Referral {
 }
 
 export default function ReferralPage() {
-  const [userBalance] = useState(15000)
-  const [userProfit] = useState(3250.5)
-  const [totalReferrals] = useState(12)
-  const [activeReferrals] = useState(8)
-  const [totalEarnings] = useState(850.75)
-  const [availableEarnings] = useState(650.25)
+  const router = useRouter()
+  const { user } = useAuth()
+  
+  const [userBalance, setUserBalance] = useState(0)
+  const [userProfit, setUserProfit] = useState(0)
+  const [loading, setLoading] = useState(true)
+  const [totalReferrals, setTotalReferrals] = useState(0)
+  const [totalEarnings, setTotalEarnings] = useState(0)
+  const [referralLink, setReferralLink] = useState("")
+  const [referralCode, setReferralCode] = useState("")
+  const [copiedMessage, setCopiedMessage] = useState(false)
 
-  const referralLink = "https://conglomerate.com/ref/ABC123"
+  const [referrals, setReferrals] = useState<Referral[]>([])
 
-  const [referrals] = useState<Referral[]>([
-    {
-      id: "1",
-      name: "Іван К.",
-      email: "ivan***@gmail.com",
-      deposits: 5000,
-      earnings: 250,
-      date: "2026-01-01",
-      status: "active",
-    },
-    {
-      id: "2",
-      name: "Олена С.",
-      email: "olena***@gmail.com",
-      deposits: 3000,
-      earnings: 150,
-      date: "2025-12-28",
-      status: "active",
-    },
-    {
-      id: "3",
-      name: "Петро М.",
-      email: "petro***@gmail.com",
-      deposits: 7500,
-      earnings: 375,
-      date: "2025-12-20",
-      status: "active",
-    },
-    {
-      id: "4",
-      name: "Марія Д.",
-      email: "maria***@gmail.com",
-      deposits: 0,
-      earnings: 0,
-      date: "2025-12-15",
-      status: "inactive",
-    },
-  ])
+  // Завантаження даних при mount
+  useEffect(() => {
+    async function fetchData() {
+      if (!user) {
+        router.push('/auth/login')
+        return
+      }
+
+      setLoading(true)
+      try {
+        // Отримати wallet balance
+        const walletResult = await api.getWallet()
+        if (walletResult.success && walletResult.data) {
+          setUserBalance(walletResult.data.balance || 0)
+        }
+
+        // Отримати referral stats
+        const refResult = await api.getReferralStats()
+        if (refResult.success && refResult.data) {
+          const data = refResult.data
+          
+          setReferralCode(data.referral_code || '')
+          setReferralLink(data.referral_link || `https://conglomerate-eight.vercel.app/?ref=${data.referral_code}`)
+          setTotalReferrals(data.stats?.total_referrals || 0)
+          setTotalEarnings(data.stats?.total_earned || 0)
+          
+          // Маппінг рефералів
+          const referralsData = data.referrals?.map((r: any) => ({
+            id: r.id,
+            name: r.full_name || 'Анонім',
+            email: r.email ? r.email.replace(/(.{3}).*(@.*)/, '$1***$2') : 'hidden@email.com',
+            deposits: 0, // TODO: додати підрахунок з deposits
+            earnings: 0, // TODO: додати підрахунок з bonuses
+            date: r.created_at,
+            status: 'active' as const, // TODO: визначити статус
+          })) || []
+          
+          setReferrals(referralsData)
+        }
+      } catch (err) {
+        console.error('Failed to fetch referral data:', err)
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    fetchData()
+  }, [user, router])
 
   const copyToClipboard = () => {
     navigator.clipboard.writeText(referralLink)
+    setCopiedMessage(true)
+    setTimeout(() => setCopiedMessage(false), 2000)
   }
+
+  if (loading) {
+    return <Loading fullScreen size="lg" text="Завантаження даних..." />
+  }
+
+  if (!user) {
+    return null
+  }
+
+  const activeReferrals = referrals.filter(r => r.status === 'active').length
 
   return (
     <>
-      <Header isAuthenticated={true} userBalance={userBalance} userProfit={userProfit} />
+      <Header isAuthenticated={true} />
+      
+      {/* Success message при копіюванні */}
+      {copiedMessage && (
+        <div className="fixed top-4 right-4 z-50 bg-green-900/90 border border-green-500 text-green-400 px-6 py-4 rounded-lg shadow-lg">
+          Посилання скопійовано!
+        </div>
+      )}
 
       <main className="min-h-screen px-4 py-8 sm:px-6 lg:px-8">
         <div className="container mx-auto max-w-6xl">
@@ -94,8 +132,8 @@ export default function ReferralPage() {
             </div>
 
             <div className="bg-gray-dark border border-gray-medium rounded-lg p-6">
-              <div className="text-gray-light text-sm mb-2">Доступно до виводу</div>
-              <div className="text-3xl font-bold text-silver font-sans">${availableEarnings.toFixed(2)}</div>
+              <div className="text-gray-light text-sm mb-2">Реферальний код</div>
+              <div className="text-2xl font-bold text-silver font-mono">{referralCode || '—'}</div>
             </div>
           </div>
 
@@ -264,19 +302,19 @@ export default function ReferralPage() {
               <h3 className="text-xl font-bold mb-3">Статистика</h3>
               <div className="space-y-2 text-sm">
                 <div className="flex justify-between">
-                  <span className="text-gray-light">Середній депозит:</span>
-                  <span className="font-medium font-sans">${(15500 / activeReferrals).toFixed(2)}</span>
+                  <span className="text-gray-light">Активних рефералів:</span>
+                  <span className="font-medium font-sans">{activeReferrals}</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-gray-light">Заробіток на реферала:</span>
                   <span className="font-medium text-silver font-sans">
-                    ${(totalEarnings / activeReferrals).toFixed(2)}
+                    ${activeReferrals > 0 ? (totalEarnings / activeReferrals).toFixed(2) : '0.00'}
                   </span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-gray-light">Конверсія:</span>
                   <span className="font-medium font-sans">
-                    {((activeReferrals / totalReferrals) * 100).toFixed(0)}%
+                    {totalReferrals > 0 ? ((activeReferrals / totalReferrals) * 100).toFixed(0) : '0'}%
                   </span>
                 </div>
               </div>

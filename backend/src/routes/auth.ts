@@ -16,18 +16,36 @@ export async function handleRegister(request: Request, env: Env): Promise<Respon
       return errorResponse('VALIDATION_ERROR', 'Password must be at least 8 characters', 400);
     }
     
+    // КРИТИЧНО: Читаємо referral_code з httpOnly cookie (пріоритет над body)
+    let finalReferralCode = body.referral_code;
+    const cookieHeader = request.headers.get('Cookie');
+    if (cookieHeader) {
+      const cookiePairs = cookieHeader.split(';').map(c => c.trim());
+      const refCookie = cookiePairs.find(c => c.startsWith('referral_code='));
+      if (refCookie) {
+        const cookieRefCode = refCookie.split('=')[1];
+        if (cookieRefCode) {
+          finalReferralCode = cookieRefCode;
+          console.log('✅ Using referral code from cookie:', finalReferralCode);
+        }
+      }
+    }
+    
     const supabase = createServiceSupabaseClient(env);
     
     let referrerId: string | null = null;
-    if (body.referral_code) {
+    if (finalReferralCode) {
       const { data: referrer } = await supabase
         .from('profiles')
         .select('id')
-        .eq('referral_code', body.referral_code)
+        .eq('referral_code', finalReferralCode)
         .single();
       
       if (referrer) {
         referrerId = referrer.id;
+        console.log('✅ Referral verified:', finalReferralCode);
+      } else {
+        console.warn('⚠️ Invalid referral code:', finalReferralCode);
       }
     }
     
@@ -35,7 +53,10 @@ export async function handleRegister(request: Request, env: Env): Promise<Respon
       email: body.email,
       password: body.password,
       options: {
-        emailRedirectTo: 'https://conglomerate-group.com/auth/login',
+        data: {
+          referred_by: referrerId,
+        },
+        emailRedirectTo: 'https://conglomerate-eight.vercel.app/auth/set-name',
       },
     });
     
@@ -43,14 +64,18 @@ export async function handleRegister(request: Request, env: Env): Promise<Respon
       return errorResponse('REGISTRATION_FAILED', authError?.message || 'Registration failed', 400);
     }
     
-    if (referrerId) {
-      await supabase
-        .from('profiles')
-        .update({ referred_by: referrerId })
-        .eq('id', authData.user.id);
-    }
-    
-    const { data: profile } = await supabase
+    // Генерація унікального referral_code для нового користувача
+    const generateReferralCode = () => {
+      const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+      let code = '';
+      for (let i = 0; i < 8; i++) {
+        code += chars.charAt(Math.floor(Math.random() * chars.length));
+      }
+      return code;
+    };
+
+    // Перевірка чи профіль вже існує і має referral_code
+    let { data: profile } = await supabase
       .from('profiles')
       .select('*')
       .eq('id', authData.user.id)
@@ -59,10 +84,59 @@ export async function handleRegister(request: Request, env: Env): Promise<Respon
     if (!profile) {
       return errorResponse('PROFILE_ERROR', 'Failed to create profile', 500);
     }
+
+    // Якщо немає referral_code - створюємо його
+    if (!profile.referral_code) {
+      let newReferralCode = generateReferralCode();
+      let isUnique = false;
+      let attempts = 0;
+      
+      // Перевіряємо унікальність (максимум 5 спроб)
+      while (!isUnique && attempts < 5) {
+        const { data: existingCode } = await supabase
+          .from('profiles')
+          .select('id')
+          .eq('referral_code', newReferralCode)
+          .single();
+        
+        if (!existingCode) {
+          isUnique = true;
+        } else {
+          newReferralCode = generateReferralCode();
+          attempts++;
+        }
+      }
+      
+      // Оновлюємо профіль з новим referral_code
+      const updates: any = { referral_code: newReferralCode };
+      if (referrerId) {
+        updates.referred_by = referrerId;
+      }
+      
+      const { data: updatedProfile } = await supabase
+        .from('profiles')
+        .update(updates)
+        .eq('id', authData.user.id)
+        .select()
+        .single();
+      
+      if (updatedProfile) {
+        profile = updatedProfile;
+        console.log('✅ Generated referral_code:', newReferralCode, 'for user:', authData.user.id);
+      }
+    } else if (referrerId) {
+      // Якщо referral_code вже є, просто оновлюємо referred_by
+      await supabase
+        .from('profiles')
+        .update({ referred_by: referrerId })
+        .eq('id', authData.user.id);
+      
+      console.log('✅ User', authData.user.id, 'referred by', referrerId);
+    }
     
     await logAudit(env, authData.user.id, 'user.register', 'profiles', authData.user.id, { email: body.email }, request);
     
-    return jsonResponse(
+    const response = jsonResponse(
       {
         user: {
           id: authData.user.id,
@@ -74,6 +148,21 @@ export async function handleRegister(request: Request, env: Env): Promise<Respon
       },
       201
     );
+    
+    // Set httpOnly cookies for BOTH access and refresh tokens
+    const cookies: string[] = [];
+    if (authData.session?.access_token) {
+      cookies.push(`access_token=${authData.session.access_token}; Path=/; HttpOnly; Secure; SameSite=Lax; Max-Age=604800`);
+    }
+    if (authData.session?.refresh_token) {
+      cookies.push(`refresh_token=${authData.session.refresh_token}; Path=/; HttpOnly; Secure; SameSite=Lax; Max-Age=2592000`); // 30 days
+    }
+    
+    if (cookies.length > 0) {
+      response.headers.set('Set-Cookie', cookies.join(', '));
+    }
+    
+    return response;
   } catch (error) {
     return errorResponse('SERVER_ERROR', 'Internal server error', 500);
   }
@@ -131,15 +220,33 @@ export async function handleLogin(request: Request, env: Env): Promise<Response>
     
     await logAudit(env, authData.user.id, 'user.login', 'profiles', authData.user.id, { email: body.email }, request);
     
-    return jsonResponse({
+    const response = jsonResponse({
       user: {
         id: authData.user.id,
-        email: body.email,
-        role: profile.role,
-        referral_code: profile.referral_code,
+        email: authData.user.email || '',
+        role: profile?.role || 'user',
+        referral_code: profile?.referral_code,
+        full_name: profile?.full_name,
+        is_phone_verified: !!authData.user.phone_confirmed_at,
+        phone: authData.user.phone,
       },
       session: authData.session,
     });
+    
+    // Set httpOnly cookies for BOTH access and refresh tokens
+    const cookies: string[] = [];
+    if (authData.session?.access_token) {
+      cookies.push(`access_token=${authData.session.access_token}; Path=/; HttpOnly; Secure; SameSite=Lax; Max-Age=604800`);
+    }
+    if (authData.session?.refresh_token) {
+      cookies.push(`refresh_token=${authData.session.refresh_token}; Path=/; HttpOnly; Secure; SameSite=Lax; Max-Age=2592000`); // 30 days
+    }
+    
+    if (cookies.length > 0) {
+      response.headers.set('Set-Cookie', cookies.join(', '));
+    }
+    
+    return response;
   } catch (error) {
     return errorResponse('SERVER_ERROR', 'Internal server error', 500);
   }
@@ -160,7 +267,16 @@ export async function handleLogout(request: Request, env: Env): Promise<Response
       await supabase.auth.admin.signOut(token);
     }
     
-    return jsonResponse({ message: 'Logged out successfully' });
+    const response = jsonResponse({ message: 'Logged out successfully' });
+    
+    // Clear BOTH httpOnly cookies
+    const clearCookies = [
+      'access_token=; Path=/; HttpOnly; Secure; SameSite=Lax; Max-Age=0',
+      'refresh_token=; Path=/; HttpOnly; Secure; SameSite=Lax; Max-Age=0'
+    ];
+    response.headers.set('Set-Cookie', clearCookies.join(', '));
+    
+    return response;
   } catch (error) {
     return errorResponse('SERVER_ERROR', 'Internal server error', 500);
   }
@@ -174,8 +290,40 @@ export async function handleMe(request: Request, env: Env): Promise<Response> {
       return errorResponse('UNAUTHORIZED', 'Not authenticated', 401);
     }
     
-    return jsonResponse({ user });
+    const supabase = createServiceSupabaseClient(env);
+    
+    // Отримати повний профіль з усіма даними
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('*')
+      .eq('id', user.id)
+      .single();
+    
+    if (!profile) {
+      return errorResponse('PROFILE_NOT_FOUND', 'Profile not found', 404);
+    }
+    
+    // Отримати phone з auth.users через admin API
+    const { data: authUserData } = await supabase.auth.admin.getUserById(user.id);
+    const authUser = authUserData?.user;
+    
+    return jsonResponse({
+      user: {
+        id: user.id,
+        email: user.email || '',
+        role: profile.role,
+        referral_code: profile.referral_code,
+        full_name: profile.full_name,
+        // Phone з auth.users (верифікований через OTP)
+        phone: authUser?.phone || null,
+        is_phone_verified: !!authUser?.phone_confirmed_at,
+        // Додаткові дані з profiles
+        plan: profile.plan || 'Стандарт',
+        monthly_percentage: profile.monthly_percentage || 0,
+      },
+    });
   } catch (error) {
+    console.error('❌ handleMe error:', error);
     return errorResponse('UNAUTHORIZED', 'Not authenticated', 401);
   }
 }
@@ -275,23 +423,299 @@ export async function handleResetPassword(request: Request, env: Env): Promise<R
 
 export async function handleRefreshToken(request: Request, env: Env): Promise<Response> {
   try {
-    const body = await request.json() as { refresh_token: string };
+    // Читаємо refresh_token з httpOnly cookie (пріоритет) або з body (fallback)
+    let refreshToken: string | undefined;
     
-    if (!body.refresh_token) {
+    const cookieHeader = request.headers.get('Cookie');
+    if (cookieHeader) {
+      const cookies = cookieHeader.split(';').map(c => c.trim());
+      const refreshCookie = cookies.find(c => c.startsWith('refresh_token='));
+      if (refreshCookie) {
+        refreshToken = refreshCookie.split('=')[1];
+      }
+    }
+    
+    // Fallback: спробувати з body (для сумісності)
+    if (!refreshToken) {
+      try {
+        const body = await request.json() as { refresh_token?: string };
+        refreshToken = body.refresh_token;
+      } catch (e) {
+        // Body не JSON або порожнє
+      }
+    }
+    
+    if (!refreshToken) {
       return errorResponse('VALIDATION_ERROR', 'Refresh token is required', 400);
     }
     
     const supabase = createServiceSupabaseClient(env);
     const { data, error } = await supabase.auth.refreshSession({
-      refresh_token: body.refresh_token,
+      refresh_token: refreshToken,
     });
     
     if (error || !data.session) {
       return errorResponse('REFRESH_FAILED', 'Failed to refresh token', 401);
     }
     
-    return jsonResponse({ session: data.session });
+    const response = jsonResponse({ session: data.session });
+    
+    // Оновити httpOnly cookies з новими токенами
+    const cookies: string[] = [];
+    if (data.session?.access_token) {
+      cookies.push(`access_token=${data.session.access_token}; Path=/; HttpOnly; Secure; SameSite=Lax; Max-Age=604800`);
+    }
+    if (data.session?.refresh_token) {
+      cookies.push(`refresh_token=${data.session.refresh_token}; Path=/; HttpOnly; Secure; SameSite=Lax; Max-Age=2592000`);
+    }
+    
+    if (cookies.length > 0) {
+      response.headers.set('Set-Cookie', cookies.join(', '));
+    }
+    
+    return response;
   } catch (error) {
+    return errorResponse('SERVER_ERROR', 'Internal server error', 500);
+  }
+}
+
+export async function handleUpdateEmail(request: Request, env: Env): Promise<Response> {
+  try {
+    const user = await getUserFromRequest(request, env);
+    if (!user) {
+      return errorResponse('UNAUTHORIZED', 'Not authenticated', 401);
+    }
+
+    const body = await request.json() as { email: string };
+    
+    if (!body.email) {
+      return errorResponse('VALIDATION_ERROR', 'Email is required', 400);
+    }
+    
+    const token = request.headers.get('Authorization')?.replace('Bearer ', '');
+    if (!token) {
+      return errorResponse('UNAUTHORIZED', 'No token provided', 401);
+    }
+
+    const supabase = createServiceSupabaseClient(env);
+    await supabase.auth.setSession({ access_token: token, refresh_token: token });
+    
+    const { error } = await supabase.auth.updateUser({ email: body.email });
+    
+    if (error) {
+      return errorResponse('UPDATE_FAILED', error.message, 400);
+    }
+    
+    return jsonResponse({ message: 'Email update initiated. Please check your new email for confirmation.' });
+  } catch (error) {
+    return errorResponse('SERVER_ERROR', 'Internal server error', 500);
+  }
+}
+
+export async function handleUpdatePhone(request: Request, env: Env): Promise<Response> {
+  try {
+    const user = await getUserFromRequest(request, env);
+    if (!user) {
+      return errorResponse('UNAUTHORIZED', 'Not authenticated', 401);
+    }
+
+    const body = await request.json() as { phone: string };
+    
+    if (!body.phone) {
+      return errorResponse('VALIDATION_ERROR', 'Phone is required', 400);
+    }
+    
+    const token = request.headers.get('Authorization')?.replace('Bearer ', '');
+    if (!token) {
+      return errorResponse('UNAUTHORIZED', 'No token provided', 401);
+    }
+
+    const supabase = createServiceSupabaseClient(env);
+    await supabase.auth.setSession({ access_token: token, refresh_token: token });
+    
+    const { error } = await supabase.auth.updateUser({ phone: body.phone });
+    
+    if (error) {
+      return errorResponse('UPDATE_FAILED', error.message, 400);
+    }
+    
+    return jsonResponse({ message: 'Phone updated successfully' });
+  } catch (error) {
+    return errorResponse('SERVER_ERROR', 'Internal server error', 500);
+  }
+}
+
+export async function handleUpdatePassword(request: Request, env: Env): Promise<Response> {
+  try {
+    const user = await getUserFromRequest(request, env);
+    if (!user) {
+      return errorResponse('UNAUTHORIZED', 'Not authenticated', 401);
+    }
+
+    const body = await request.json() as { password: string };
+    
+    if (!body.password) {
+      return errorResponse('VALIDATION_ERROR', 'Password is required', 400);
+    }
+
+    if (body.password.length < 6) {
+      return errorResponse('VALIDATION_ERROR', 'Password must be at least 6 characters', 400);
+    }
+    
+    const token = request.headers.get('Authorization')?.replace('Bearer ', '');
+    if (!token) {
+      return errorResponse('UNAUTHORIZED', 'No token provided', 401);
+    }
+
+    const supabase = createServiceSupabaseClient(env);
+    await supabase.auth.setSession({ access_token: token, refresh_token: token });
+    
+    const { error } = await supabase.auth.updateUser({ password: body.password });
+    
+    if (error) {
+      return errorResponse('UPDATE_FAILED', error.message, 400);
+    }
+    
+    return jsonResponse({ message: 'Password updated successfully' });
+  } catch (error) {
+    return errorResponse('SERVER_ERROR', 'Internal server error', 500);
+  }
+}
+
+export async function handleSetName(request: Request, env: Env): Promise<Response> {
+  try {
+    const user = await getUserFromRequest(request, env);
+    if (!user) {
+      return errorResponse('UNAUTHORIZED', 'Not authenticated', 401);
+    }
+    const body = await request.json() as { full_name: string };
+    
+    if (!body.full_name || body.full_name.trim().length === 0) {
+      return errorResponse('VALIDATION_ERROR', 'Full name is required', 400);
+    }
+    
+    const supabase = createServiceSupabaseClient(env);
+    
+    const { error } = await supabase
+      .from('profiles')
+      .update({ full_name: body.full_name.trim() })
+      .eq('id', user.id);
+    
+    if (error) {
+      return errorResponse('UPDATE_FAILED', error.message, 400);
+    }
+    
+    await logAudit(env, user.id, 'user.set_name', 'profiles', user.id, { full_name: body.full_name }, request);
+    
+    return jsonResponse({ message: 'Name updated successfully' });
+  } catch (error) {
+    return errorResponse('SERVER_ERROR', 'Internal server error', 500);
+  }
+}
+
+export async function handleSendPhoneOTP(request: Request, env: Env): Promise<Response> {
+  try {
+    const user = await getUserFromRequest(request, env);
+    if (!user) {
+      return errorResponse('UNAUTHORIZED', 'Not authenticated', 401);
+    }
+    const body = await request.json() as { phone: string };
+    
+    if (!body.phone || body.phone.trim().length === 0) {
+      return errorResponse('VALIDATION_ERROR', 'Phone number is required', 400);
+    }
+    
+    console.log('📱 Sending OTP to phone:', body.phone.trim(), 'for user:', user.id);
+    
+    const supabase = createServiceSupabaseClient(env);
+    
+    // ТІЛЬКИ відправляємо OTP - phone НЕ оновлюється до верифікації
+    const { error: otpError } = await supabase.auth.signInWithOtp({
+      phone: body.phone.trim()
+    });
+    
+    if (otpError) {
+      console.error('❌ OTP send error:', {
+        message: otpError.message,
+        status: otpError.status,
+        name: otpError.name
+      });
+      return errorResponse('OTP_SEND_FAILED', `Failed to send OTP: ${otpError.message}`, 400);
+    }
+    
+    console.log('✅ OTP sent successfully to:', body.phone.trim());
+    
+    await logAudit(env, user.id, 'phone.otp_sent', 'profiles', user.id, { phone: body.phone }, request);
+    
+    return jsonResponse({ message: 'OTP sent successfully' });
+  } catch (error) {
+    console.error('❌ handleSendPhoneOTP error:', error);
+    return errorResponse('SERVER_ERROR', `Internal server error: ${error instanceof Error ? error.message : 'Unknown error'}`, 500);
+  }
+}
+
+export async function handleVerifyPhoneOTP(request: Request, env: Env): Promise<Response> {
+  try {
+    const user = await getUserFromRequest(request, env);
+    if (!user) {
+      return errorResponse('UNAUTHORIZED', 'Not authenticated', 401);
+    }
+    const body = await request.json() as { phone: string; token: string };
+    
+    if (!body.phone || !body.token) {
+      return errorResponse('VALIDATION_ERROR', 'Phone and token are required', 400);
+    }
+    
+    console.log('🔐 Verifying OTP for phone:', body.phone, 'user:', user.id);
+    
+    const supabase = createServiceSupabaseClient(env);
+    
+    // СПОЧАТКУ верифікуємо OTP
+    const { error: verifyError } = await supabase.auth.verifyOtp({
+      phone: body.phone,
+      token: body.token,
+      type: 'sms'
+    });
+    
+    if (verifyError) {
+      console.error('❌ OTP verification failed:', verifyError.message);
+      return errorResponse('OTP_VERIFY_FAILED', verifyError.message, 400);
+    }
+    
+    console.log('✅ OTP verified successfully');
+    
+    // ПІСЛЯ успішної верифікації - оновлюємо phone в auth.users
+    // phone_confirmed_at встановлюється автоматично після verifyOtp
+    const { error: updateAuthError } = await supabase.auth.admin.updateUserById(
+      user.id,
+      { 
+        phone: body.phone
+      }
+    );
+    
+    if (updateAuthError) {
+      console.error('⚠️ Could not update phone in auth.users:', updateAuthError.message);
+    } else {
+      console.log('✅ Phone updated in auth.users');
+    }
+    
+    // ТАКОЖ оновлюємо phone в profiles для відображення в налаштуваннях
+    const { error: updateProfileError } = await supabase
+      .from('profiles')
+      .update({ phone: body.phone, phone_verified: true })
+      .eq('id', user.id);
+    
+    if (updateProfileError) {
+      console.warn('⚠️ Could not update phone in profiles:', updateProfileError.message);
+    } else {
+      console.log('✅ Phone updated in profiles');
+    }
+    
+    await logAudit(env, user.id, 'phone.verified', 'profiles', user.id, { phone: body.phone }, request);
+    
+    return jsonResponse({ message: 'Phone verified successfully' });
+  } catch (error) {
+    console.error('❌ handleVerifyPhoneOTP error:', error);
     return errorResponse('SERVER_ERROR', 'Internal server error', 500);
   }
 }

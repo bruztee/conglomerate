@@ -16,10 +16,10 @@ export default function Home() {
           <div className="text-center max-w-4xl mx-auto">
             <div className="mb-8 flex justify-center">
               <Image
-                src="/logo.jpg"
+                src="/logo.png"
                 alt="Conglomerate Group"
-                width={120}
-                height={120}
+                width={240}
+                height={240}
                 className="rounded-lg"
                 priority
               />

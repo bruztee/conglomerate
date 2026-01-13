@@ -6,9 +6,13 @@ import UserIcon from "@/components/icons/UserIcon"
 import NetworkIcon from "@/components/icons/NetworkIcon"
 import BoltIcon from "@/components/icons/BoltIcon"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import Link from "next/link"
 import Header from "@/components/Header"
+import { useAuth } from "@/context/AuthContext"
+import { api } from "@/lib/api"
+import { useRouter } from "next/navigation"
+import Loading from "@/components/Loading"
 
 interface Deposit {
   id: string
@@ -21,38 +25,18 @@ interface Deposit {
 }
 
 export default function DashboardPage() {
+  const router = useRouter()
+  const { user } = useAuth()
   const [amount, setAmount] = useState("")
-  const [userBalance] = useState(15000)
-  const [userProfit] = useState(3250.5)
-  const [totalInvestments] = useState(12500)
+  const [userBalance, setUserBalance] = useState(0)
+  const [userProfit, setUserProfit] = useState(0)
+  const [totalInvestments, setTotalInvestments] = useState(0)
+  const [loading, setLoading] = useState(true)
 
   const quickAmounts = [100, 500, 1000, 5000, 10000]
 
-  const [activeDeposits] = useState<Deposit[]>([
-    { id: "1", amount: 5000, profit: 1250, percentage: 5, date: "2026-01-01", status: "active" },
-    { id: "2", amount: 7500, profit: 2000.5, percentage: 7, date: "2025-12-15", status: "active" },
-  ])
-
-  const [depositHistory] = useState<Deposit[]>([
-    {
-      id: "3",
-      amount: 3000,
-      profit: 750,
-      percentage: 5,
-      date: "2025-11-20",
-      withdrawDate: "2025-12-20",
-      status: "completed",
-    },
-    { id: "4", amount: 2000, profit: 500, percentage: 5, date: "2025-10-15", status: "accruing" },
-    {
-      id: "5",
-      amount: 4000,
-      profit: 1000,
-      percentage: 7,
-      date: "2025-09-01",
-      status: "pending_withdrawal",
-    },
-  ])
+  const [activeDeposits, setActiveDeposits] = useState<Deposit[]>([])
+  const [depositHistory, setDepositHistory] = useState<Deposit[]>([])
 
   const profitPercentage = 5
 
@@ -97,14 +81,92 @@ export default function DashboardPage() {
     }
   }
 
+  useEffect(() => {
+    if (!user) {
+      router.push('/auth/login')
+      return
+    }
+
+    const fetchData = async () => {
+      setLoading(true)
+      
+      // Fetch wallet data
+      const walletResult = await api.getWallet()
+      if (walletResult.success && walletResult.data) {
+        const data = walletResult.data as any
+        setUserBalance(data.balance || 0)
+        setUserProfit(data.stats?.total_earned || 0)
+        setTotalInvestments(data.stats?.total_principal || 0)
+      }
+
+      // Fetch deposits
+      const depositsResult = await api.getDeposits()
+      if (depositsResult.success && depositsResult.data) {
+        const data = depositsResult.data as any
+        const deposits = data.deposits || []
+        
+        // Separate active and history
+        const active = deposits.filter((d: any) => d.status === 'confirmed' || d.status === 'pending')
+        const history = deposits.filter((d: any) => d.status !== 'confirmed' && d.status !== 'pending')
+        
+        // Map to our format
+        setActiveDeposits(active.map((d: any) => ({
+          id: d.id,
+          amount: parseFloat(d.amount),
+          profit: 0, // TODO: calculate from ledger
+          percentage: 5, // TODO: get from plan
+          date: d.created_at,
+          status: d.status === 'confirmed' ? 'active' : 'accruing' as any,
+        })))
+        
+        setDepositHistory(history.map((d: any) => ({
+          id: d.id,
+          amount: parseFloat(d.amount),
+          profit: 0,
+          percentage: 5,
+          date: d.created_at,
+          withdrawDate: d.confirmed_at,
+          status: 'completed' as any,
+        })))
+      }
+
+      setLoading(false)
+    }
+
+    fetchData()
+  }, [user, router])
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    console.log("[v0] Creating deposit with amount:", amount)
+    
+    const result = await api.createDeposit(parseFloat(amount))
+    if (result.success) {
+      // Refresh deposits
+      const depositsResult = await api.getDeposits()
+      if (depositsResult.success && depositsResult.data) {
+        const data = depositsResult.data as any
+        const deposits = data.deposits || []
+        const active = deposits.filter((d: any) => d.status === 'confirmed' || d.status === 'pending')
+        setActiveDeposits(active.map((d: any) => ({
+          id: d.id,
+          amount: parseFloat(d.amount),
+          profit: 0,
+          percentage: 5,
+          date: d.created_at,
+          status: d.status === 'confirmed' ? 'active' : 'accruing' as any,
+        })))
+      }
+      setAmount('')
+    }
+  }
+
+  if (loading) {
+    return <Loading fullScreen size="lg" text="Завантаження даних..." />
   }
 
   return (
     <>
-      <Header isAuthenticated={true} userBalance={userBalance} userProfit={userProfit} />
+      <Header isAuthenticated={true} />
 
       <main className="min-h-screen px-4 py-8 sm:px-6 lg:px-8">
         <div className="container mx-auto max-w-7xl">

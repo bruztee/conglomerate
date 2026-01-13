@@ -8,6 +8,9 @@ interface User {
   email: string;
   role: string;
   referral_code?: string;
+  full_name?: string | null;
+  is_phone_verified?: boolean;
+  phone?: string | null;
 }
 
 interface AuthContextType {
@@ -26,28 +29,53 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true);
 
   const refreshUser = async () => {
-    const response = await api.getMe();
-    if (response.success && response.data) {
-      setUser(response.data as User);
-    } else {
-      setUser(null);
-      api.setAccessToken(null);
+    try {
+      const response = await api.me();
+      if (response.success && response.data) {
+        const data = response.data as any;
+        if (data.user) {
+          const userData = data.user as User;
+          setUser(userData);
+        } else {
+          setUser(null);
+          api.setAccessToken(null);
+        }
+      } else {
+        setUser(null);
+        api.setAccessToken(null);
+      }
+    } catch (error) {
+      console.error('RefreshUser error:', error);
+      // Не очищаємо токен при помилці мережі - можливо тимчасова проблема
     }
   };
 
   useEffect(() => {
+    let isMounted = true;
+    
     const initAuth = async () => {
-      const token = typeof window !== 'undefined' ? localStorage.getItem('access_token') : null;
+      // НОВИЙ ПІДХІД: httpOnly cookie встановлюється сервером
+      // Просто робимо /me запит - cookie відправиться автоматично через credentials: 'include'
+      console.log('🔍 Auth init: Fetching user from server...');
       
-      if (token) {
-        api.setAccessToken(token);
+      try {
         await refreshUser();
+      } catch (error) {
+        console.error('Auth init error:', error);
       }
       
-      setLoading(false);
+      // Тільки оновлюємо стан якщо компонент ще змонтований
+      if (isMounted) {
+        setLoading(false);
+      }
     };
 
     initAuth();
+    
+    // Cleanup функція для запобігання race condition при швидких refresh
+    return () => {
+      isMounted = false;
+    };
   }, []);
 
   const login = async (email: string, password: string) => {
@@ -55,6 +83,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     
     if (response.success && response.data?.user) {
       setUser(response.data.user);
+      // Refresh user to get full data including phone verification status
+      await refreshUser();
       return { success: true };
     }
     
@@ -75,6 +105,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const logout = async () => {
     await api.logout();
     setUser(null);
+    // httpOnly cookie очищується сервером через Set-Cookie
   };
 
   return (

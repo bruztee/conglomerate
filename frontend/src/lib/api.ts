@@ -1,4 +1,6 @@
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8787';
+const API_URL =
+  (process.env.NEXT_PUBLIC_API_URL ?? '') ||
+  (process.env.NODE_ENV === 'production' ? '' : 'http://localhost:8787');
 
 interface ApiResponse<T = any> {
   success: boolean;
@@ -15,22 +17,14 @@ class ApiClient {
 
   constructor(baseUrl: string) {
     this.baseUrl = baseUrl;
-    if (typeof window !== 'undefined') {
-      this.accessToken = localStorage.getItem('access_token');
-    }
+    // httpOnly cookie встановлюється сервером - не читаємо localStorage
   }
 
   setAccessToken(token: string | null) {
-    this.accessToken = token;
-    if (typeof window !== 'undefined') {
-      if (token) {
-        localStorage.setItem('access_token', token);
-        document.cookie = `access_token=${token}; path=/; max-age=604800; samesite=strict`;
-      } else {
-        localStorage.removeItem('access_token');
-        document.cookie = 'access_token=; path=/; max-age=0';
-      }
-    }
+    // DEPRECATED: Тепер НЕ використовується
+    // httpOnly cookie встановлюється ТІЛЬКИ сервером через Set-Cookie header
+    // Ця функція залишається для сумісності але нічого не робить
+    console.log('⚠️ setAccessToken is deprecated - using httpOnly cookies only');
   }
 
   private async request<T>(
@@ -42,14 +36,14 @@ class ApiClient {
       ...(options.headers as Record<string, string> || {}),
     };
 
-    if (this.accessToken) {
-      headers['Authorization'] = `Bearer ${this.accessToken}`;
-    }
+    // НЕ додаємо Authorization header - покладаємось тільки на httpOnly cookie
+    // Cookie відправляється автоматично через credentials: 'include'
 
     try {
       const response = await fetch(`${this.baseUrl}${endpoint}`, {
         ...options,
         headers,
+        credentials: 'include', // КРИТИЧНО: Відправляти httpOnly cookies автоматично
       });
 
       const data = await response.json();
@@ -90,42 +84,30 @@ class ApiClient {
       body: JSON.stringify({ email, password }),
     });
 
-    if (response.success && response.data?.session) {
-      this.setAccessToken(response.data.session.access_token);
-      if (typeof window !== 'undefined') {
-        localStorage.setItem('refresh_token', response.data.session.refresh_token);
-      }
-    }
+    // ✅ httpOnly cookies (access_token + refresh_token) встановлюються СЕРВЕРОМ
+    // НЕ зберігаємо нічого в localStorage - все через httpOnly cookies для безпеки
 
     return response;
   }
 
   async logout() {
-    const response = await this.request('/api/auth/logout', {
-      method: 'POST',
-    });
-    this.setAccessToken(null);
-    if (typeof window !== 'undefined') {
-      localStorage.removeItem('refresh_token');
-    }
+    const response = await this.request('/api/auth/logout', { method: 'POST' });
+    // httpOnly cookies очищуються СЕРВЕРОМ через Set-Cookie
     return response;
   }
 
-  async refreshToken() {
-    if (typeof window === 'undefined') return { success: false };
-    
-    const refreshToken = localStorage.getItem('refresh_token');
-    if (!refreshToken) return { success: false };
+  async me() {
+    return this.request('/api/auth/me', { method: 'GET' });
+  }
 
+  async refreshToken() {
+    // refresh_token читається з httpOnly cookie автоматично
     const response = await this.request<{ session: any }>('/api/auth/refresh', {
       method: 'POST',
-      body: JSON.stringify({ refresh_token: refreshToken }),
+      body: JSON.stringify({}), // Empty body - token читається з cookie на backend
     });
 
-    if (response.success && response.data?.session) {
-      this.setAccessToken(response.data.session.access_token);
-      localStorage.setItem('refresh_token', response.data.session.refresh_token);
-    }
+    // httpOnly cookies оновлюються СЕРВЕРОМ через Set-Cookie
 
     return response;
   }
@@ -155,6 +137,48 @@ class ApiClient {
     });
   }
 
+  async updateEmail(email: string) {
+    return this.request('/api/auth/update-email', {
+      method: 'PUT',
+      body: JSON.stringify({ email }),
+    });
+  }
+
+  async updatePhone(phone: string) {
+    return this.request('/api/auth/update-phone', {
+      method: 'PUT',
+      body: JSON.stringify({ phone }),
+    });
+  }
+
+  async updatePassword(password: string) {
+    return this.request('/api/auth/update-password', {
+      method: 'PUT',
+      body: JSON.stringify({ password }),
+    });
+  }
+
+  async setName(full_name: string) {
+    return this.request('/api/auth/set-name', {
+      method: 'POST',
+      body: JSON.stringify({ full_name }),
+    });
+  }
+
+  async sendPhoneOTP(phone: string) {
+    return this.request('/api/auth/send-phone-otp', {
+      method: 'POST',
+      body: JSON.stringify({ phone }),
+    });
+  }
+
+  async verifyPhoneOTP(phone: string, token: string) {
+    return this.request('/api/auth/verify-phone-otp', {
+      method: 'POST',
+      body: JSON.stringify({ phone, token }),
+    });
+  }
+
   // Wallet
   async getWallet() {
     return this.request('/api/wallet');
@@ -176,18 +200,6 @@ class ApiClient {
     return this.request('/api/deposits');
   }
 
-  // Withdrawals
-  async createWithdrawal(amount: number, destination: any) {
-    return this.request('/api/withdrawals', {
-      method: 'POST',
-      body: JSON.stringify({ amount, destination }),
-    });
-  }
-
-  async getWithdrawals() {
-    return this.request('/api/withdrawals');
-  }
-
   // Investments
   async getInvestmentPlans() {
     return this.request('/api/investment-plans');
@@ -202,6 +214,29 @@ class ApiClient {
 
   async getInvestments() {
     return this.request('/api/investments');
+  }
+
+  // Withdrawals
+  async getWithdrawals() {
+    return this.request('/api/withdrawals');
+  }
+
+  async createWithdrawal(amount: number, method: string, details: any) {
+    return this.request('/api/withdrawals', {
+      method: 'POST',
+      body: JSON.stringify({ amount, method, details }),
+    });
+  }
+
+  // Referrals
+  async getReferralStats() {
+    return this.request('/api/referrals/stats');
+  }
+
+  async setReferralCookie(referralCode: string) {
+    return this.request(`/api/referrals/set-cookie?ref=${referralCode}`, {
+      method: 'POST',
+    });
   }
 }
 

@@ -1,21 +1,36 @@
 "use client"
 
-import Link from "next/link"
-import Image from "next/image"
-import { useState } from "react"
+import { useState, useEffect } from 'react';
+import Link from 'next/link';
+import Image from 'next/image';
 import { useRouter } from "next/navigation"
 import { useAuth } from "@/context/AuthContext"
+import { api } from '@/lib/api';
 
 interface HeaderProps {
   isAuthenticated?: boolean
-  userBalance?: number
-  userProfit?: number
 }
 
-export default function Header({ isAuthenticated = false, userBalance = 0, userProfit = 0 }: HeaderProps) {
+export default function Header({ isAuthenticated = false }: HeaderProps) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
+  const [userBalance, setUserBalance] = useState(0)
+  const [userProfit, setUserProfit] = useState(0)
   const router = useRouter()
   const { logout, user } = useAuth()
+
+  useEffect(() => {
+    if (user) {
+      const fetchWallet = async () => {
+        const result = await api.getWallet()
+        if (result.success && result.data) {
+          const data = result.data as any
+          setUserBalance(data.balance || 0)
+          setUserProfit(data.stats?.total_earned || 0)
+        }
+      }
+      fetchWallet()
+    }
+  }, [user])
   
   const handleLogout = async () => {
     await logout()
@@ -31,7 +46,7 @@ export default function Header({ isAuthenticated = false, userBalance = 0, userP
         <div className="flex h-16 items-center justify-between">
           <div className="flex items-center gap-8">
             <Link href="/" className="flex items-center gap-3 hover:opacity-80 transition-opacity">
-              <Image src="/logo.jpg" alt="Conglomerate Group" width={40} height={40} className="rounded" />
+              <Image src="/logo.png" alt="Conglomerate Group" width={40} height={40} className="rounded" />
               <span className="text-xl font-bold tracking-tight hidden sm:inline font-sans">CONGLOMERATE GROUP</span>
             </Link>
           </div>
@@ -56,7 +71,7 @@ export default function Header({ isAuthenticated = false, userBalance = 0, userP
                     href="/dashboard"
                     className="btn-gradient-primary px-4 py-2 text-foreground font-medium rounded transition-colors font-sans"
                   >
-                    Депозит
+                    Депозити
                   </Link>
                   <Link
                     href="/withdraw"
@@ -71,10 +86,10 @@ export default function Header({ isAuthenticated = false, userBalance = 0, userP
                     Рефералка
                   </Link>
                   <Link
-                    href="/dashboard"
+                    href="/dashboard/settings"
                     className="btn-gradient-secondary px-4 py-2 text-foreground font-medium rounded transition-colors font-sans"
                   >
-                    Профіль
+                    Налаштування
                   </Link>
                   <button
                     onClick={handleLogout}
@@ -129,7 +144,7 @@ export default function Header({ isAuthenticated = false, userBalance = 0, userP
                 href="/dashboard"
                 className="btn-gradient-primary px-4 py-2 text-foreground font-medium rounded transition-colors text-center font-sans"
               >
-                Депозит
+                Депозити
               </Link>
               <Link
                 href="/withdraw"
@@ -144,10 +159,10 @@ export default function Header({ isAuthenticated = false, userBalance = 0, userP
                 Рефералка
               </Link>
               <Link
-                href="/dashboard"
+                href="/dashboard/settings"
                 className="btn-gradient-secondary px-4 py-2 text-foreground font-medium rounded transition-colors text-center font-sans"
               >
-                Профіль
+                Налаштування
               </Link>
               <button
                 onClick={handleLogout}

@@ -8,13 +8,30 @@ export interface AuthUser {
 }
 
 export async function getUserFromRequest(request: Request, env: Env): Promise<AuthUser | null> {
-  const authHeader = request.headers.get('Authorization');
+  // КРИТИЧНО: Спочатку Authorization header, потім Cookie
+  let token: string | null = null;
   
-  if (!authHeader || !authHeader.startsWith('Bearer ')) {
-    return null;
+  // 1. Спробувати Authorization header (для API calls з токеном в пам'яті)
+  const authHeader = request.headers.get('Authorization');
+  if (authHeader && authHeader.startsWith('Bearer ')) {
+    token = authHeader.substring(7);
   }
   
-  const token = authHeader.substring(7);
+  // 2. Якщо немає Authorization - прочитати з httpOnly cookie
+  if (!token) {
+    const cookieHeader = request.headers.get('Cookie');
+    if (cookieHeader) {
+      const cookies = cookieHeader.split(';').map(c => c.trim());
+      const accessTokenCookie = cookies.find(c => c.startsWith('access_token='));
+      if (accessTokenCookie) {
+        token = accessTokenCookie.split('=')[1];
+      }
+    }
+  }
+  
+  if (!token) {
+    return null;
+  }
   
   const supabase = createServiceSupabaseClient(env);
   

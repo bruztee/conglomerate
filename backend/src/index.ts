@@ -1,10 +1,11 @@
 import type { Env } from './types';
 import { corsHeaders, errorResponse } from './utils/response';
-import { handleRegister, handleLogin, handleLogout, handleMe, handleRefreshToken, handleResendVerification, handleForgotPassword, handleResetPassword } from './routes/auth';
+import { handleRegister, handleLogin, handleLogout, handleMe, handleRefreshToken, handleResendVerification, handleForgotPassword, handleResetPassword, handleUpdateEmail, handleUpdatePhone, handleUpdatePassword, handleSetName, handleSendPhoneOTP, handleVerifyPhoneOTP } from './routes/auth';
 import { handleGetWallet, handleGetTransactions } from './routes/wallet';
 import { handleCreateDeposit, handleGetDeposits, handleConfirmDeposit } from './routes/deposits';
 import { handleCreateWithdrawal, handleGetWithdrawals, handleApproveWithdrawal } from './routes/withdrawals';
 import { handleGetPlans, handleCreateInvestment, handleGetInvestments } from './routes/investments';
+import { handleGetReferralStats, handleSetReferralCookie } from './routes/referrals';
 
 interface RouteHandler {
   (request: Request, env: Env, ...args: string[]): Promise<Response>;
@@ -24,6 +25,12 @@ const routes: Route[] = [
   { method: 'POST', pattern: /^\/api\/auth\/resend-verification$/, handler: handleResendVerification },
   { method: 'POST', pattern: /^\/api\/auth\/forgot-password$/, handler: handleForgotPassword },
   { method: 'POST', pattern: /^\/api\/auth\/reset-password$/, handler: handleResetPassword },
+  { method: 'PUT', pattern: /^\/api\/auth\/update-email$/, handler: handleUpdateEmail },
+  { method: 'PUT', pattern: /^\/api\/auth\/update-phone$/, handler: handleUpdatePhone },
+  { method: 'PUT', pattern: /^\/api\/auth\/update-password$/, handler: handleUpdatePassword },
+  { method: 'POST', pattern: /^\/api\/auth\/set-name$/, handler: handleSetName },
+  { method: 'POST', pattern: /^\/api\/auth\/send-phone-otp$/, handler: handleSendPhoneOTP },
+  { method: 'POST', pattern: /^\/api\/auth\/verify-phone-otp$/, handler: handleVerifyPhoneOTP },
   { method: 'GET', pattern: /^\/api\/auth\/me$/, handler: handleMe },
   
   { method: 'GET', pattern: /^\/api\/wallet$/, handler: handleGetWallet },
@@ -40,6 +47,9 @@ const routes: Route[] = [
   { method: 'GET', pattern: /^\/api\/investment-plans$/, handler: handleGetPlans },
   { method: 'POST', pattern: /^\/api\/investments$/, handler: handleCreateInvestment },
   { method: 'GET', pattern: /^\/api\/investments$/, handler: handleGetInvestments },
+  
+  { method: 'GET', pattern: /^\/api\/referrals\/stats$/, handler: handleGetReferralStats },
+  { method: 'POST', pattern: /^\/api\/referrals\/set-cookie$/, handler: handleSetReferralCookie },
 ];
 
 export default {

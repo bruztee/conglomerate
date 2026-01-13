@@ -5,6 +5,9 @@ import "./globals.css"
 import AnimatedBackground from "@/components/AnimatedBackground"
 import Footer from "@/components/Footer"
 import { AuthProvider } from "@/context/AuthContext"
+import PhoneVerificationWrapper from "@/components/PhoneVerificationWrapper"
+import RootLayoutClient from "@/components/RootLayoutClient"
+import ReferralCookieHandler from "@/components/ReferralCookieHandler"
 
 const orbitron = Orbitron({
   variable: "--font-heading",
@@ -30,6 +33,10 @@ const playfair = Playfair_Display({
 export const metadata: Metadata = {
   title: "Conglomerate Group | Білий трафік — чорні цифри",
   description: "Закрита інвестиційна онлайн-платформа для роботи з криптовалютними активами",
+  icons: {
+    icon: '/logo.png',
+    apple: '/logo.png',
+  },
 }
 
 export default function RootLayout({
@@ -38,14 +45,21 @@ export default function RootLayout({
   children: React.ReactNode
 }>) {
   return (
-    <html lang="en">
+    <html lang="uk">
       <body className={`${orbitron.variable} ${spaceGrotesk.variable} ${playfair.variable} antialiased`}>
         <AuthProvider>
           <AnimatedBackground />
-          <div className="flex flex-col min-h-screen">
-            <div className="flex-1">{children}</div>
-            <Footer />
-          </div>
+          <ReferralCookieHandler />
+          <RootLayoutClient>
+            <div className="flex flex-col min-h-screen">
+              <div className="flex-1">
+                <PhoneVerificationWrapper>
+                  {children}
+                </PhoneVerificationWrapper>
+              </div>
+              <Footer />
+            </div>
+          </RootLayoutClient>
         </AuthProvider>
       </body>
     </html>

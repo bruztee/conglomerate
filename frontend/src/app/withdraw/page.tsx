@@ -2,8 +2,12 @@
 
 import type React from "react"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
+import { useRouter } from "next/navigation"
+import { useAuth } from "@/context/AuthContext"
+import { api } from "@/lib/api"
 import Header from "@/components/Header"
+import Loading from "@/components/Loading"
 
 interface WithdrawalRequest {
   id: string
@@ -26,39 +30,75 @@ interface Deposit {
 }
 
 export default function WithdrawPage() {
+  const router = useRouter()
+  const { user } = useAuth()
+  
   const [walletAddress, setWalletAddress] = useState("")
   const [selectedMethod, setSelectedMethod] = useState<string | null>(null)
-  const [userBalance] = useState(15000)
-  const [userProfit] = useState(3250.5)
+  const [userBalance, setUserBalance] = useState(0)
+  const [userProfit, setUserProfit] = useState(0)
+  const [loading, setLoading] = useState(true)
+  const [submitting, setSubmitting] = useState(false)
+  const [message, setMessage] = useState('')
+  const [error, setError] = useState('')
 
-  const [activeDeposits, setActiveDeposits] = useState<Deposit[]>([
-    { id: "1", amount: 5000, percentage: 12, profit: 600, createdDate: "2025-12-01", selected: false },
-    { id: "2", amount: 3000, percentage: 15, profit: 450, createdDate: "2025-12-15", selected: false },
-    { id: "3", amount: 2000, percentage: 10, profit: 200, createdDate: "2026-01-01", selected: false },
-  ])
+  const [activeDeposits, setActiveDeposits] = useState<Deposit[]>([])
+  const [withdrawalHistory, setWithdrawalHistory] = useState<WithdrawalRequest[]>([])
 
-  const [withdrawalHistory] = useState<WithdrawalRequest[]>([
-    {
-      id: "1",
-      depositId: "DEP-001",
-      amount: 1000,
-      percentage: 12,
-      method: "USDT (TRC20)",
-      status: "completed",
-      createdDate: "2025-12-20",
-      withdrawDate: "2026-01-03",
-    },
-    {
-      id: "2",
-      depositId: "DEP-002",
-      amount: 500,
-      percentage: 15,
-      method: "BTC",
-      status: "pending",
-      createdDate: "2026-01-02",
-      withdrawDate: null,
-    },
-  ])
+  // Завантаження даних при mount
+  useEffect(() => {
+    async function fetchData() {
+      if (!user) {
+        router.push('/auth/login')
+        return
+      }
+
+      setLoading(true)
+      try {
+        // Отримати wallet balance
+        const walletResult = await api.getWallet()
+        if (walletResult.success && walletResult.data) {
+          setUserBalance(walletResult.data.balance || 0)
+        }
+
+        // Отримати deposits (активні)
+        const depositsResult = await api.getDeposits()
+        if (depositsResult.success && depositsResult.data) {
+          const activeDepositsData = depositsResult.data.filter((d: any) => d.status === 'confirmed').map((d: any) => ({
+            id: d.id,
+            amount: d.amount,
+            percentage: 5, // або з плану
+            profit: 0, // TODO: розрахувати на основі часу
+            createdDate: d.created_at,
+            selected: false,
+          }))
+          setActiveDeposits(activeDepositsData)
+        }
+
+        // Отримати withdrawal history
+        const withdrawalsResult = await api.getWithdrawals()
+        if (withdrawalsResult.success && withdrawalsResult.data) {
+          const historyData = withdrawalsResult.data.withdrawals?.map((w: any) => ({
+            id: w.id,
+            depositId: w.account_id,
+            amount: w.amount,
+            percentage: 0,
+            method: w.method || 'USDT',
+            status: w.status === 'approved' ? 'completed' : w.status === 'requested' ? 'pending' : 'rejected',
+            createdDate: w.created_at,
+            withdrawDate: w.processed_at,
+          })) || []
+          setWithdrawalHistory(historyData)
+        }
+      } catch (err) {
+        console.error('Failed to fetch data:', err)
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    fetchData()
+  }, [user, router])
 
   const methods = [
     { id: "usdt-trc20", name: "USDT (TRC20)", fee: "1%", minAmount: 50 },
@@ -76,11 +116,88 @@ export default function WithdrawPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+    setSubmitting(true)
+    setError('')
+    setMessage('')
+
+    try {
+      if (selectedTotal === 0) {
+        setError('Оберіть депозити для виводу')
+        setSubmitting(false)
+        return
+      }
+
+      if (!walletAddress) {
+        setError('Введіть адресу гаманця')
+        setSubmitting(false)
+        return
+      }
+
+      if (!selectedMethod) {
+        setError('Оберіть метод виводу')
+        setSubmitting(false)
+        return
+      }
+
+      // Створити withdrawal request
+      const result = await api.createWithdrawal(selectedTotal, selectedMethod, {
+        wallet_address: walletAddress,
+      })
+
+      if (result.success) {
+        setMessage('Заявка на вивід успішно створена! Очікуйте обробки протягом 24-48 годин.')
+        setWalletAddress('')
+        setSelectedMethod(null)
+        setActiveDeposits(prev => prev.map(d => ({ ...d, selected: false })))
+        
+        // Перезавантажити withdrawal history
+        const withdrawalsResult = await api.getWithdrawals()
+        if (withdrawalsResult.success && withdrawalsResult.data) {
+          const historyData = withdrawalsResult.data.withdrawals?.map((w: any) => ({
+            id: w.id,
+            depositId: w.account_id,
+            amount: w.amount,
+            percentage: 0,
+            method: w.method || 'USDT',
+            status: w.status === 'approved' ? 'completed' : w.status === 'requested' ? 'pending' : 'rejected',
+            createdDate: w.created_at,
+            withdrawDate: w.processed_at,
+          })) || []
+          setWithdrawalHistory(historyData)
+        }
+      } else {
+        setError(result.error?.message || 'Помилка створення заявки на вивід')
+      }
+    } catch (err) {
+      setError('Помилка створення заявки на вивід')
+    } finally {
+      setSubmitting(false)
+    }
+  }
+
+  if (loading) {
+    return <Loading fullScreen size="lg" text="Завантаження даних..." />
+  }
+
+  if (!user) {
+    return null
   }
 
   return (
     <>
       <Header isAuthenticated={true} userBalance={userBalance} userProfit={userProfit} />
+
+      {/* Success/Error Messages */}
+      {message && (
+        <div className="fixed top-4 right-4 z-50 bg-green-900/90 border border-green-500 text-green-400 px-6 py-4 rounded-lg shadow-lg max-w-md">
+          {message}
+        </div>
+      )}
+      {error && (
+        <div className="fixed top-4 right-4 z-50 bg-red-900/90 border border-red-500 text-red-400 px-6 py-4 rounded-lg shadow-lg max-w-md">
+          {error}
+        </div>
+      )}
 
       <main className="min-h-screen px-4 py-8 sm:px-6 lg:px-8">
         <div className="container mx-auto max-w-5xl">
@@ -213,10 +330,10 @@ export default function WithdrawPage() {
 
                 <button
                   type="submit"
-                  disabled={selectedTotal === 0 || !walletAddress || !selectedMethod}
+                  disabled={selectedTotal === 0 || !walletAddress || !selectedMethod || submitting}
                   className="btn-gradient-primary w-full px-4 py-3 disabled:bg-gray-medium disabled:cursor-not-allowed disabled:border-gray-medium disabled:shadow-none text-foreground font-bold rounded-lg transition-all font-sans"
                 >
-                  Подати заявку на вивід
+                  {submitting ? 'Створення заявки...' : 'Подати заявку на вивід'}
                 </button>
               </form>
             </div>

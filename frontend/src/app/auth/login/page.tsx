@@ -5,6 +5,7 @@ import { useState } from "react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import Header from "@/components/Header"
+import Loading from "@/components/Loading"
 import { useAuth } from "@/context/AuthContext"
 
 export default function LoginPage() {
@@ -33,7 +34,9 @@ export default function LoginPage() {
     const result = await login(formData.email, formData.password)
     
     if (result.success) {
+      // Тримаємо loading=true і редиректимо - Dashboard покаже свій loading
       router.push("/dashboard")
+      // НЕ встановлюємо setLoading(false) - loading screen залишається до повного завантаження dashboard
     } else {
       // Перевірити чи треба верифікувати email
       if (result.error?.code === 'EMAIL_NOT_VERIFIED') {
@@ -44,6 +47,11 @@ export default function LoginPage() {
       setError(result.error?.message || "Помилка входу")
       setLoading(false)
     }
+  }
+
+  // Показати fullscreen loading під час логіну/редиректу
+  if (loading) {
+    return <Loading fullScreen size="lg" text="Вхід..." />
   }
 
   return (
@@ -106,10 +114,9 @@ export default function LoginPage() {
 
             <button
               type="submit"
-              disabled={loading}
-              className="btn-gradient-primary w-full px-6 py-3 text-foreground font-bold rounded-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+              className="btn-gradient-primary w-full px-4 py-3 text-foreground font-bold rounded-lg transition-colors font-sans"
             >
-              {loading ? "Вхід..." : "Увійти"}
+              Увійти
             </button>
           </form>
 
