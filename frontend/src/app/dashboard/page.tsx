@@ -403,12 +403,12 @@ export default function DashboardPage() {
                       .map((deposit) => (
                     <div
                       key={deposit.id}
-                      className="bg-blur/50 border border-gray-medium/50 rounded-lg p-4 hover:border-silver/50 transition-colors"
+                      className="bg-blur/50 border border-gray-medium/50 rounded-lg p-3 sm:p-4 hover:border-silver/50 transition-colors"
                     >
-                      <div className="flex justify-between items-start mb-3">
-                        <div className="flex-1">
+                      <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-3 mb-3">
+                        <div className="flex-1 min-w-0">
                           <div className="text-xs text-gray-light mb-1">Депозит</div>
-                          <div className="text-2xl font-bold text-silver font-sans">${deposit.amount.toFixed(2)}</div>
+                          <div className="text-xl sm:text-2xl font-bold text-silver font-sans break-words">${deposit.amount.toFixed(2)}</div>
                           {deposit.frozen > 0 && (
                             <div className="text-xs text-gray-light mt-1">
                               Заморожено: ${deposit.frozen.toFixed(2)}
@@ -420,18 +420,18 @@ export default function DashboardPage() {
                             </div>
                           )}
                         </div>
-                        <div className="text-right">
+                        <div className="text-left sm:text-right">
                           <div className="text-xs text-gray-light mb-1">Прибуток</div>
-                          <div className="text-lg font-bold text-foreground font-sans">+${deposit.profit.toFixed(2)}</div>
+                          <div className="text-lg font-bold text-foreground font-sans break-words">+${deposit.profit.toFixed(2)}</div>
                         </div>
                       </div>
-                      <div className="flex justify-between items-center pt-3 border-t border-gray-medium/30">
-                        <div className="flex items-center gap-3">
-                          <span className="text-sm text-gray-light">
+                      <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3 pt-3 border-t border-gray-medium/30">
+                        <div className="flex flex-wrap items-center gap-2">
+                          <span className="text-xs sm:text-sm text-gray-light whitespace-nowrap">
                             {new Date(deposit.date).toLocaleDateString("uk-UA")}
                           </span>
                           {deposit.isFrozen ? (
-                            <span className="inline-block px-2 py-1 rounded text-xs bg-orange-500/20 text-orange-400">
+                            <span className="inline-block px-2 py-1 rounded text-xs bg-orange-500/20 text-orange-400 whitespace-nowrap">
                               Заморожен
                             </span>
                           ) : (
@@ -443,7 +443,7 @@ export default function DashboardPage() {
                         {deposit.status !== 'withdrawal_pending' && !deposit.isFrozen && (
                           <button
                             onClick={() => handleWithdraw(deposit.id)}
-                            className="btn-gradient-primary px-4 py-2 text-foreground font-bold text-sm rounded-lg transition-colors font-sans"
+                            className="btn-gradient-primary w-full sm:w-auto px-4 py-2 text-foreground font-bold text-sm rounded-lg transition-colors font-sans whitespace-nowrap"
                           >
                             Вивести
                           </button>
@@ -484,12 +484,14 @@ export default function DashboardPage() {
                       .map((deposit) => (
                       <div
                         key={deposit.id}
-                        className="bg-blur/50 border border-gray-medium/50 rounded-lg p-4"
+                        className="bg-blur/50 border border-gray-medium/50 rounded-lg p-3 sm:p-4"
                       >
-                        <div className="flex justify-between items-center mb-3 pb-3 border-b border-gray-medium/30">
-                          <span className="text-sm font-sans text-gray-light">Deposit #{deposit.id}</span>
+                        <div className="flex justify-between items-center gap-2 mb-3 pb-3 border-b border-gray-medium/30">
+                          <span className="text-xs sm:text-sm font-sans text-gray-light truncate flex-1 min-w-0">
+                            Deposit #{deposit.id.slice(0, 8)}...
+                          </span>
                           <span
-                            className={`px-2 py-1 ${getStatusColor(deposit.status)} rounded-full text-xs font-sans whitespace-nowrap`}
+                            className={`px-2 py-1 ${getStatusColor(deposit.status)} rounded-full text-xs font-sans whitespace-nowrap flex-shrink-0`}
                           >
                             {getStatusLabel(deposit.status)}
                           </span>
@@ -565,7 +567,7 @@ export default function DashboardPage() {
                             key={deposit.id}
                             className="border-b border-gray-medium/20 hover:bg-blur/30 transition-colors"
                           >
-                            <td className="py-3 px-4 text-sm font-sans">#{deposit.id}</td>
+                            <td className="py-3 px-4 text-sm font-sans">#{deposit.id.slice(0, 8)}...</td>
                             <td className="py-3 px-4 text-sm font-medium font-sans">${deposit.amount.toFixed(2)}</td>
                             <td className="py-3 px-4 text-sm font-medium font-sans text-orange-400">
                               {(deposit.withdrawn || 0) > 0 ? `-$${(deposit.withdrawn || 0).toFixed(2)}` : '—'}
