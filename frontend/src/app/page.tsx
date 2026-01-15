@@ -34,26 +34,23 @@ export default function Home() {
       <main className="min-h-screen">
         <section className="relative min-h-[90vh] flex items-center justify-center px-4 sm:px-6 lg:px-8">
           <div className="text-center max-w-4xl mx-auto">
-            <div className="mb-8 flex justify-center">
+            <div className="mb-6 flex justify-center">
               <Image
-                src="/logo.png"
+                src="/image.png"
                 alt="Conglomerate Group"
-                width={240}
-                height={240}
-                className="rounded-lg"
+                width={600}
+                height={200}
+                className="object-contain"
                 priority
               />
             </div>
-
-            <h1 className="text-5xl sm:text-6xl lg:text-7xl font-bold mb-6 tracking-tight">CONGLOMERATE GROUP</h1>
 
             <p className="text-2xl sm:text-3xl text-silver font-medium mb-12 tracking-wide">
               Білий трафік — чорні цифри
             </p>
 
             <p className="text-lg sm:text-xl text-gray-light mb-12 max-w-2xl mx-auto leading-relaxed">
-              Закрита інвестиційна онлайн-платформа для роботи з криптовалютними активами. Швидкі транзакції, мінімальні
-              комісії, максимальна конфіденційність.
+              Закрита інвестиційна платформа для заробітку на арбітражі трафіку. Інвестуйте в цифрові активи та отримуйте стабільний прибуток від професійної роботи з трафіком.
             </p>
 
             <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
@@ -81,12 +78,12 @@ export default function Home() {
               <div className="space-y-6">
                 <h3 className="text-2xl font-bold text-silver">Що це за платформа</h3>
                 <p className="text-gray-light leading-relaxed">
-                  Conglomerate Group — це закрита інвестиційна онлайн-платформа, яка дозволяє користувачам інвестувати
-                  кошти та отримувати прибуток у цифровому форматі.
+                  Conglomerate Group — це закрита інвестиційна платформа, що спеціалізується на арбітражі трафіку. 
+                  Ми дозволяємо користувачам інвестувати кошти та заробляти на професійній роботі з рекламним трафіком.
                 </p>
                 <p className="text-gray-light leading-relaxed">
-                  Платформа створена для роботи з криптовалютними активами, що забезпечує швидкі транзакції, мінімальні
-                  комісії, глобальну доступність та високий рівень конфіденційності.
+                  Розрахунки здійснюються виключно в криптовалюті — це забезпечує швидкі транзакції, мінімальні комісії, 
+                  глобальну доступність та максимальну конфіденційність для наших інвесторів.
                 </p>
               </div>
 

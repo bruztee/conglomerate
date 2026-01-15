@@ -691,13 +691,47 @@ export async function handleVerifyEmail(request: Request, env: Env): Promise<Res
     }
     
     // Перевірити чи email підтверджено
-    if (sessionData.user.email_confirmed_at) {
-      console.log('✅ Email verified for user:', sessionData.user.id, sessionData.user.email);
-      return jsonResponse({ message: 'Email verified successfully' });
-    } else {
+    if (!sessionData.user.email_confirmed_at) {
       console.log('⚠️ Email not yet confirmed:', sessionData.user.email);
       return errorResponse('EMAIL_NOT_CONFIRMED', 'Email not yet confirmed', 400);
     }
+    
+    console.log('✅ Email verified for user:', sessionData.user.id, sessionData.user.email);
+    
+    // Отримати профіль користувача
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('*')
+      .eq('id', sessionData.user.id)
+      .single();
+    
+    if (!profile) {
+      return errorResponse('PROFILE_ERROR', 'Profile not found', 404);
+    }
+    
+    await logAudit(env, sessionData.user.id, 'user.email_verified', 'profiles', sessionData.user.id, { email: sessionData.user.email }, request);
+    
+    const response = jsonResponse({
+      message: 'Email verified successfully',
+      user: {
+        id: sessionData.user.id,
+        email: sessionData.user.email || '',
+        role: profile.role,
+        referral_code: profile.referral_code,
+        full_name: profile.full_name,
+      },
+      session: sessionData.session,
+    });
+    
+    // Set httpOnly cookies for session
+    if (sessionData.session?.access_token) {
+      response.headers.append('Set-Cookie', `access_token=${sessionData.session.access_token}; Path=/; HttpOnly; Secure; SameSite=Lax; Max-Age=604800`);
+    }
+    if (sessionData.session?.refresh_token) {
+      response.headers.append('Set-Cookie', `refresh_token=${sessionData.session.refresh_token}; Path=/; HttpOnly; Secure; SameSite=Lax; Max-Age=2592000`);
+    }
+    
+    return response;
   } catch (error) {
     console.error('❌ handleVerifyEmail error:', error);
     return errorResponse('SERVER_ERROR', 'Internal server error', 500);

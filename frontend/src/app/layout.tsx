@@ -31,11 +31,11 @@ const playfair = Playfair_Display({
 })
 
 export const metadata: Metadata = {
-  title: "Conglomerate Group | Білий трафік — чорні цифри",
+  title: "Білий трафік — чорні цифри",
   description: "Закрита інвестиційна онлайн-платформа для роботи з криптовалютними активами",
   icons: {
-    icon: '/logo.png',
-    apple: '/logo.png',
+    icon: '/image.png',
+    apple: '/image.png',
   },
 }
 

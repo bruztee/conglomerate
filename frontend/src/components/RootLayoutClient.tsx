@@ -8,7 +8,7 @@ import AnimatedBackground from '@/components/AnimatedBackground'
 import Footer from '@/components/Footer'
 import PhoneVerificationWrapper from '@/components/PhoneVerificationWrapper'
 
-const publicPaths = ['/auth/login', '/auth/register', '/auth/verify-email', '/auth/forgot-password', '/auth/reset-password']
+const publicPaths = ['/auth/login', '/auth/register', '/auth/verify-email', '/auth/forgot-password', '/auth/reset-password', '/auth/callback']
 
 export default function RootLayoutClient({ children }: { children: React.ReactNode }) {
   const { user, loading } = useAuth()
@@ -21,9 +21,16 @@ export default function RootLayoutClient({ children }: { children: React.ReactNo
     if (loading) return
 
     const isPublicPath = publicPaths.some(path => pathname.startsWith(path))
+    const isSetNamePage = pathname === '/auth/set-name'
 
     // Якщо це публічний шлях - не редиректимо
     if (isPublicPath) {
+      return
+    }
+
+    // Якщо користувач залогінений але не встановив ім'я - редірект на set-name
+    if (user && !user.full_name && !isSetNamePage) {
+      router.replace('/auth/set-name')
       return
     }
 

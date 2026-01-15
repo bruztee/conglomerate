@@ -27,10 +27,16 @@ export async function handleGetWallet(request: Request, env: Env): Promise<Respo
     let totalAccrued = 0;
     let totalLocked = 0;
 
-    (investments || []).forEach(inv => {
-      totalPrincipal += Number(inv.principal);
-      totalAccrued += Number(inv.accrued_interest);
-      totalLocked += Number(inv.locked_amount || 0);
+    (investments || []).forEach((inv, idx) => {
+      const principal = Number(inv.principal);
+      const accrued = Number(inv.accrued_interest);
+      const locked = Number(inv.locked_amount || 0);
+      
+      console.log(`[GET_WALLET] Investment ${idx}: principal=${principal}, accrued=${accrued}, locked_amount=${inv.locked_amount}, locked=${locked}`);
+      
+      totalPrincipal += principal;
+      totalAccrued += accrued;
+      totalLocked += locked;
     });
 
     const balance = totalPrincipal + totalAccrued - totalLocked;

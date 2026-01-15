@@ -34,7 +34,12 @@ export default function AuthCallbackPage() {
           })
           
           if (response.ok) {
-            router.push('/auth/login?verified=true')
+            const data = await response.json()
+            if (data.user && !data.user.full_name) {
+              router.push('/auth/set-name')
+            } else {
+              router.push('/dashboard')
+            }
           } else {
             const data = await response.json()
             setError(data.error?.message || 'Verification failed')

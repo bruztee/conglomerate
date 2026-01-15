@@ -73,7 +73,7 @@ function RegisterForm() {
         <div className="w-full max-w-md">
           <div className="text-center mb-8">
             <h1 className="text-3xl font-bold mb-2">Реєстрація</h1>
-            <p className="text-gray-light">Приєднуйтесь до Conglomerate Group</p>
+            <p className="text-gray-light">Приєднуйтесь до платформи</p>
           </div>
 
           {showVerificationMessage ? (

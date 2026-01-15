@@ -12,7 +12,7 @@ export default function RulesPage() {
         <div className="container mx-auto max-w-4xl">
           <div className="mb-8">
             <h1 className="text-3xl font-bold mb-2">Правила та умови роботи</h1>
-            <p className="text-gray-light">Ознайомтесь з умовами використання платформи Conglomerate Group</p>
+            <p className="text-gray-light">Ознайомтесь з умовами використання платформи</p>
           </div>
 
           <div className="bg-gray-dark border border-gray-medium rounded-lg p-6 sm:p-8 space-y-8">
@@ -20,7 +20,7 @@ export default function RulesPage() {
               <h2 className="text-2xl font-bold mb-4 text-accent">1. Загальні положення</h2>
               <div className="space-y-3 text-gray-light leading-relaxed">
                 <p>
-                  Conglomerate Group — це закрита інвестиційна онлайн-платформа для роботи з криптовалютними активами.
+                  Платформа — це закрита інвестиційна онлайн-платформа для роботи з криптовалютними активами.
                 </p>
                 <p>Використовуючи платформу, користувач підтверджує, що він:</p>
                 <ul className="list-disc list-inside space-y-2 ml-4">
@@ -52,7 +52,7 @@ export default function RulesPage() {
                 <p className="font-medium text-foreground">
                   Користувач несе повну відповідальність за свої інвестиційні рішення.
                 </p>
-                <p>Conglomerate Group не несе відповідальності за:</p>
+                <p>Платформа не несе відповідальності за:</p>
                 <ul className="list-disc list-inside space-y-2 ml-4">
                   <li>Фінансові втрати, пов'язані з ринковими коливаннями</li>
                   <li>Затримки, викликані роботою блокчейн-мереж</li>
@@ -172,7 +172,7 @@ export default function RulesPage() {
             <section>
               <h2 className="text-2xl font-bold mb-4 text-accent">10. Зміна умов</h2>
               <div className="space-y-3 text-gray-light leading-relaxed">
-                <p>Conglomerate Group залишає за собою право змінювати ці правила в будь-який час.</p>
+                <p>Платформа залишає за собою право змінювати ці правила в будь-який час.</p>
                 <p>Користувачі будуть повідомлені про значні зміни через:</p>
                 <ul className="list-disc list-inside space-y-2 ml-4">
                   <li>Email повідомлення</li>
@@ -208,7 +208,7 @@ export default function RulesPage() {
                 року
               </p>
               <p className="text-sm text-gray-light text-center mt-2">
-                © <span className="font-sans">2026</span> Conglomerate Group. Всі права захищені.
+                © <span className="font-sans">2026</span>. Всі права захищені.
               </p>
             </div>
           </div>

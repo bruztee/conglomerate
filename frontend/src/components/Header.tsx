@@ -46,8 +46,7 @@ export default function Header({ isAuthenticated = false }: HeaderProps) {
         <div className="flex h-16 items-center justify-between">
           <div className="flex items-center gap-8">
             <Link href="/" className="flex items-center gap-3 hover:opacity-80 transition-opacity">
-              <Image src="/logo.png" alt="Conglomerate Group" width={40} height={40} className="rounded" />
-              <span className="text-xl font-bold tracking-tight hidden sm:inline font-sans">CONGLOMERATE GROUP</span>
+              <Image src="/image.png" alt="Conglomerate Group" width={180} height={60} className="object-contain" />
             </Link>
           </div>
 

@@ -37,7 +37,6 @@ export default function AdminSidebar() {
     <div className="w-64 bg-gray-dark border-r border-gray-medium min-h-screen flex flex-col">
       <div className="p-6">
         <h1 className="text-xl font-bold text-silver mb-1">Адмін-панель</h1>
-        <p className="text-xs text-gray-light">Conglomerate Group</p>
       </div>
 
       <nav className="px-3 flex-1">

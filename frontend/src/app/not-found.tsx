@@ -11,8 +11,7 @@ export default function NotFound() {
         <div className="container mx-auto px-4 sm:px-6 lg:px-8 relative">
           <div className="flex h-16 items-center justify-center">
             <Link href="/" className="flex items-center gap-3 hover:opacity-80 transition-opacity">
-              <Image src="/logo.png" alt="Conglomerate Group" width={40} height={40} className="rounded" />
-              <span className="text-xl font-bold tracking-tight font-sans">CONGLOMERATE GROUP</span>
+              <Image src="/image.png" alt="Conglomerate Group" width={180} height={60} className="object-contain" />
             </Link>
           </div>
         </div>

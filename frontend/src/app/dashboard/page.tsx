@@ -15,6 +15,7 @@ import { useAuth } from "@/context/AuthContext"
 import { api } from "@/lib/api"
 import { useRouter } from "next/navigation"
 import Loading from "@/components/Loading"
+import DepositFlow from "@/components/DepositFlow"
 
 interface Deposit {
   id: string
@@ -27,6 +28,7 @@ interface Deposit {
   status: string
   isFrozen?: boolean
   withdrawn?: number
+  locked?: number
 }
 
 export default function DashboardPage() {
@@ -34,14 +36,11 @@ export default function DashboardPage() {
   const { user, loading: authLoading } = useAuth()
   
   // ВСІ useState МАЮТЬ БУТИ НА ПОЧАТКУ
-  const [amount, setAmount] = useState("")
   const [userBalance, setUserBalance] = useState(0)
   const [frozenAmount, setFrozenAmount] = useState(0)
   const [userProfit, setUserProfit] = useState(0)
   const [totalInvestments, setTotalInvestments] = useState(0)
   const [loading, setLoading] = useState(true)
-  const [paymentMethods, setPaymentMethods] = useState<any[]>([])
-  const [selectedMethod, setSelectedMethod] = useState<any>(null)
   const [activeDeposits, setActiveDeposits] = useState<Deposit[]>([])
   const [depositHistory, setDepositHistory] = useState<Deposit[]>([])
   const [profitPercentage, setProfitPercentage] = useState(5) // Актуальний % користувача з БД
@@ -55,15 +54,6 @@ export default function DashboardPage() {
   if (!user) {
     router.push('/auth/login')
     return null
-  }
-
-  const quickAmounts = [100, 500, 1000, 5000, 10000]
-
-  const plan = {
-    profit: `${profitPercentage}%`,
-    minAmount: 100,
-    maxAmount: 100000,
-    duration: "30 днів",
   }
 
   const handleWithdraw = (depositId: string) => {
@@ -143,18 +133,6 @@ export default function DashboardPage() {
         setProfitPercentage(userData?.monthly_percentage || 5)
       }
 
-      // Fetch active payment methods (PUBLIC endpoint)
-      const paymentMethodsResponse = await api.getActivePaymentMethods()
-      if (paymentMethodsResponse.success && paymentMethodsResponse.data?.payment_methods) {
-        const activeMethods = paymentMethodsResponse.data.payment_methods
-        setPaymentMethods(activeMethods)
-        if (activeMethods.length > 0) {
-          // Рандомно вибрати один метод
-          const randomIndex = Math.floor(Math.random() * activeMethods.length)
-          setSelectedMethod(activeMethods[randomIndex])
-        }
-      }
-
       // Fetch investments для отримання accrued_interest
       const investmentsResult = await api.getInvestments()
       const investmentsMap = new Map()
@@ -231,13 +209,17 @@ export default function DashboardPage() {
             generatedProfit = currentAccrued
           }
           
+          // ЗАМОРОЖЕНО: locked_amount з investment
+          const lockedAmount = investment ? parseFloat(investment.locked_amount || 0) : 0
+          
           return {
             id: d.id,
             amount: originalAmount, // Початкова сума депозиту
             currentAmount: currentPrincipal + currentAccrued, // Поточна сума
             withdrawn: withdrawnAmount, // Реальна виведена сума з withdrawals
             profit: generatedProfit, // Згенерований профіт
-            percentage: d.monthly_percentage || profitPercentage,
+            locked: lockedAmount, // Заморожено
+            percentage: investment ? parseFloat(investment.rate_monthly || profitPercentage) : profitPercentage,
             date: d.created_at, // Дата створення депозиту
             withdrawDate: withdrawDate, // Дата закриття позиції (якщо є)
             status: displayStatus, // investment.status (active/closed)
@@ -251,29 +233,88 @@ export default function DashboardPage() {
     fetchData()
   }, [user, router])
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
+  const handleDepositSuccess = async () => {
+    setLoading(true)
     
-    const result = await api.createDeposit(parseFloat(amount))
-    if (result.success) {
-      // Refresh deposits list
-      const depositsResult = await api.getDeposits()
-      if (depositsResult.success && depositsResult.data) {
-        const data = depositsResult.data as any
-        const deposits = data.deposits || []
-        const active = deposits.filter((d: any) => d.status === 'confirmed' || d.status === 'pending' || d.status === 'withdrawal_pending')
-        
-        setActiveDeposits(active.map((d: any) => ({
+    // Refresh data after successful deposit
+    const walletResult = await api.getWallet()
+    if (walletResult.success && walletResult.data) {
+      const data = walletResult.data as any
+      setUserBalance(data.balance || 0)
+      setFrozenAmount(data.locked_amount || 0)
+      setUserProfit(data.total_profit || 0)
+      setTotalInvestments(data.total_invested || 0)
+    }
+    
+    // Refresh deposits and investments
+    const depositsResult = await api.getDeposits()
+    const investmentsResult = await api.getInvestments()
+    
+    if (depositsResult.success && investmentsResult.success) {
+      const deposits = (depositsResult.data as any)?.deposits || []
+      const investments = (investmentsResult.data as any)?.investments || []
+      
+      const investmentsMap = new Map()
+      investments.forEach((inv: any) => {
+        if (inv.deposit_id) {
+          investmentsMap.set(inv.deposit_id, inv)
+        }
+      })
+      
+      const active = deposits.filter((d: any) => {
+        const investment = investmentsMap.get(d.id)
+        return investment && investment.status === 'active'
+      })
+      
+      setActiveDeposits(active.map((d: any) => {
+        const investment = investmentsMap.get(d.id)
+        return {
           id: d.id,
           amount: parseFloat(d.amount),
-          profit: 0,
+          frozen: investment ? parseFloat(investment.locked_amount || 0) : 0,
+          profit: investment ? parseFloat(investment.accrued_interest || 0) : 0,
           percentage: d.monthly_percentage || profitPercentage,
           date: d.created_at,
           status: d.status,
-        })))
-      }
-      setAmount('')
+          isFrozen: investment?.is_frozen || false,
+        }
+      }))
+      
+      // Update deposit history
+      setDepositHistory(deposits.map((d: any) => {
+        const investment = investmentsMap.get(d.id)
+        const originalAmount = parseFloat(d.amount)
+        const currentPrincipal = investment ? parseFloat(investment.principal || 0) : originalAmount
+        const currentAccrued = investment ? parseFloat(investment.accrued_interest || 0) : 0
+        const withdrawnAmount = investment?.total_withdrawn ? parseFloat(investment.total_withdrawn) : 0
+        const displayStatus = investment?.status || 'pending'
+        const withdrawDate = investment?.closed_at || null
+        
+        let generatedProfit = 0
+        if (displayStatus === 'closed') {
+          generatedProfit = withdrawnAmount - originalAmount
+        } else {
+          generatedProfit = currentAccrued
+        }
+        
+        const lockedAmount = investment ? parseFloat(investment.locked_amount || 0) : 0
+        
+        return {
+          id: d.id,
+          amount: originalAmount,
+          currentAmount: currentPrincipal + currentAccrued,
+          withdrawn: withdrawnAmount,
+          profit: generatedProfit,
+          locked: lockedAmount,
+          percentage: investment ? parseFloat(investment.rate_monthly || profitPercentage) : profitPercentage,
+          date: d.created_at,
+          withdrawDate: withdrawDate,
+          status: displayStatus,
+        }
+      }))
     }
+    
+    setLoading(false)
   }
 
   if (loading) {
@@ -333,129 +374,7 @@ export default function DashboardPage() {
 
           {/* Deposit Creation and Active Deposits */}
           <div className="grid lg:grid-cols-2 gap-6 mb-8">
-            <div className="bg-gray-dark/20 border border-gray-medium/30 rounded-lg p-6">
-              <h2 className="text-xl font-bold mb-4">Створити депозит</h2>
-
-              <div className="bg-background/50 border border-silver/30 rounded-lg p-4 mb-6">
-                <h3 className="font-bold mb-3 text-silver">Інвестиційний план</h3>
-                <div className="grid grid-cols-3 gap-4 text-sm">
-                  <div>
-                    <div className="text-gray-light text-xs mb-1">Прибуток</div>
-                    <div className="font-bold text-silver font-sans">{plan.profit}</div>
-                  </div>
-                  <div>
-                    <div className="text-gray-light text-xs mb-1">Мінімум</div>
-                    <div className="font-bold font-sans">${plan.minAmount}</div>
-                  </div>
-                  <div>
-                    <div className="text-gray-light text-xs mb-1">Максимум</div>
-                    <div className="font-bold font-sans">${plan.maxAmount}</div>
-                  </div>
-                </div>
-                <div className="mt-3 pt-3 border-t border-gray-medium/30">
-                  <div className="text-xs text-gray-light">Термін: {plan.duration}</div>
-                </div>
-              </div>
-
-              <form onSubmit={handleSubmit} className="space-y-4">
-                {/* Payment Method Info */}
-                {selectedMethod && (
-                  <div className="bg-silver/10 border border-silver/30 rounded-lg p-4">
-                    <div className="text-xs text-gray-light mb-2">Реквізити для депозиту:</div>
-                    <div className="space-y-2">
-                      <div className="flex justify-between items-center">
-                        <span className="text-sm text-gray-light">Валюта:</span>
-                        <span className="font-bold text-silver font-sans">{selectedMethod.currency}</span>
-                      </div>
-                      <div className="flex justify-between items-center">
-                        <span className="text-sm text-gray-light">Мережа:</span>
-                        <span className="font-medium font-sans">{selectedMethod.network}</span>
-                      </div>
-                      <div className="pt-2 border-t border-gray-medium/30">
-                        <div className="text-xs text-gray-light mb-1">Адреса гаманця:</div>
-                        <div className="font-mono text-sm bg-background p-2 rounded break-all">
-                          {selectedMethod.wallet_address}
-                        </div>
-                        <button
-                          type="button"
-                          onClick={() => navigator.clipboard.writeText(selectedMethod.wallet_address)}
-                          className="flex items-center gap-1 text-xs text-silver hover:text-foreground mt-2"
-                        >
-                          <CopyIcon className="w-4 h-4" />
-                          Копіювати адресу
-                        </button>
-                      </div>
-                      {selectedMethod.min_amount > 0 && (
-                        <div className="flex items-center gap-1 text-xs text-yellow-500">
-                          <WarningIcon className="w-4 h-4" />
-                          Мінімальна сума: ${selectedMethod.min_amount}
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                )}
-
-                <div>
-                  <label htmlFor="amount" className="block text-sm font-medium mb-2">
-                    Сума депозиту
-                  </label>
-                  <div className="relative">
-                    <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-light font-sans">$</span>
-                    <input
-                      type="number"
-                      id="amount"
-                      value={amount}
-                      onChange={(e) => setAmount(e.target.value)}
-                      className="w-full pl-8 pr-4 py-3 bg-background border border-gray-medium rounded-lg focus:outline-none focus:border-silver transition-colors font-sans"
-                      placeholder="0.00"
-                      min={plan.minAmount}
-                      max={plan.maxAmount}
-                    />
-                  </div>
-                  <div className="flex flex-wrap gap-2 mt-3">
-                    {quickAmounts.map((quickAmount) => (
-                      <button
-                        key={quickAmount}
-                        type="button"
-                        onClick={() => setAmount(quickAmount.toString())}
-                        className="px-3 py-1.5 bg-gray-dark/50 hover:bg-silver/20 border border-gray-medium hover:border-silver text-sm rounded-lg transition-colors font-sans"
-                      >
-                        ${quickAmount}
-                      </button>
-                    ))}
-                  </div>
-                  <p className="text-xs text-gray-light mt-2">
-                    Від <span className="font-sans">${plan.minAmount}</span> до{" "}
-                    <span className="font-sans">${plan.maxAmount}</span>
-                  </p>
-                </div>
-
-                <div className="bg-background border border-gray-medium rounded-lg p-4">
-                  <div className="text-sm text-gray-light mb-2">
-                    Очікуваний прибуток (<span className="font-sans">{profitPercentage}%</span> місячних)
-                  </div>
-                  <div className="text-2xl font-bold text-silver font-sans">
-                    {amount ? `$${((Number.parseFloat(amount) * profitPercentage) / 100).toFixed(2)}` : "$0.00"}
-                  </div>
-                  <div className="text-xs text-gray-light mt-1">за {plan.duration}</div>
-                </div>
-
-                <button
-                  type="submit"
-                  disabled={!amount || Number.parseFloat(amount) < plan.minAmount || !selectedMethod}
-                  className="btn-gradient-primary w-full px-4 py-3 disabled:bg-gray-medium disabled:cursor-not-allowed text-foreground font-bold rounded-lg transition-colors font-sans"
-                >
-                  {selectedMethod ? 'Я оплатив - Підтвердити' : 'Немає доступних методів оплати'}
-                </button>
-
-                {selectedMethod && (
-                  <p className="flex items-center justify-center gap-1 text-xs text-gray-light">
-                    <WarningIcon className="w-4 h-4" />
-                    Натисніть кнопку ТІЛЬКИ після відправки коштів на вказану адресу
-                  </p>
-                )}
-              </form>
-            </div>
+            <DepositFlow onSuccess={handleDepositSuccess} />
 
             <div className="bg-gray-dark/20 border border-gray-medium/30 rounded-lg p-6">
               <h2 className="text-xl font-bold mb-4">Активні депозити</h2>
@@ -472,12 +391,12 @@ export default function DashboardPage() {
                           <div className="text-xs text-gray-light mb-1">Депозит</div>
                           <div className="text-2xl font-bold text-silver font-sans">${deposit.amount.toFixed(2)}</div>
                           {deposit.frozen > 0 && (
-                            <div className="text-xs text-orange-400 mt-1">
+                            <div className="text-xs text-gray-light mt-1">
                               Заморожено: ${deposit.frozen.toFixed(2)}
                             </div>
                           )}
                           {deposit.frozen > 0 && (
-                            <div className="text-xs text-green-400 mt-1">
+                            <div className="text-xs text-white mt-1">
                               Доступно: ${Math.max(0, deposit.amount - deposit.frozen).toFixed(2)}
                             </div>
                           )}
@@ -497,7 +416,7 @@ export default function DashboardPage() {
                               Заморожен
                             </span>
                           ) : (
-                            <span className={`inline-block px-2 py-1 rounded text-xs ${getStatusColor(deposit.status)}`}>
+                            <span className={`inline-block px-2 py-1 rounded text-xs whitespace-nowrap ${getStatusColor(deposit.status)}`}>
                               {getStatusLabel(deposit.status)}
                             </span>
                           )}
@@ -531,53 +450,122 @@ export default function DashboardPage() {
               <h2 className="text-xl font-bold mb-4">Історія депозитів</h2>
 
               {depositHistory.length > 0 ? (
-                <div className="overflow-x-auto">
-                  <table className="w-full">
-                    <thead>
-                      <tr className="border-b border-gray-medium/30">
-                        <th className="text-left py-3 px-4 text-sm font-medium text-gray-light font-sans">ID</th>
-                        <th className="text-left py-3 px-4 text-sm font-medium text-gray-light">Початкова сума</th>
-                        <th className="text-left py-3 px-4 text-sm font-medium text-gray-light">Виведено</th>
-                        <th className="text-left py-3 px-4 text-sm font-medium text-gray-light">Процент</th>
-                        <th className="text-left py-3 px-4 text-sm font-medium text-gray-light">Профіт</th>
-                        <th className="text-left py-3 px-4 text-sm font-medium text-gray-light">Дата створення</th>
-                        <th className="text-left py-3 px-4 text-sm font-medium text-gray-light">Дата виводу</th>
-                        <th className="text-left py-3 px-4 text-sm font-medium text-gray-light">Статус</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {depositHistory.map((deposit) => (
-                        <tr
-                          key={deposit.id}
-                          className="border-b border-gray-medium/20 hover:bg-background/30 transition-colors"
-                        >
-                          <td className="py-3 px-4 text-sm font-sans">#{deposit.id}</td>
-                          <td className="py-3 px-4 text-sm font-medium font-sans">${deposit.amount.toFixed(2)}</td>
-                          <td className="py-3 px-4 text-sm font-medium font-sans text-orange-400">
-                            {(deposit.withdrawn || 0) > 0 ? `-$${(deposit.withdrawn || 0).toFixed(2)}` : '—'}
-                          </td>
-                          <td className="py-3 px-4 text-sm font-sans text-silver">{deposit.percentage}%</td>
-                          <td className="py-3 px-4 text-sm font-medium text-silver font-sans">
-                            +${deposit.profit.toFixed(2)}
-                          </td>
-                          <td className="py-3 px-4 text-sm text-gray-light">
-                            {new Date(deposit.date).toLocaleDateString("uk-UA")}
-                          </td>
-                          <td className="py-3 px-4 text-sm text-gray-light">
-                            {deposit.withdrawDate ? new Date(deposit.withdrawDate).toLocaleDateString("uk-UA") : '—'}
-                          </td>
-                          <td className="py-3 px-4">
-                            <span
-                              className={`px-3 py-1 ${getStatusColor(deposit.status)} rounded-full text-xs font-sans`}
-                            >
-                              {getStatusLabel(deposit.status)}
-                            </span>
-                          </td>
+                <>
+                  {/* Mobile Cards */}
+                  <div className="md:hidden space-y-4">
+                    {depositHistory.map((deposit) => (
+                      <div
+                        key={deposit.id}
+                        className="bg-background/50 border border-gray-medium/50 rounded-lg p-4"
+                      >
+                        <div className="flex justify-between items-center mb-3 pb-3 border-b border-gray-medium/30">
+                          <span className="text-sm font-sans text-gray-light">Deposit #{deposit.id}</span>
+                          <span
+                            className={`px-2 py-1 ${getStatusColor(deposit.status)} rounded-full text-xs font-sans whitespace-nowrap`}
+                          >
+                            {getStatusLabel(deposit.status)}
+                          </span>
+                        </div>
+                        
+                        <div className="grid grid-cols-2 gap-3 text-sm">
+                          <div>
+                            <div className="text-xs text-gray-light mb-1">Сума</div>
+                            <div className="font-medium font-sans">${deposit.amount.toFixed(2)}</div>
+                          </div>
+                          <div>
+                            <div className="text-xs text-gray-light mb-1">Профіт</div>
+                            <div className="font-medium text-silver font-sans">+${deposit.profit.toFixed(2)}</div>
+                          </div>
+                          {(deposit.locked || 0) > 0 && (
+                            <div>
+                              <div className="text-xs text-gray-light mb-1">Заморожено</div>
+                              <div className="font-medium font-sans text-gray-light">${(deposit.locked || 0).toFixed(2)}</div>
+                            </div>
+                          )}
+                          {(deposit.locked || 0) > 0 && (
+                            <div>
+                              <div className="text-xs text-gray-light mb-1">Доступно</div>
+                              <div className="font-medium font-sans">${Math.max(0, deposit.amount - (deposit.locked || 0)).toFixed(2)}</div>
+                            </div>
+                          )}
+                          <div>
+                            <div className="text-xs text-gray-light mb-1">Процент</div>
+                            <div className="font-medium text-silver font-sans">{deposit.percentage}%</div>
+                          </div>
+                          <div>
+                            <div className="text-xs text-gray-light mb-1">Дата</div>
+                            <div className="font-medium text-gray-light">{new Date(deposit.date).toLocaleDateString("uk-UA")}</div>
+                          </div>
+                          {(deposit.withdrawn || 0) > 0 && (
+                            <div className="col-span-2">
+                              <div className="text-xs text-gray-light mb-1">Виведено</div>
+                              <div className="font-medium font-sans text-orange-400">-${(deposit.withdrawn || 0).toFixed(2)}</div>
+                            </div>
+                          )}
+                          {deposit.withdrawDate && (
+                            <div className="col-span-2">
+                              <div className="text-xs text-gray-light mb-1">Дата виводу</div>
+                              <div className="font-medium text-gray-light">{new Date(deposit.withdrawDate).toLocaleDateString("uk-UA")}</div>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* Desktop Table */}
+                  <div className="hidden md:block overflow-x-auto">
+                    <table className="w-full">
+                      <thead>
+                        <tr className="border-b border-gray-medium/30">
+                          <th className="text-left py-3 px-4 text-sm font-medium text-gray-light font-sans">ID</th>
+                          <th className="text-left py-3 px-4 text-sm font-medium text-gray-light">Початкова сума</th>
+                          <th className="text-left py-3 px-4 text-sm font-medium text-gray-light">Виведено</th>
+                          <th className="text-left py-3 px-4 text-sm font-medium text-gray-light">Заморожено</th>
+                          <th className="text-left py-3 px-4 text-sm font-medium text-gray-light">Процент</th>
+                          <th className="text-left py-3 px-4 text-sm font-medium text-gray-light">Профіт</th>
+                          <th className="text-left py-3 px-4 text-sm font-medium text-gray-light">Дата створення</th>
+                          <th className="text-left py-3 px-4 text-sm font-medium text-gray-light">Дата виводу</th>
+                          <th className="text-left py-3 px-4 text-sm font-medium text-gray-light">Статус</th>
                         </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
+                      </thead>
+                      <tbody>
+                        {depositHistory.map((deposit) => (
+                          <tr
+                            key={deposit.id}
+                            className="border-b border-gray-medium/20 hover:bg-background/30 transition-colors"
+                          >
+                            <td className="py-3 px-4 text-sm font-sans">#{deposit.id}</td>
+                            <td className="py-3 px-4 text-sm font-medium font-sans">${deposit.amount.toFixed(2)}</td>
+                            <td className="py-3 px-4 text-sm font-medium font-sans text-orange-400">
+                              {(deposit.withdrawn || 0) > 0 ? `-$${(deposit.withdrawn || 0).toFixed(2)}` : '—'}
+                            </td>
+                            <td className="py-3 px-4 text-sm font-medium font-sans text-gray-light">
+                              {(deposit.locked || 0) > 0 ? `$${(deposit.locked || 0).toFixed(2)}` : '—'}
+                            </td>
+                            <td className="py-3 px-4 text-sm font-sans text-silver">{deposit.percentage}%</td>
+                            <td className="py-3 px-4 text-sm font-medium text-silver font-sans">
+                              +${deposit.profit.toFixed(2)}
+                            </td>
+                            <td className="py-3 px-4 text-sm text-gray-light">
+                              {new Date(deposit.date).toLocaleDateString("uk-UA")}
+                            </td>
+                            <td className="py-3 px-4 text-sm text-gray-light">
+                              {deposit.withdrawDate ? new Date(deposit.withdrawDate).toLocaleDateString("uk-UA") : '—'}
+                            </td>
+                            <td className="py-3 px-4">
+                              <span
+                                className={`px-3 py-1 ${getStatusColor(deposit.status)} rounded-full text-xs font-sans whitespace-nowrap`}
+                              >
+                                {getStatusLabel(deposit.status)}
+                              </span>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </>
               ) : (
                 <div className="text-center py-8 text-gray-light">
                   <p>Історія депозитів пуста</p>

@@ -11,7 +11,7 @@ import { useAuth } from "@/context/AuthContext"
 export default function LoginPage() {
   const router = useRouter()
   const searchParams = useSearchParams()
-  const { login, user, loading: authLoading } = useAuth()
+  const { login, user, loading: authLoading, refreshUser } = useAuth()
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
   const [error, setError] = useState("")
@@ -61,9 +61,8 @@ export default function LoginPage() {
     const result = await login(email, password)
     
     if (result.success) {
-      // Redirect to returnUrl або dashboard
-      const redirectTo = returnUrl || '/dashboard'
-      router.push(redirectTo)
+      await refreshUser()
+      router.push('/dashboard')
     } else {
       if (result.error?.code === 'EMAIL_NOT_VERIFIED') {
         router.push(`/auth/verify-email?email=${encodeURIComponent(email)}`)
