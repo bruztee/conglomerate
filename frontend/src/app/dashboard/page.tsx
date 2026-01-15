@@ -72,6 +72,10 @@ export default function DashboardPage() {
 
   const getStatusLabel = (status: string) => {
     switch (status) {
+      case "active":
+        return "Активний"
+      case "closed":
+        return "Виведено"
       case "pending":
         return "Очікує підтвердження"
       case "confirmed":
@@ -91,6 +95,10 @@ export default function DashboardPage() {
 
   const getStatusColor = (status: string) => {
     switch (status) {
+      case "active":
+        return "bg-green-500/20 text-green-400"
+      case "closed":
+        return "bg-gray-500/20 text-gray-400"
       case "pending":
         return "bg-yellow-500/20 text-yellow-400"
       case "confirmed":
@@ -199,18 +207,40 @@ export default function DashboardPage() {
         setDepositHistory(deposits.map((d: any) => {
           const investment = investmentsMap.get(d.id)
           const originalAmount = parseFloat(d.amount) // Початкова сума депозиту
-          const currentAmount = investment ? parseFloat(investment.principal || 0) : originalAmount
-          const withdrawnAmount = originalAmount - currentAmount // Виведено = початкова - поточна
+          const currentPrincipal = investment ? parseFloat(investment.principal || 0) : originalAmount
+          const currentAccrued = investment ? parseFloat(investment.accrued_interest || 0) : 0
+          
+          // ВИВЕДЕНО: брати з investment.total_withdrawn (реальна сума з withdrawals)
+          const withdrawnAmount = investment?.total_withdrawn ? parseFloat(investment.total_withdrawn) : 0
+          
+          // СТАТУС: показувати investment.status (active/closed), а не deposit.status
+          const displayStatus = investment?.status || 'pending'
+          
+          // ДАТА ВИВОДУ: якщо позиція закрита - показувати investment.closed_at
+          const withdrawDate = investment?.closed_at || null
+          
+          // PROFIT: ВЕСЬ згенерований профіт
+          // Якщо закрито: withdrawn - original (бо всі кошти виведено)
+          // Якщо активно: current_accrued (поточний нарахований)
+          let generatedProfit = 0
+          if (displayStatus === 'closed') {
+            // Закрита позиція: профіт = виведено - початкова сума
+            generatedProfit = withdrawnAmount - originalAmount
+          } else {
+            // Активна позиція: поточний accrued_interest
+            generatedProfit = currentAccrued
+          }
+          
           return {
             id: d.id,
-            amount: originalAmount, // Показуємо початкову суму
-            currentAmount: currentAmount, // Поточна сума (якщо потрібно)
-            withdrawn: withdrawnAmount, // Виведено
-            profit: investment ? parseFloat(investment.accrued_interest || 0) : 0,
+            amount: originalAmount, // Початкова сума депозиту
+            currentAmount: currentPrincipal + currentAccrued, // Поточна сума
+            withdrawn: withdrawnAmount, // Реальна виведена сума з withdrawals
+            profit: generatedProfit, // Згенерований профіт
             percentage: d.monthly_percentage || profitPercentage,
-            date: d.created_at,
-            withdrawDate: d.confirmed_at || d.updated_at,
-            status: d.status,
+            date: d.created_at, // Дата створення депозиту
+            withdrawDate: withdrawDate, // Дата закриття позиції (якщо є)
+            status: displayStatus, // investment.status (active/closed)
           }
         }))
       }
@@ -511,6 +541,7 @@ export default function DashboardPage() {
                         <th className="text-left py-3 px-4 text-sm font-medium text-gray-light">Процент</th>
                         <th className="text-left py-3 px-4 text-sm font-medium text-gray-light">Профіт</th>
                         <th className="text-left py-3 px-4 text-sm font-medium text-gray-light">Дата створення</th>
+                        <th className="text-left py-3 px-4 text-sm font-medium text-gray-light">Дата виводу</th>
                         <th className="text-left py-3 px-4 text-sm font-medium text-gray-light">Статус</th>
                       </tr>
                     </thead>
@@ -531,6 +562,9 @@ export default function DashboardPage() {
                           </td>
                           <td className="py-3 px-4 text-sm text-gray-light">
                             {new Date(deposit.date).toLocaleDateString("uk-UA")}
+                          </td>
+                          <td className="py-3 px-4 text-sm text-gray-light">
+                            {deposit.withdrawDate ? new Date(deposit.withdrawDate).toLocaleDateString("uk-UA") : '—'}
                           </td>
                           <td className="py-3 px-4">
                             <span
