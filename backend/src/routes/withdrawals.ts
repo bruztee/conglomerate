@@ -10,17 +10,13 @@ export async function handleCreateWithdrawal(request: Request, env: Env): Promis
     const user = await requireAuth(request, env);
     console.log('[CREATE_WITHDRAWAL] User authenticated:', user.id);
     
-    const body = await request.json() as { 
-      amount: number; 
+    const body = await request.json() as {
+      amount?: number;
+      close?: boolean;
       destination: any;
       selected_deposit_id?: string;
     };
-    console.log('[CREATE_WITHDRAWAL] Request body:', JSON.stringify({ amount: body.amount, has_destination: !!body.destination, selected_deposit_id: body.selected_deposit_id }));
-    
-    if (!body.amount || body.amount <= 0) {
-      console.log('[CREATE_WITHDRAWAL] Validation error: Invalid amount');
-      return errorResponse('VALIDATION_ERROR', 'Invalid amount', 400);
-    }
+    console.log('[CREATE_WITHDRAWAL] Request body:', JSON.stringify(body));
     
     if (!body.destination) {
       console.log('[CREATE_WITHDRAWAL] Validation error: Destination required');
@@ -29,10 +25,11 @@ export async function handleCreateWithdrawal(request: Request, env: Env): Promis
     
     const supabase = createServiceSupabaseClient(env);
     
-    console.log('[CREATE_WITHDRAWAL] Fetching active investment...');
+    // Знайти investment_id
+    console.log('[CREATE_WITHDRAWAL] Finding investment...');
     let investmentQuery = supabase
       .from('investments')
-      .select('id, principal, accrued_interest, locked_amount, deposit_id')
+      .select('id')
       .eq('user_id', user.id)
       .eq('status', 'active');
 
@@ -41,98 +38,59 @@ export async function handleCreateWithdrawal(request: Request, env: Env): Promis
       investmentQuery = investmentQuery.eq('deposit_id', body.selected_deposit_id);
     }
 
-    const { data: investments, error: investmentsError } = await investmentQuery;
+    const { data: investments } = await investmentQuery;
     
-    if (investmentsError || !investments || investments.length === 0) {
-      console.log('[CREATE_WITHDRAWAL] No active investment found, error:', investmentsError);
+    if (!investments || investments.length === 0) {
+      console.log('[CREATE_WITHDRAWAL] No active investment found');
       return errorResponse('NO_ACTIVE_INVESTMENT', 'No active investment found', 404);
     }
     
-    const investment = investments[0];
-    console.log('[CREATE_WITHDRAWAL] Investment found:', investment.id);
+    const investmentId = investments[0].id;
+    console.log('[CREATE_WITHDRAWAL] Investment found:', investmentId);
     
-    const principal = Number(investment.principal);
-    const accruedInterest = Number(investment.accrued_interest);
-    const currentLocked = Number(investment.locked_amount || 0);
-    const totalValue = principal + accruedInterest;
-    const availableAmount = totalValue - currentLocked;
+    // БЕТОН: Викликати SQL функцію - вона зробить ВСЕ атомарно
+    // lock, accrue, calculate, reserve, create withdrawal
+    const requestedAmount = body.close ? null : body.amount; // NULL = withdraw ALL
+    console.log('[CREATE_WITHDRAWAL] Calling request_withdrawal RPC, amount:', requestedAmount, 'close:', body.close);
     
-    console.log('[CREATE_WITHDRAWAL] Balances - principal:', principal, 'accrued:', accruedInterest, 'locked:', currentLocked, 'available:', availableAmount);
+    const { data, error } = await supabase.rpc('request_withdrawal', {
+      p_user_id: user.id,
+      p_investment_id: investmentId,
+      p_requested_amount: requestedAmount,
+      p_destination: body.destination,
+    });
     
-    // Якщо користувач хоче full withdrawal - берем ВСЮ доступну суму незалежно від amount з фронту
-    // Це уникає race condition коли між відкриттям сторінки і submit крон нарахував проценти
-    const requestedAmount = body.amount;
-    const isFullWithdrawalRequest = Math.abs(requestedAmount - availableAmount) < 0.02; // Tolerance для round-off errors
-    const actualAmount = isFullWithdrawalRequest ? availableAmount : requestedAmount;
-    
-    console.log('[CREATE_WITHDRAWAL] Requested:', requestedAmount, 'Available:', availableAmount, 'Is full:', isFullWithdrawalRequest, 'Actual:', actualAmount);
-    
-    if (availableAmount < actualAmount) {
-      console.log('[CREATE_WITHDRAWAL] Insufficient funds - requested:', actualAmount, 'available:', availableAmount);
-      return errorResponse('INSUFFICIENT_FUNDS', `Insufficient balance. Available: ${availableAmount.toFixed(2)}`, 400);
+    if (error) {
+      console.error('[CREATE_WITHDRAWAL] RPC error:', JSON.stringify(error));
+      return errorResponse('RPC_FAILED', `Failed to create withdrawal: ${error.message}`, 500);
     }
     
-    const newLocked = currentLocked + actualAmount;
-    const isFullWithdrawal = newLocked >= totalValue - 0.01; // Small tolerance
-    const withdrawalKind = isFullWithdrawal ? 'close' : 'partial';
-    console.log('[CREATE_WITHDRAWAL] Withdrawal type:', withdrawalKind, '- new locked amount:', newLocked);
-
-    console.log('[CREATE_WITHDRAWAL] Creating withdrawal record...');
-    const { data: withdrawal, error } = await supabase
-      .from('withdrawals')
-      .insert({
-        amount: actualAmount, // Використовуємо розрахунок сервера, не фронту
-        destination: body.destination,
-        status: 'requested',
-        investment_id: investment.id,
-        kind: withdrawalKind,
-      })
-      .select()
-      .single();
-    
-    if (error || !withdrawal) {
-      console.error('[CREATE_WITHDRAWAL] Failed to create withdrawal:', error);
-      return errorResponse('CREATE_FAILED', 'Failed to create withdrawal', 500);
-    }
-    console.log('[CREATE_WITHDRAWAL] Withdrawal created:', withdrawal.id);
-
-    const updateData: any = {
-      locked_amount: newLocked,
-      updated_at: new Date().toISOString(),
-    };
-    
-    if (isFullWithdrawal) {
-      updateData.status = 'closing';
-      console.log('[CREATE_WITHDRAWAL] Full withdrawal - setting investment status to closing');
+    if (!data || data.length === 0) {
+      console.error('[CREATE_WITHDRAWAL] No data returned from RPC');
+      return errorResponse('UNKNOWN_ERROR', 'No data returned from withdrawal function', 500);
     }
     
-    console.log('[CREATE_WITHDRAWAL] Updating investment locked_amount...', JSON.stringify(updateData));
-    const { error: updateError } = await supabase
-      .from('investments')
-      .update(updateData)
-      .eq('id', investment.id);
+    const result = data[0];
+    console.log('[CREATE_WITHDRAWAL] RPC result:', JSON.stringify(result));
     
-    if (updateError) {
-      console.error('[CREATE_WITHDRAWAL] Failed to lock investment amount:', JSON.stringify(updateError));
-      console.error('[CREATE_WITHDRAWAL] Update data was:', JSON.stringify(updateData));
-      console.error('[CREATE_WITHDRAWAL] Investment ID:', investment.id);
-      console.log('[CREATE_WITHDRAWAL] Rolling back - deleting withdrawal');
-      await supabase.from('withdrawals').delete().eq('id', withdrawal.id);
-      return errorResponse('LOCK_FAILED', `Failed to lock investment amount: ${updateError.message || updateError.code}`, 500);
+    // Перевірити чи є помилка від SQL функції
+    if (result.error_code) {
+      console.error('[CREATE_WITHDRAWAL] SQL function error:', result.error_code, result.error_message);
+      return errorResponse(result.error_code, result.error_message, 400);
     }
-    console.log('[CREATE_WITHDRAWAL] Investment updated successfully');
+    
+    console.log('[CREATE_WITHDRAWAL] SUCCESS - withdrawal_id:', result.withdrawal_id, 'amount:', result.actual_amount, 'kind:', result.withdrawal_kind);
     
     await logAudit(
       env,
       user.id,
       'withdrawal.create',
       'withdrawals',
-      withdrawal.id,
+      result.withdrawal_id,
       { 
-        amount: actualAmount,
-        requested_amount: requestedAmount,
-        kind: withdrawalKind,
-        investment_id: investment.id,
+        amount: result.actual_amount,
+        kind: result.withdrawal_kind,
+        investment_id: investmentId,
       },
       request
     );
@@ -141,8 +99,9 @@ export async function handleCreateWithdrawal(request: Request, env: Env): Promis
     console.log('[CREATE_WITHDRAWAL] Success, returning response');
     return jsonResponse({
       success: true,
-      withdrawal_id: withdrawal.id,
-      kind: withdrawalKind,
+      withdrawal_id: result.withdrawal_id,
+      amount: result.actual_amount,
+      kind: result.withdrawal_kind,
       message: 'Withdrawal request created successfully',
     }, 201);
   } catch (error) {
@@ -196,7 +155,7 @@ export async function handleApproveWithdrawal(request: Request, env: Env, withdr
     console.log('[APPROVE_WITHDRAWAL] Withdrawal not found:', withdrawalId);
     return errorResponse('NOT_FOUND', 'Withdrawal not found', 404);
   }
-  console.log('[APPROVE_WITHDRAWAL] Withdrawal found, status:', withdrawal.status, 'amount:', withdrawal.amount);
+  console.log('[APPROVE_WITHDRAWAL] Withdrawal found, investment_id:', withdrawal.investment_id, 'status:', withdrawal.status);
   
   const userId = (withdrawal.investments as any)?.user_id;
   if (!userId) {
@@ -209,6 +168,84 @@ export async function handleApproveWithdrawal(request: Request, env: Env, withdr
     return errorResponse('INVALID_STATUS', 'Withdrawal already processed', 400);
   }
   
+  // Отримати investment для оновлення
+  console.log('[APPROVE_WITHDRAWAL] Fetching investment with id:', withdrawal.investment_id);
+  const { data: investment, error: invError } = await supabase
+    .from('investments')
+    .select('*')
+    .eq('id', withdrawal.investment_id)
+    .single();
+  
+  if (invError || !investment) {
+    console.error('[APPROVE_WITHDRAWAL] Investment not found:', invError);
+    return errorResponse('NOT_FOUND', 'Investment not found', 404);
+  }
+  
+  const withdrawalAmount = Number(withdrawal.amount);
+  const principal = Number(investment.principal || 0);
+  const accruedInterest = Number(investment.accrued_interest || 0);
+  const lockedAmount = Number(investment.locked_amount || 0);
+  
+  console.log('[APPROVE_WITHDRAWAL] Investment found:', investment.id, 'principal:', principal, 'locked:', lockedAmount);
+  console.log('[APPROVE_WITHDRAWAL] Amounts - withdrawal:', withdrawalAmount, 'principal:', principal, 'accrued:', accruedInterest, 'locked:', lockedAmount);
+  
+  // СПОЧАТКУ знімаємо з accrued_interest (профіт), ПОТІМ з principal (тіло)
+  let remainingToWithdraw = withdrawalAmount;
+  let newAccruedInterest = accruedInterest;
+  let newPrincipal = principal;
+  
+  // 1. Знімаємо з profit
+  if (remainingToWithdraw > 0 && newAccruedInterest > 0) {
+    const fromProfit = Math.min(remainingToWithdraw, newAccruedInterest);
+    newAccruedInterest -= fromProfit;
+    remainingToWithdraw -= fromProfit;
+    console.log('[APPROVE_WITHDRAWAL] Deducted from profit:', fromProfit, 'remaining:', remainingToWithdraw);
+  }
+  
+  // 2. Знімаємо з principal
+  if (remainingToWithdraw > 0 && newPrincipal > 0) {
+    const fromPrincipal = Math.min(remainingToWithdraw, newPrincipal);
+    newPrincipal -= fromPrincipal;
+    remainingToWithdraw -= fromPrincipal;
+    console.log('[APPROVE_WITHDRAWAL] Deducted from principal:', fromPrincipal, 'remaining:', remainingToWithdraw);
+  }
+  
+  // 3. Зменшуємо locked_amount
+  const newLockedAmount = Math.max(0, lockedAmount - withdrawalAmount);
+  
+  // 4. Визначити новий статус investment
+  let newStatus = investment.status;
+  if (withdrawal.kind === 'close' || (newPrincipal <= 0.01 && newAccruedInterest <= 0.01)) {
+    newStatus = 'closed';
+    console.log('[APPROVE_WITHDRAWAL] Setting investment status to closed');
+  }
+  
+  if (remainingToWithdraw > 0.01) {
+    console.error('[APPROVE_WITHDRAWAL] Insufficient funds: still need', remainingToWithdraw);
+    return errorResponse('INSUFFICIENT_FUNDS', 'Insufficient funds in investment', 400);
+  }
+  
+  console.log('[APPROVE_WITHDRAWAL] New values - principal:', newPrincipal, 'accrued:', newAccruedInterest, 'locked:', newLockedAmount, 'status:', newStatus);
+  
+  // Оновити investment
+  const { error: invUpdateError } = await supabase
+    .from('investments')
+    .update({
+      principal: newPrincipal,
+      accrued_interest: newAccruedInterest,
+      locked_amount: newLockedAmount,
+      status: newStatus,
+      updated_at: new Date().toISOString(),
+    })
+    .eq('id', withdrawal.investment_id);
+  
+  if (invUpdateError) {
+    console.error('[APPROVE_WITHDRAWAL] Investment update error:', invUpdateError);
+    return errorResponse('UPDATE_FAILED', 'Failed to update investment', 500);
+  }
+  console.log('[APPROVE_WITHDRAWAL] Investment updated successfully');
+  
+  // Оновити withdrawal статус
   console.log('[APPROVE_WITHDRAWAL] Updating withdrawal status to approved...');
   const { error: updateError } = await supabase
     .from('withdrawals')
@@ -224,22 +261,6 @@ export async function handleApproveWithdrawal(request: Request, env: Env, withdr
     return errorResponse('UPDATE_FAILED', 'Failed to approve withdrawal', 500);
   }
   console.log('[APPROVE_WITHDRAWAL] Withdrawal updated successfully');
-  
-  console.log('[APPROVE_WITHDRAWAL] Fetching user profile...');
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('balance')
-    .eq('id', userId)
-    .single();
-  
-  if (profile) {
-    const newBalance = Number(profile.balance || 0) - Number(withdrawal.amount);
-    console.log('[APPROVE_WITHDRAWAL] Updating balance from', profile.balance, 'to', newBalance);
-    await supabase
-      .from('profiles')
-      .update({ balance: newBalance })
-      .eq('id', userId);
-  }
   
   await logAudit(
     env,

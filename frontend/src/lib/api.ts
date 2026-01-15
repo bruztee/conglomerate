@@ -218,14 +218,15 @@ class ApiClient {
     return this.request('/withdrawals');
   }
 
-  async createWithdrawal(amount: number, destination: any, selectedDepositId?: string) {
+  async createWithdrawal(data: { 
+    amount?: number; 
+    close?: boolean; 
+    destination: any; 
+    selected_deposit_id?: string;
+  }) {
     return this.request('/withdrawals', {
       method: 'POST',
-      body: JSON.stringify({ 
-        amount, 
-        destination,
-        selected_deposit_id: selectedDepositId 
-      }),
+      body: JSON.stringify(data),
     });
   }
 

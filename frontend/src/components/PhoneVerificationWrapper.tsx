@@ -20,7 +20,7 @@ export default function PhoneVerificationWrapper({ children }: { children: React
     }
 
     // Show popup only if user is loaded and phone is not verified
-    if (user && user.is_phone_verified === false) {
+    if (user && user.phone_verified === false) {
       // Small delay to ensure page is rendered first
       const timer = setTimeout(() => {
         setShowPopup(true)

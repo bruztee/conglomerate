@@ -135,22 +135,8 @@ export async function handleConfirmDeposit(request: Request, env: Env, depositId
   }
   console.log('[CONFIRM_DEPOSIT] Deposit updated successfully');
   
-  // Оновити баланс користувача в profiles
-  console.log('[CONFIRM_DEPOSIT] Fetching user profile...');
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('balance')
-    .eq('id', deposit.user_id)
-    .single();
-  
-  if (profile) {
-    const newBalance = Number(profile.balance || 0) + Number(deposit.amount);
-    console.log('[CONFIRM_DEPOSIT] Updating balance from', profile.balance, 'to', newBalance);
-    await supabase
-      .from('profiles')
-      .update({ balance: newBalance })
-      .eq('id', deposit.user_id);
-  }
+  // Баланс більше не зберігається в profiles - розраховується через investments
+  console.log('[CONFIRM_DEPOSIT] Skipping balance update - calculated from investments');
   
   await logAudit(
     env,

@@ -30,6 +30,7 @@ interface Deposit {
   frozen?: number
   percentage: number
   profit: number
+  available?: number
   createdDate: string
   network?: string
   coin?: string
@@ -42,6 +43,7 @@ export default function WithdrawPage() {
   // ВСІ useState МАЮТЬ БУТИ НА ПОЧАТКУ
   const [walletAddress, setWalletAddress] = useState("")
   const [withdrawAmount, setWithdrawAmount] = useState("")
+  const [isFullWithdrawal, setIsFullWithdrawal] = useState(false)
   const [selectedDepositId, setSelectedDepositId] = useState<string>("")
   const [userBalance, setUserBalance] = useState(0)
   const [userProfit, setUserProfit] = useState(0)
@@ -95,30 +97,39 @@ export default function WithdrawPage() {
           })
         }
 
-        // Отримати deposits (активні confirmed)
+        // Отримати deposits (АКТИВНІ ПОЗИЦІЇ)
         const depositsResult = await api.getDeposits()
         if (depositsResult.success && depositsResult.data) {
           const data = depositsResult.data as any
           const deposits = data.deposits || []
           
           const activeDepositsData = deposits
-            .filter((d: any) => d.status === 'confirmed')
+            .filter((d: any) => {
+              const investment = investmentsMap.get(d.id)
+              // Показувати ТІЛЬКИ якщо investment.status === 'active'
+              // deposit.status може бути 'confirmed' навіть коли позиція закрита!
+              return investment && investment.status === 'active'
+            })
             .map((d: any) => {
               const investment = investmentsMap.get(d.id)
               const paymentDetails = d.payment_details || {}
               const lockedAmount = investment ? parseFloat(investment.locked_amount || 0) : 0
               const totalAmount = investment ? parseFloat(investment.principal || d.amount) : parseFloat(d.amount)
+              const profit = investment ? parseFloat(investment.accrued_interest || 0) : 0
+              const available = totalAmount + profit - lockedAmount
               return {
                 id: d.id,
                 amount: totalAmount,
                 frozen: lockedAmount,
                 percentage: d.monthly_percentage || 5,
-                profit: investment ? parseFloat(investment.accrued_interest || 0) : 0,
+                profit: profit,
+                available: available,
                 createdDate: d.created_at,
                 network: paymentDetails.network || 'TRC20',
                 coin: paymentDetails.coin || 'USDT',
               }
             })
+            .filter((d: any) => d.available > 0.01) // НЕ показувати депозити без доступних коштів
           setActiveDeposits(activeDepositsData)
         }
 
@@ -166,7 +177,7 @@ export default function WithdrawPage() {
 
       const amount = parseFloat(withdrawAmount)
       
-      if (!amount || amount <= 0) {
+      if (!isFullWithdrawal && (!amount || amount <= 0)) {
         setError('Введіть суму для виводу')
         setSubmitting(false)
         return
@@ -179,16 +190,21 @@ export default function WithdrawPage() {
       }
 
       // Створити withdrawal request - backend валідує доступну суму
-      const result = await api.createWithdrawal(amount, {
-        wallet_address: walletAddress,
-        network: selectedNetwork,
-        coin: selectedDeposit?.coin,
-      }, selectedDepositId)
+      const result = await api.createWithdrawal({
+        amount: isFullWithdrawal ? maxWithdrawAmount : parseFloat(withdrawAmount),
+        close: isFullWithdrawal, // Якщо full withdrawal - сервер сам візьме всю суму
+        destination: {
+          wallet_address: walletAddress,
+          network: selectedNetwork,
+        },
+        selected_deposit_id: selectedDepositId,
+      })
 
       if (result.success) {
         setMessage('Заявка на вивід успішно створена! Очікуйте обробки протягом 24-48 годин.')
         setWalletAddress('')
         setWithdrawAmount('')
+        setIsFullWithdrawal(false)
         setSelectedDepositId('')
         
         // ВАЖЛИВО: Перезавантажити ВСІ дані - баланс, deposits, withdrawals
@@ -214,30 +230,38 @@ export default function WithdrawPage() {
           })
         }
         
-        // Оновити deposits
+        // Оновити deposits (АКТИВНІ ПОЗИЦІЇ)
         const depositsResult = await api.getDeposits()
         if (depositsResult.success && depositsResult.data) {
           const data = depositsResult.data as any
           const deposits = data.deposits || []
           
           const activeDepositsData = deposits
-            .filter((d: any) => d.status === 'confirmed')
+            .filter((d: any) => {
+              const investment = investmentsMap.get(d.id)
+              // Показувати ТІЛЬКИ якщо investment.status === 'active'
+              return investment && investment.status === 'active'
+            })
             .map((d: any) => {
               const investment = investmentsMap.get(d.id)
               const paymentDetails = d.payment_details || {}
               const lockedAmount = investment ? parseFloat(investment.locked_amount || 0) : 0
               const totalAmount = investment ? parseFloat(investment.principal || d.amount) : parseFloat(d.amount)
+              const profit = investment ? parseFloat(investment.accrued_interest || 0) : 0
+              const available = totalAmount + profit - lockedAmount
               return {
                 id: d.id,
                 amount: totalAmount,
                 frozen: lockedAmount,
                 percentage: d.monthly_percentage || 5,
-                profit: investment ? parseFloat(investment.accrued_interest || 0) : 0,
+                profit: profit,
+                available: available,
                 createdDate: d.created_at,
                 network: paymentDetails.network || 'TRC20',
                 coin: paymentDetails.coin || 'USDT',
               }
             })
+            .filter((d: any) => d.available > 0.01) // НЕ показувати депозити без доступних коштів
           setActiveDeposits(activeDepositsData)
         }
         
@@ -383,19 +407,26 @@ export default function WithdrawPage() {
                       </label>
                       <div className="relative">
                         <input
-                          type="number"
+                          type="text"
                           id="amount"
-                          value={withdrawAmount}
-                          onChange={(e) => setWithdrawAmount(e.target.value)}
-                          className="w-full px-4 py-3 pr-16 bg-background border border-gray-medium rounded-lg focus:outline-none focus:border-silver transition-colors font-sans"
+                          value={isFullWithdrawal ? "MAX" : withdrawAmount}
+                          onChange={(e) => {
+                            setWithdrawAmount(e.target.value)
+                            setIsFullWithdrawal(false)
+                          }}
+                          disabled={isFullWithdrawal}
+                          className="w-full px-4 py-3 pr-20 bg-background border border-gray-medium rounded-lg focus:outline-none focus:border-silver transition-colors font-sans disabled:opacity-60 disabled:cursor-not-allowed"
                           placeholder="Введіть суму"
                         />
                         <button
                           type="button"
-                          onClick={() => setWithdrawAmount(maxWithdrawAmount.toFixed(2))}
-                          className="absolute right-2 top-1/2 -translate-y-1/2 px-3 py-1.5 bg-silver/10 hover:bg-silver/20 text-silver text-xs font-medium rounded transition-colors"
+                          onClick={() => {
+                            setIsFullWithdrawal(true)
+                            setWithdrawAmount(maxWithdrawAmount.toFixed(2))
+                          }}
+                          className="absolute right-3 top-1/2 -translate-y-1/2 btn-gradient-small px-3 py-1.5 text-foreground text-xs font-bold rounded transition-colors font-sans"
                         >
-                          MAX
+                          Все
                         </button>
                       </div>
                       <p className="text-xs text-gray-light mt-1">

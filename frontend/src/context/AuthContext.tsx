@@ -9,7 +9,7 @@ interface User {
   role: string;
   referral_code?: string;
   full_name?: string | null;
-  is_phone_verified?: boolean;
+  phone_verified?: boolean;
   phone?: string | null;
 }
 

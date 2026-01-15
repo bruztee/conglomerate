@@ -98,7 +98,7 @@ export async function handleApproveWithdrawal(request: Request, env: Env, withdr
     console.log('[APPROVE_WITHDRAWAL] Fetching investment with id:', withdrawal.investment_id);
     const { data: investment, error: invError } = await supabase
       .from('investments')
-      .select('id, principal, accrued_interest, locked_amount, status')
+      .select('id, principal, accrued_interest, locked_amount, status, deposit_id')
       .eq('id', withdrawal.investment_id)
       .single();
 
@@ -121,25 +121,41 @@ export async function handleApproveWithdrawal(request: Request, env: Env, withdr
       return errorResponse('VALIDATION_ERROR', `Locked amount (${currentLocked}) is less than withdrawal amount (${withdrawalAmount})`, 400);
     }
     
-    // 4. Списати суму ТІЛЬКИ з principal (profit залишається окремо)
-    const newAccrued = currentAccrued; // Profit НЕ чіпаємо
-    const withdrawnPrincipal = withdrawalAmount;
-    const withdrawnProfit = 0;
+    // 4. СПОЧАТКУ знімаємо з accrued_interest (профіт), ПОТІМ з principal (тіло)
+    let remainingToWithdraw = withdrawalAmount;
+    let newAccrued = currentAccrued;
+    let newPrincipal = currentPrincipal;
     
-    // Перевірка що в principal достатньо коштів
-    if (withdrawalAmount > currentPrincipal) {
-      console.error('[APPROVE_WITHDRAWAL] Insufficient principal:', currentPrincipal, 'requested:', withdrawalAmount);
-      return errorResponse('VALIDATION_ERROR', `Principal (${currentPrincipal}) is less than withdrawal amount (${withdrawalAmount})`, 400);
+    // 4.1. Знімаємо з profit
+    let withdrawnProfit = 0;
+    if (remainingToWithdraw > 0 && newAccrued > 0) {
+      withdrawnProfit = Math.min(remainingToWithdraw, newAccrued);
+      newAccrued -= withdrawnProfit;
+      remainingToWithdraw -= withdrawnProfit;
+      console.log('[APPROVE_WITHDRAWAL] Deducted from profit:', withdrawnProfit, 'remaining:', remainingToWithdraw);
     }
     
-    const newPrincipal = currentPrincipal - withdrawalAmount;
+    // 4.2. Знімаємо з principal
+    let withdrawnPrincipal = 0;
+    if (remainingToWithdraw > 0 && newPrincipal > 0) {
+      withdrawnPrincipal = Math.min(remainingToWithdraw, newPrincipal);
+      newPrincipal -= withdrawnPrincipal;
+      remainingToWithdraw -= withdrawnPrincipal;
+      console.log('[APPROVE_WITHDRAWAL] Deducted from principal:', withdrawnPrincipal, 'remaining:', remainingToWithdraw);
+    }
+    
+    // 4.3. Перевірка що вистачило коштів
+    if (remainingToWithdraw > 0.01) {
+      console.error('[APPROVE_WITHDRAWAL] Insufficient funds: still need', remainingToWithdraw);
+      return errorResponse('VALIDATION_ERROR', `Insufficient funds in investment. Available: ${currentPrincipal + currentAccrued}, Requested: ${withdrawalAmount}`, 400);
+    }
 
     // 5. Зменшити locked_amount
     const newLocked = Math.max(0, currentLocked - withdrawalAmount);
 
     // 6. Визначити новий статус investment
     let newStatus: string = investment.status;
-    if (newPrincipal === 0 && newAccrued === 0) {
+    if (newPrincipal <= 0.01 && newAccrued <= 0.01) {
       newStatus = 'closed';
     } else if (investment.status === 'closing' && newLocked === 0) {
       // Якщо був closing але вивід не повний - повернути в active
@@ -167,6 +183,22 @@ export async function handleApproveWithdrawal(request: Request, env: Env, withdr
     if (updateInvError) {
       console.error('Failed to update investment:', updateInvError);
       return errorResponse('DATABASE_ERROR', 'Failed to update investment', 500);
+    }
+
+    // 7.5. Якщо investment закрито, оновити deposit status на 'withdrawn'
+    if (newStatus === 'closed' && investment.deposit_id) {
+      console.log('[APPROVE_WITHDRAWAL] Investment closed, updating deposit status to withdrawn');
+      const { error: depositUpdateError } = await supabase
+        .from('deposits')
+        .update({ status: 'withdrawn', updated_at: new Date().toISOString() })
+        .eq('id', investment.deposit_id);
+      
+      if (depositUpdateError) {
+        console.error('[APPROVE_WITHDRAWAL] Failed to update deposit status:', depositUpdateError);
+        // Не фейлимо весь процес, тільки логуємо
+      } else {
+        console.log('[APPROVE_WITHDRAWAL] Deposit status updated to withdrawn');
+      }
     }
 
     // 8. Оновити withdrawal status

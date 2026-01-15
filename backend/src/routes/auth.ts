@@ -53,6 +53,7 @@ export async function handleRegister(request: Request, env: Env): Promise<Respon
       }
     }
     
+    console.log('[REGISTER] Calling supabase.auth.signUp...');
     const { data: authData, error: authError } = await supabase.auth.signUp({
       email: body.email,
       password: body.password,
@@ -65,8 +66,13 @@ export async function handleRegister(request: Request, env: Env): Promise<Respon
     });
     
     if (authError || !authData.user) {
+      console.error('[REGISTER] Auth signup failed:', JSON.stringify(authError));
       return errorResponse('REGISTRATION_FAILED', authError?.message || 'Registration failed', 400);
     }
+    console.log('[REGISTER] Auth signup successful, user_id:', authData.user.id);
+    console.log('[REGISTER] User email_confirmed_at:', authData.user.email_confirmed_at);
+    console.log('[REGISTER] Session exists:', !!authData.session);
+    console.log('[REGISTER] User confirmation_sent_at:', authData.user.confirmation_sent_at);
     
     // Генерація унікального referral_code для нового користувача
     const generateReferralCode = () => {
@@ -79,15 +85,19 @@ export async function handleRegister(request: Request, env: Env): Promise<Respon
     };
 
     // Перевірка чи профіль вже існує і має referral_code
-    let { data: profile } = await supabase
+    console.log('[REGISTER] Fetching profile for user:', authData.user.id);
+    let { data: profile, error: profileError } = await supabase
       .from('profiles')
       .select('*')
       .eq('id', authData.user.id)
       .single();
     
-    if (!profile) {
-      return errorResponse('PROFILE_ERROR', 'Failed to create profile', 500);
+    if (profileError || !profile) {
+      console.error('[REGISTER] Profile fetch error:', JSON.stringify(profileError));
+      console.error('[REGISTER] Profile data:', profile);
+      return errorResponse('PROFILE_ERROR', `Failed to fetch profile: ${profileError?.message || 'Unknown error'}`, 500);
     }
+    console.log('[REGISTER] Profile found, has referral_code:', !!profile.referral_code);
 
     // Якщо немає referral_code - створюємо його
     if (!profile.referral_code) {
@@ -117,29 +127,42 @@ export async function handleRegister(request: Request, env: Env): Promise<Respon
         updates.referred_by = referrerId;
       }
       
-      const { data: updatedProfile } = await supabase
+      console.log('[REGISTER] Updating profile with:', JSON.stringify(updates));
+      const { data: updatedProfile, error: updateError } = await supabase
         .from('profiles')
         .update(updates)
         .eq('id', authData.user.id)
         .select()
         .single();
       
+      if (updateError) {
+        console.error('[REGISTER] Profile update error:', JSON.stringify(updateError));
+        return errorResponse('PROFILE_UPDATE_ERROR', `Failed to update profile: ${updateError.message}`, 500);
+      }
+      
       if (updatedProfile) {
         profile = updatedProfile;
-        console.log('✅ Generated referral_code:', newReferralCode, 'for user:', authData.user.id);
+        console.log('[REGISTER] Generated referral_code:', newReferralCode, 'for user:', authData.user.id);
       }
     } else if (referrerId) {
       // Якщо referral_code вже є, просто оновлюємо referred_by
-      await supabase
+      console.log('[REGISTER] Updating referred_by:', referrerId);
+      const { error: refUpdateError } = await supabase
         .from('profiles')
         .update({ referred_by: referrerId })
         .eq('id', authData.user.id);
       
-      console.log('✅ User', authData.user.id, 'referred by', referrerId);
+      if (refUpdateError) {
+        console.error('[REGISTER] Referred_by update error:', JSON.stringify(refUpdateError));
+      } else {
+        console.log('[REGISTER] User', authData.user.id, 'referred by', referrerId);
+      }
     }
     
+    console.log('[REGISTER] Logging audit...');
     await logAudit(env, authData.user.id, 'user.register', 'profiles', authData.user.id, { email: body.email }, request);
     
+    console.log('[REGISTER] Registration successful for:', body.email);
     const response = jsonResponse(
       {
         user: {
@@ -226,7 +249,7 @@ export async function handleLogin(request: Request, env: Env): Promise<Response>
         role: profile?.role || 'user',
         referral_code: profile?.referral_code,
         full_name: profile?.full_name,
-        is_phone_verified: !!authData.user.phone_confirmed_at,
+        phone_verified: !!authData.user.phone_confirmed_at,
         phone: authData.user.phone,
       },
       session: authData.session,
@@ -307,7 +330,7 @@ export async function handleMe(request: Request, env: Env): Promise<Response> {
         full_name: profile.full_name,
         // Phone з auth.users (верифікований через OTP)
         phone: authUser?.phone || null,
-        is_phone_verified: !!authUser?.phone_confirmed_at,
+        phone_verified: !!authUser?.phone_confirmed_at,
         // Додаткові дані з profiles
         plan: profile.plan || 'Стандарт',
         monthly_percentage: profile.monthly_percentage || 0,
