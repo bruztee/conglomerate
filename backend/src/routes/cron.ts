@@ -42,7 +42,7 @@ export async function handleAccrueInterest(env: Env): Promise<void> {
       return;
     }
 
-    console.log(`[CRON_ACCRUE] SUCCESS - Processed: ${processedCount} investments, Total accrued: ${totalAccrued.toFixed(2)} USD`);
+    console.log(`[CRON_ACCRUE] SUCCESS - Processed: ${processedCount} investments, Total accrued: ${totalAccrued.toFixed(8)} USD`);
   } catch (error) {
     console.error('[CRON_ACCRUE] Exception:', error);
   }

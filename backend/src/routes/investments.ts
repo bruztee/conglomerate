@@ -67,15 +67,16 @@ export async function handleGetInvestments(request: Request, env: Env): Promise<
       const referralEarnings = Number(inv.referral_earnings || 0);
       const totalWithdrawn = withdrawalsMap.get(inv.id) || 0;
       
-      // Округлюємо ОДИН РАЗ після обчислення
-      const totalValue = Math.round((principal + accruedInterest) * 100) / 100;
-      const available = Math.round((totalValue - lockedAmount) * 100) / 100;
+      // TRUNC для payable_total - не створюємо "зайві центи"
+      const totalValue = Math.trunc((principal + accruedInterest) * 100) / 100;
+      const available = Math.max(totalValue - lockedAmount, 0);
       
       return {
         ...inv,
-        // Округлені значення для фінансів
+        // principal, locked_amount, referral_earnings - завжди в центах (2 знаки)
         principal: Math.round(principal * 100) / 100,
-        accrued_interest: Math.round(accruedInterest * 100) / 100,
+        // accrued_interest - зберігаємо повну точність (8 знаків)
+        accrued_interest: accruedInterest,
         locked_amount: Math.round(lockedAmount * 100) / 100,
         referral_earnings: Math.round(referralEarnings * 100) / 100,
         total_value: totalValue,

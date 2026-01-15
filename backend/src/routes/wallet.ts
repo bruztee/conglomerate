@@ -27,20 +27,33 @@ export async function handleGetWallet(request: Request, env: Env): Promise<Respo
     let totalAccrued = 0;
     let totalLocked = 0;
     let totalReferralEarnings = 0;
-
+    let totalBalance = 0;
+    let lockedBalance = 0;
+    let referralEarnings = 0;
+    
     (investments || []).forEach((inv, idx) => {
-      const principal = Number(inv.principal);
-      const accrued = Number(inv.accrued_interest);
-      const locked = Number(inv.locked_amount || 0);
-      const referralEarnings = Number(inv.referral_earnings || 0);
+      const principal = parseFloat(inv.principal || 0);
+      const accruedInterest = parseFloat(inv.accrued_interest || 0);
+      const locked = parseFloat(inv.locked_amount || 0);
+      const referral = parseFloat(inv.referral_earnings || 0);
       
-      console.log(`[GET_WALLET] Investment ${idx}: principal=${principal}, accrued=${accrued}, locked_amount=${inv.locked_amount}, locked=${locked}, referral_earnings=${referralEarnings}`);
+      // TRUNC для payable_total кожної інвестиції
+      const payableTotal = Math.trunc((principal + accruedInterest) * 100) / 100;
+      
+      totalBalance += payableTotal;
+      lockedBalance += locked;
+      referralEarnings += referral;
+      
+      console.log(`[GET_WALLET] Investment ${idx}: principal=${principal}, accrued=${accruedInterest}, locked_amount=${inv.locked_amount}, locked=${locked}, referral_earnings=${referral}`);
       
       totalPrincipal += principal;
-      totalAccrued += accrued;
+      totalAccrued += accruedInterest;
       totalLocked += locked;
-      totalReferralEarnings += referralEarnings;
+      totalReferralEarnings += referral;
     });
+    
+    const availableBalance = Math.max(totalBalance - lockedBalance, 0);
+    console.log('[GET_WALLET] Calculated - principal:', totalPrincipal, 'accrued:', totalAccrued, 'referral:', totalReferralEarnings, 'locked:', totalLocked, 'balance:', availableBalance);
 
     const balance = totalPrincipal + totalAccrued + totalReferralEarnings - totalLocked;
     console.log('[GET_WALLET] Calculated - principal:', totalPrincipal, 'accrued:', totalAccrued, 'referral:', totalReferralEarnings, 'locked:', totalLocked, 'balance:', balance);
