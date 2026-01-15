@@ -13,7 +13,18 @@ import PhoneVerificationPopup from "@/components/PhoneVerificationPopup"
 export default function SettingsPage() {
   const router = useRouter()
   const { user, loading: authLoading } = useAuth()
+  
+  // ВСІ useState МАЮТЬ БУТИ НА ПОЧАТКУ
   const [activeTab, setActiveTab] = useState<'email' | 'phone' | 'password'>('email')
+  const [emailForm, setEmailForm] = useState({ email: '' })
+  const [phoneForm, setPhoneForm] = useState({ phone: '' })
+  const [passwordCooldown, setPasswordCooldown] = useState(0)
+  const [loading, setLoading] = useState(false)
+  const [pageLoading, setPageLoading] = useState(true)
+  const [message, setMessage] = useState('')
+  const [error, setError] = useState('')
+  const [userProfile, setUserProfile] = useState<any>(null)
+  const [showPhoneVerification, setShowPhoneVerification] = useState(false)
 
   // Show loading while checking auth
   if (authLoading) {
@@ -23,19 +34,8 @@ export default function SettingsPage() {
   // Redirect if not authenticated
   if (!user) {
     router.push('/auth/login')
-    return <Loading fullScreen size="lg" />
+    return null
   }
-  
-  const [emailForm, setEmailForm] = useState({ email: '' })
-  const [phoneForm, setPhoneForm] = useState({ phone: '' })
-  const [passwordCooldown, setPasswordCooldown] = useState(0)
-  
-  const [loading, setLoading] = useState(false)
-  const [pageLoading, setPageLoading] = useState(true)
-  const [message, setMessage] = useState('')
-  const [error, setError] = useState('')
-  const [userProfile, setUserProfile] = useState<any>(null)
-  const [showPhoneVerification, setShowPhoneVerification] = useState(false)
 
   const handleUpdateEmail = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -335,7 +335,10 @@ export default function SettingsPage() {
 
       {/* Phone Verification Popup */}
       {showPhoneVerification && (
-        <PhoneVerificationPopup onVerified={handlePhoneVerified} />
+        <PhoneVerificationPopup 
+          onVerified={handlePhoneVerified}
+          onClose={() => setShowPhoneVerification(false)}
+        />
       )}
     </>
   )

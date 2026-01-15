@@ -5,9 +5,10 @@ import { api } from "@/lib/api"
 
 interface PhoneVerificationPopupProps {
   onVerified: () => void
+  onClose?: () => void
 }
 
-export default function PhoneVerificationPopup({ onVerified }: PhoneVerificationPopupProps) {
+export default function PhoneVerificationPopup({ onVerified, onClose }: PhoneVerificationPopupProps) {
   const [step, setStep] = useState<'phone' | 'code'>('phone')
   const [phone, setPhone] = useState('')
   const [code, setCode] = useState('')
@@ -86,7 +87,19 @@ export default function PhoneVerificationPopup({ onVerified }: PhoneVerification
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-background/80 backdrop-blur-sm">
       <div className="w-full max-w-md mx-4">
-        <div className="bg-gray-dark border border-gray-medium rounded-lg p-8 shadow-2xl">
+        <div className="bg-gray-dark border border-gray-medium rounded-lg p-8 shadow-2xl relative">
+          {onClose && (
+            <button
+              onClick={onClose}
+              className="absolute top-4 right-4 text-gray-light hover:text-white transition-colors"
+              aria-label="Close"
+            >
+              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+          )}
+          
           <div className="text-center mb-6">
             <h2 className="text-2xl font-bold mb-2">Верифікація телефону</h2>
             <p className="text-gray-light text-sm">

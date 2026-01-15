@@ -56,7 +56,7 @@ export async function handleRegister(request: Request, env: Env): Promise<Respon
         data: {
           referred_by: referrerId,
         },
-        emailRedirectTo: 'https://conglomerate-eight.vercel.app/auth/set-name',
+        emailRedirectTo: 'https://conglomerate-g.com/auth/callback',
       },
     });
     
@@ -150,16 +150,11 @@ export async function handleRegister(request: Request, env: Env): Promise<Respon
     );
     
     // Set httpOnly cookies for BOTH access and refresh tokens
-    const cookies: string[] = [];
     if (authData.session?.access_token) {
-      cookies.push(`access_token=${authData.session.access_token}; Path=/; HttpOnly; Secure; SameSite=Lax; Max-Age=604800`);
+      response.headers.append('Set-Cookie', `access_token=${authData.session.access_token}; Path=/; HttpOnly; Secure; SameSite=Lax; Max-Age=604800`);
     }
     if (authData.session?.refresh_token) {
-      cookies.push(`refresh_token=${authData.session.refresh_token}; Path=/; HttpOnly; Secure; SameSite=Lax; Max-Age=2592000`); // 30 days
-    }
-    
-    if (cookies.length > 0) {
-      response.headers.set('Set-Cookie', cookies.join(', '));
+      response.headers.append('Set-Cookie', `refresh_token=${authData.session.refresh_token}; Path=/; HttpOnly; Secure; SameSite=Lax; Max-Age=2592000`); // 30 days
     }
     
     return response;
@@ -234,16 +229,11 @@ export async function handleLogin(request: Request, env: Env): Promise<Response>
     });
     
     // Set httpOnly cookies for BOTH access and refresh tokens
-    const cookies: string[] = [];
     if (authData.session?.access_token) {
-      cookies.push(`access_token=${authData.session.access_token}; Path=/; HttpOnly; Secure; SameSite=Lax; Max-Age=604800`);
+      response.headers.append('Set-Cookie', `access_token=${authData.session.access_token}; Path=/; HttpOnly; Secure; SameSite=Lax; Max-Age=604800`);
     }
     if (authData.session?.refresh_token) {
-      cookies.push(`refresh_token=${authData.session.refresh_token}; Path=/; HttpOnly; Secure; SameSite=Lax; Max-Age=2592000`); // 30 days
-    }
-    
-    if (cookies.length > 0) {
-      response.headers.set('Set-Cookie', cookies.join(', '));
+      response.headers.append('Set-Cookie', `refresh_token=${authData.session.refresh_token}; Path=/; HttpOnly; Secure; SameSite=Lax; Max-Age=2592000`); // 30 days
     }
     
     return response;
@@ -270,11 +260,8 @@ export async function handleLogout(request: Request, env: Env): Promise<Response
     const response = jsonResponse({ message: 'Logged out successfully' });
     
     // Clear BOTH httpOnly cookies
-    const clearCookies = [
-      'access_token=; Path=/; HttpOnly; Secure; SameSite=Lax; Max-Age=0',
-      'refresh_token=; Path=/; HttpOnly; Secure; SameSite=Lax; Max-Age=0'
-    ];
-    response.headers.set('Set-Cookie', clearCookies.join(', '));
+    response.headers.append('Set-Cookie', 'access_token=; Path=/; HttpOnly; Secure; SameSite=Lax; Max-Age=0');
+    response.headers.append('Set-Cookie', 'refresh_token=; Path=/; HttpOnly; Secure; SameSite=Lax; Max-Age=0');
     
     return response;
   } catch (error) {
@@ -343,7 +330,7 @@ export async function handleResendVerification(request: Request, env: Env): Prom
       type: 'signup',
       email: body.email,
       options: {
-        emailRedirectTo: 'https://conglomerate-group.com/auth/login',
+        emailRedirectTo: 'https://conglomerate-g.com/auth/callback',
       },
     });
     
@@ -369,7 +356,7 @@ export async function handleForgotPassword(request: Request, env: Env): Promise<
     
     // Send password reset email
     const { error } = await supabase.auth.resetPasswordForEmail(body.email, {
-      redirectTo: 'https://conglomerate-eight.vercel.app/auth/reset-password',
+      redirectTo: 'https://conglomerate-g.com/auth/callback',
     });
     
     if (error) {
@@ -461,16 +448,11 @@ export async function handleRefreshToken(request: Request, env: Env): Promise<Re
     const response = jsonResponse({ session: data.session });
     
     // Оновити httpOnly cookies з новими токенами
-    const cookies: string[] = [];
     if (data.session?.access_token) {
-      cookies.push(`access_token=${data.session.access_token}; Path=/; HttpOnly; Secure; SameSite=Lax; Max-Age=604800`);
+      response.headers.append('Set-Cookie', `access_token=${data.session.access_token}; Path=/; HttpOnly; Secure; SameSite=Lax; Max-Age=604800`);
     }
     if (data.session?.refresh_token) {
-      cookies.push(`refresh_token=${data.session.refresh_token}; Path=/; HttpOnly; Secure; SameSite=Lax; Max-Age=2592000`);
-    }
-    
-    if (cookies.length > 0) {
-      response.headers.set('Set-Cookie', cookies.join(', '));
+      response.headers.append('Set-Cookie', `refresh_token=${data.session.refresh_token}; Path=/; HttpOnly; Secure; SameSite=Lax; Max-Age=2592000`);
     }
     
     return response;
@@ -629,17 +611,23 @@ export async function handleSendPhoneOTP(request: Request, env: Env): Promise<Re
     
     const supabase = createServiceSupabaseClient(env);
     
-    // ТІЛЬКИ відправляємо OTP - phone НЕ оновлюється до верифікації
+    // Використовуємо Admin API для оновлення phone і відправки OTP
+    const { error: updateError } = await supabase.auth.admin.updateUserById(user.id, {
+      phone: body.phone.trim(),
+    });
+    
+    if (updateError) {
+      console.error('❌ Update phone error:', updateError.message);
+      return errorResponse('UPDATE_FAILED', `Failed to update phone: ${updateError.message}`, 400);
+    }
+    
+    // Тепер відправляємо OTP на цей номер
     const { error: otpError } = await supabase.auth.signInWithOtp({
       phone: body.phone.trim()
     });
     
     if (otpError) {
-      console.error('❌ OTP send error:', {
-        message: otpError.message,
-        status: otpError.status,
-        name: otpError.name
-      });
+      console.error('❌ OTP send error:', otpError.message);
       return errorResponse('OTP_SEND_FAILED', `Failed to send OTP: ${otpError.message}`, 400);
     }
     
@@ -651,6 +639,41 @@ export async function handleSendPhoneOTP(request: Request, env: Env): Promise<Re
   } catch (error) {
     console.error('❌ handleSendPhoneOTP error:', error);
     return errorResponse('SERVER_ERROR', `Internal server error: ${error instanceof Error ? error.message : 'Unknown error'}`, 500);
+  }
+}
+
+export async function handleVerifyEmail(request: Request, env: Env): Promise<Response> {
+  try {
+    const body = await request.json() as { access_token: string; refresh_token: string };
+    
+    if (!body.access_token || !body.refresh_token) {
+      return errorResponse('VALIDATION_ERROR', 'Tokens are required', 400);
+    }
+    
+    const supabase = createServiceSupabaseClient(env);
+    
+    // Встановити сесію з токенами для верифікації
+    const { data: sessionData, error: sessionError } = await supabase.auth.setSession({
+      access_token: body.access_token,
+      refresh_token: body.refresh_token,
+    });
+    
+    if (sessionError || !sessionData.user) {
+      console.error('❌ Session error:', sessionError?.message);
+      return errorResponse('VERIFICATION_FAILED', 'Invalid verification link', 400);
+    }
+    
+    // Перевірити чи email підтверджено
+    if (sessionData.user.email_confirmed_at) {
+      console.log('✅ Email verified for user:', sessionData.user.id, sessionData.user.email);
+      return jsonResponse({ message: 'Email verified successfully' });
+    } else {
+      console.log('⚠️ Email not yet confirmed:', sessionData.user.email);
+      return errorResponse('EMAIL_NOT_CONFIRMED', 'Email not yet confirmed', 400);
+    }
+  } catch (error) {
+    console.error('❌ handleVerifyEmail error:', error);
+    return errorResponse('SERVER_ERROR', 'Internal server error', 500);
   }
 }
 

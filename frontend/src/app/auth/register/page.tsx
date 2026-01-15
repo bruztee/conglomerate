@@ -25,21 +25,13 @@ function RegisterForm() {
 
   // Show loading while checking auth  
   if (authLoading) {
-    return (
-      <main className="min-h-screen flex items-center justify-center">
-        <Loading size="lg" />
-      </main>
-    )
+    return <Loading fullScreen size="lg" />
   }
 
   // Redirect to dashboard if already logged in
   if (user) {
     router.push('/dashboard')
-    return (
-      <main className="min-h-screen flex items-center justify-center">
-        <Loading size="lg" />
-      </main>
-    )
+    return null
   }
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {

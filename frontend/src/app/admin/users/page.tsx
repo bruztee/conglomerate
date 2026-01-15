@@ -25,11 +25,8 @@ interface User {
 export default function AdminUsersPage() {
   const router = useRouter()
   const { user, loading: authLoading } = useAuth()
-
-  if (authLoading) return <Loading />
-  if (!user) { router.push('/auth/login'); return <Loading /> }
-  if (user.role !== 'admin') { router.push('/dashboard'); return <Loading /> }
-
+  
+  // ВСІ useState МАЮТЬ БУТИ НА ПОЧАТКУ
   const [loading, setLoading] = useState(true)
   const [users, setUsers] = useState<User[]>([])
   const [editingUser, setEditingUser] = useState<User | null>(null)
@@ -38,6 +35,10 @@ export default function AdminUsersPage() {
     status: 'active',
     monthly_percentage: 5.0,
   })
+
+  if (authLoading) return <Loading />
+  if (!user) { router.push('/auth/login'); return null }
+  if (user.role !== 'admin') { router.push('/dashboard'); return null }
 
   useEffect(() => {
     fetchUsers()

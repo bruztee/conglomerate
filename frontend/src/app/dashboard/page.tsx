@@ -29,6 +29,8 @@ interface Deposit {
 export default function DashboardPage() {
   const router = useRouter()
   const { user, loading: authLoading } = useAuth()
+  
+  // ВСІ useState МАЮТЬ БУТИ НА ПОЧАТКУ
   const [amount, setAmount] = useState("")
   const [userBalance, setUserBalance] = useState(0)
   const [userProfit, setUserProfit] = useState(0)
@@ -36,6 +38,8 @@ export default function DashboardPage() {
   const [loading, setLoading] = useState(true)
   const [paymentMethods, setPaymentMethods] = useState<any[]>([])
   const [selectedMethod, setSelectedMethod] = useState<any>(null)
+  const [activeDeposits, setActiveDeposits] = useState<Deposit[]>([])
+  const [depositHistory, setDepositHistory] = useState<Deposit[]>([])
 
   // Show loading while checking auth
   if (authLoading) {
@@ -45,13 +49,10 @@ export default function DashboardPage() {
   // Redirect if not authenticated
   if (!user) {
     router.push('/auth/login')
-    return <Loading fullScreen size="lg" />
+    return null
   }
 
   const quickAmounts = [100, 500, 1000, 5000, 10000]
-
-  const [activeDeposits, setActiveDeposits] = useState<Deposit[]>([])
-  const [depositHistory, setDepositHistory] = useState<Deposit[]>([])
 
   const profitPercentage = 5
 

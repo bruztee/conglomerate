@@ -15,6 +15,7 @@ export async function getUserFromRequest(request: Request, env: Env): Promise<Au
   const authHeader = request.headers.get('Authorization');
   if (authHeader && authHeader.startsWith('Bearer ')) {
     token = authHeader.substring(7);
+    console.log('🔑 Token from Authorization header');
   }
   
   // 2. Якщо немає Authorization - прочитати з httpOnly cookie
@@ -25,11 +26,13 @@ export async function getUserFromRequest(request: Request, env: Env): Promise<Au
       const accessTokenCookie = cookies.find(c => c.startsWith('access_token='));
       if (accessTokenCookie) {
         token = accessTokenCookie.split('=')[1];
+        console.log('🍪 Token from cookie, length:', token.length);
       }
     }
   }
   
   if (!token) {
+    console.log('❌ No token found');
     return null;
   }
   
@@ -37,19 +40,40 @@ export async function getUserFromRequest(request: Request, env: Env): Promise<Au
   
   const { data: { user }, error } = await supabase.auth.getUser(token);
   
-  if (error || !user) {
+  if (error) {
+    console.error('❌ Supabase auth.getUser error:', error.message, error.status);
     return null;
   }
   
-  const { data: profile } = await supabase
+  if (!user) {
+    console.log('❌ No user returned from Supabase');
+    return null;
+  }
+  
+  console.log('✅ User authenticated:', user.id, user.email);
+  
+  const { data: profile, error: profileError } = await supabase
     .from('profiles')
     .select('role, status')
     .eq('id', user.id)
     .single();
   
-  if (!profile || profile.status !== 'active') {
+  if (profileError) {
+    console.error('❌ Profile query error:', profileError.message);
     return null;
   }
+  
+  if (!profile) {
+    console.log('❌ No profile found for user:', user.id);
+    return null;
+  }
+  
+  if (profile.status !== 'active') {
+    console.log('❌ User status is not active:', profile.status);
+    return null;
+  }
+  
+  console.log('✅ Auth successful:', user.id, profile.role, profile.status);
   
   return {
     id: user.id,

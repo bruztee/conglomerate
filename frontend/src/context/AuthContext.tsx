@@ -38,14 +38,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           setUser(userData);
         } else {
           setUser(null);
-          api.setAccessToken(null);
         }
       } else {
-        setUser(null);
-        api.setAccessToken(null);
+        // Якщо api.me() повернув помилку, але це може бути через застарілий токен
+        // api.request() вже спробував зробити refresh автоматично
+        // Якщо ми тут - значить refresh теж не вдався
+        if (response.error?.code === 'UNAUTHORIZED') {
+          console.log('❌ Session expired, clearing user');
+          setUser(null);
+        }
       }
     } catch (error) {
-      // Не очищаємо токен при помилці мережі - можливо тимчасова проблема
+      console.error('refreshUser error:', error);
+      // Не очищаємо user при network error - можливо тимчасова проблема
     }
   };
 
@@ -89,8 +94,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const register = async (email: string, password: string, referralCode?: string) => {
     const response = await api.register(email, password, referralCode);
     
-    if (response.success && response.data) {
-      setUser(response.data as any as User);
+    if (response.success) {
+      // НЕ встановлюємо user після register - email ще не верифікований
+      // Register page покаже verification message
       return { success: true };
     }
     
@@ -98,9 +104,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const logout = async () => {
+    setLoading(true);
     await api.logout();
     setUser(null);
+    setLoading(false);
     // httpOnly cookie очищується сервером через Set-Cookie
+    // Redirect на login після logout
+    if (typeof window !== 'undefined') {
+      window.location.href = '/auth/login';
+    }
   };
 
   return (

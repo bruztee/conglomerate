@@ -28,11 +28,8 @@ interface Withdrawal {
 export default function AdminWithdrawalsPage() {
   const router = useRouter()
   const { user, loading: authLoading } = useAuth()
-
-  if (authLoading) return <Loading />
-  if (!user) { router.push('/auth/login'); return <Loading /> }
-  if (user.role !== 'admin') { router.push('/dashboard'); return <Loading /> }
-
+  
+  // ВСІ useState МАЮТЬ БУТИ НА ПОЧАТКУ
   const [loading, setLoading] = useState(true)
   const [tab, setTab] = useState<'pending' | 'history'>('pending')
   const [withdrawals, setWithdrawals] = useState<Withdrawal[]>([])
@@ -44,6 +41,10 @@ export default function AdminWithdrawalsPage() {
     network_fee: 0,
     tx_hash: '',
   })
+
+  if (authLoading) return <Loading />
+  if (!user) { router.push('/auth/login'); return null }
+  if (user.role !== 'admin') { router.push('/dashboard'); return null }
 
   useEffect(() => {
     fetchWithdrawals()

@@ -33,11 +33,17 @@ export default function WithdrawPage() {
   const router = useRouter()
   const { user, loading: authLoading } = useAuth()
   
+  // ВСІ useState МАЮТЬ БУТИ НА ПОЧАТКУ
   const [walletAddress, setWalletAddress] = useState("")
   const [selectedMethod, setSelectedMethod] = useState<string | null>(null)
   const [userBalance, setUserBalance] = useState(0)
   const [userProfit, setUserProfit] = useState(0)
   const [loading, setLoading] = useState(true)
+  const [submitting, setSubmitting] = useState(false)
+  const [message, setMessage] = useState('')
+  const [error, setError] = useState('')
+  const [activeDeposits, setActiveDeposits] = useState<Deposit[]>([])
+  const [withdrawalHistory, setWithdrawalHistory] = useState<WithdrawalRequest[]>([])
 
   // Show loading while checking auth
   if (authLoading) {
@@ -47,14 +53,8 @@ export default function WithdrawPage() {
   // Redirect if not authenticated
   if (!user) {
     router.push('/auth/login')
-    return <Loading fullScreen size="lg" />
+    return null
   }
-  const [submitting, setSubmitting] = useState(false)
-  const [message, setMessage] = useState('')
-  const [error, setError] = useState('')
-
-  const [activeDeposits, setActiveDeposits] = useState<Deposit[]>([])
-  const [withdrawalHistory, setWithdrawalHistory] = useState<WithdrawalRequest[]>([])
 
   // Завантаження даних при mount
   useEffect(() => {

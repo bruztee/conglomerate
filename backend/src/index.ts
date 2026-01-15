@@ -1,6 +1,6 @@
 import type { Env } from './types';
 import { errorResponse } from './utils/response';
-import { handleRegister, handleLogin, handleLogout, handleMe, handleRefreshToken, handleResendVerification, handleForgotPassword, handleResetPassword, handleUpdateEmail, handleUpdatePhone, handleUpdatePassword, handleSetName, handleSendPhoneOTP, handleVerifyPhoneOTP } from './routes/auth';
+import { handleRegister, handleLogin, handleLogout, handleMe, handleRefreshToken, handleResendVerification, handleForgotPassword, handleResetPassword, handleUpdateEmail, handleUpdatePhone, handleUpdatePassword, handleSetName, handleSendPhoneOTP, handleVerifyPhoneOTP, handleVerifyEmail } from './routes/auth';
 import { handleGetWallet } from './routes/wallet';
 import { handleCreateDeposit, handleGetDeposits, handleConfirmDeposit } from './routes/deposits';
 import { handleCreateWithdrawal, handleGetWithdrawals, handleApproveWithdrawal } from './routes/withdrawals';
@@ -37,6 +37,7 @@ const routes: Route[] = [
   { method: 'POST', pattern: /^\/auth\/set-name$/, handler: handleSetName },
   { method: 'POST', pattern: /^\/auth\/send-phone-otp$/, handler: handleSendPhoneOTP },
   { method: 'POST', pattern: /^\/auth\/verify-phone-otp$/, handler: handleVerifyPhoneOTP },
+  { method: 'POST', pattern: /^\/auth\/verify-email$/, handler: handleVerifyEmail },
   { method: 'GET', pattern: /^\/auth\/me$/, handler: handleMe },
   
   { method: 'GET', pattern: /^\/wallet$/, handler: handleGetWallet },

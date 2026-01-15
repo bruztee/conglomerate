@@ -44,6 +44,15 @@ interface DepositHistory {
 export default function AdminDashboard() {
   const router = useRouter()
   const { user, loading: authLoading } = useAuth()
+  
+  // ВСІ useState МАЮТЬ БУТИ НА ПОЧАТКУ
+  const [loading, setLoading] = useState(true)
+  const [stats, setStats] = useState({
+    totalUsers: 0,
+    pendingDeposits: 0,
+    pendingWithdrawals: 0,
+    activePaymentMethods: 0,
+  })
 
   // Show loading while checking auth
   if (authLoading) {
@@ -53,22 +62,14 @@ export default function AdminDashboard() {
   // Redirect if not authenticated
   if (!user) {
     router.push('/auth/login')
-    return <Loading />
+    return null
   }
 
   // Redirect if not admin (backend also enforces this)
   if (user.role !== 'admin') {
     router.push('/dashboard')
-    return <Loading />
+    return null
   }
-
-  const [loading, setLoading] = useState(true)
-  const [stats, setStats] = useState({
-    totalUsers: 0,
-    pendingDeposits: 0,
-    pendingWithdrawals: 0,
-    activePaymentMethods: 0,
-  })
 
   useEffect(() => {
     async function fetchStats() {

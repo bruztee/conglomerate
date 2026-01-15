@@ -17,12 +17,19 @@ export default function LoginPage() {
   const [error, setError] = useState("")
   const [loading, setLoading] = useState(false)
   const [returnUrl, setReturnUrl] = useState<string | null>(null)
+  const [verificationMessage, setVerificationMessage] = useState("")
 
   useEffect(() => {
     // Отримати returnUrl з query параметрів
     const url = searchParams.get('returnUrl')
     if (url) {
       setReturnUrl(decodeURIComponent(url))
+    }
+    
+    // Перевірити чи email верифікований
+    const verified = searchParams.get('verified')
+    if (verified === 'true') {
+      setVerificationMessage('Ваш email підтверджено. Тепер ви можете увійти.')
     }
   }, [searchParams])
 
@@ -34,7 +41,7 @@ export default function LoginPage() {
   // Redirect to dashboard if already logged in
   if (user) {
     router.push('/dashboard')
-    return <Loading fullScreen size="lg" />
+    return null
   }
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -68,7 +75,7 @@ export default function LoginPage() {
     }
   }
 
-  // Показати fullscreen loading під час логіну/редиректу
+  // Показати fullscreen loading під час логіну
   if (loading) {
     return <Loading fullScreen size="lg" />
   }
@@ -85,6 +92,12 @@ export default function LoginPage() {
           </div>
 
           <form onSubmit={handleSubmit} className="bg-gray-dark border border-gray-medium rounded-lg p-6 space-y-4">
+            {verificationMessage && (
+              <div className="bg-green-900/20 border border-green-500 text-green-400 px-4 py-3 rounded-lg text-sm">
+                {verificationMessage}
+              </div>
+            )}
+            
             {error && (
               <div className="bg-red-900/20 border border-red-500 text-red-400 px-4 py-3 rounded-lg text-sm">
                 {error}

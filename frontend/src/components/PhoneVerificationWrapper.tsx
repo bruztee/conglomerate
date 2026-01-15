@@ -9,6 +9,11 @@ export default function PhoneVerificationWrapper({ children }: { children: React
   const [showPopup, setShowPopup] = useState(false)
 
   useEffect(() => {
+    // ТИМЧАСОВО ВИМКНЕНО: обов'язкова верифікація телефону
+    // TODO: Увімкнути після верифікації Twilio
+    setShowPopup(false)
+    
+    /* 
     // Don't show popup while loading to avoid flashing
     if (loading) {
       return
@@ -24,6 +29,7 @@ export default function PhoneVerificationWrapper({ children }: { children: React
     } else {
       setShowPopup(false)
     }
+    */
   }, [user, loading])
 
   const handleVerified = async () => {
