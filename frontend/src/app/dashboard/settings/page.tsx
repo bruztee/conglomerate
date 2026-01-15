@@ -178,7 +178,7 @@ export default function SettingsPage() {
           <h1 className="text-3xl font-bold mb-8">Налаштування</h1>
 
           {/* Current user info */}
-          <div className="bg-gray-dark border border-gray-medium rounded-lg p-6 mb-8">
+          <div className="bg-blur-dark border border-gray-medium rounded-lg p-6 mb-8">
             <h2 className="text-xl font-bold mb-4">Поточна інформація</h2>
             <div className="space-y-2 text-gray-light">
               <p><strong>Ім'я:</strong> {userProfile?.full_name || user.full_name || 'Не вказано'}</p>
@@ -238,7 +238,7 @@ export default function SettingsPage() {
 
           {/* Email Tab */}
           {activeTab === 'email' && (
-            <div className="bg-gray-dark border border-gray-medium rounded-lg p-6">
+            <div className="bg-blur-dark border border-gray-medium rounded-lg p-6">
               <h2 className="text-xl font-bold mb-4">Змінити Email</h2>
               <form onSubmit={handleUpdateEmail} className="space-y-6">
                 <div>
@@ -250,7 +250,7 @@ export default function SettingsPage() {
                     type="email"
                     value={emailForm.email}
                     onChange={(e) => setEmailForm({ email: e.target.value })}
-                    className="w-full px-4 py-3 bg-background border border-gray-medium rounded-lg focus:outline-none focus:border-silver transition-colors"
+                    className="w-full px-4 py-3 bg-blur border border-gray-medium rounded-lg focus:outline-none focus:border-silver transition-colors"
                     placeholder="new@email.com"
                     disabled={loading}
                   />
@@ -272,11 +272,11 @@ export default function SettingsPage() {
 
           {/* Phone Tab */}
           {activeTab === 'phone' && (
-            <div className="bg-gray-dark border border-gray-medium rounded-lg p-6">
+            <div className="bg-blur-dark border border-gray-medium rounded-lg p-6">
               <h2 className="text-xl font-bold mb-4">Змінити Телефон</h2>
               
               {userProfile?.phone && (
-                <div className="mb-6 p-4 bg-background/50 rounded-lg border border-gray-medium">
+                <div className="mb-6 p-4 bg-blur/50 rounded-lg border border-gray-medium">
                   <p className="text-sm text-gray-light mb-1">Поточний телефон:</p>
                   <p className="flex items-center gap-2 text-lg font-medium">{userProfile.phone} {userProfile.phone_verified ? <span className="flex items-center gap-1 text-green-400"><CheckCircleIcon className="w-5 h-5" /> Верифіковано</span> : <span className="flex items-center gap-1 text-yellow-500"><WarningIcon className="w-5 h-5" /> Не верифіковано</span>}</p>
                 </div>
@@ -302,7 +302,7 @@ export default function SettingsPage() {
 
           {/* Password Tab */}
           {activeTab === 'password' && (
-            <div className="bg-gray-dark border border-gray-medium rounded-lg p-6">
+            <div className="bg-blur-dark border border-gray-medium rounded-lg p-6">
               <h2 className="text-xl font-bold mb-4">Змінити Пароль</h2>
               <p className="text-gray-light mb-6">
                 Натисніть кнопку нижче, щоб отримати посилання для зміни пароля на ваш email

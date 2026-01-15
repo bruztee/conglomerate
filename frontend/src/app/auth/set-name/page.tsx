@@ -63,7 +63,7 @@ export default function SetNamePage() {
       
       <main className="min-h-screen flex items-center justify-center px-4 py-12">
         <div className="w-full max-w-md">
-          <div className="bg-gray-dark border border-gray-medium rounded-lg p-8">
+          <div className="bg-blur-dark border border-gray-medium rounded-lg p-8">
             <div className="text-center mb-8">
               <h1 className="text-2xl font-bold mb-2">Вітаємо!</h1>
               <p className="text-gray-light text-sm">
@@ -87,7 +87,7 @@ export default function SetNamePage() {
                   type="text"
                   value={fullName}
                   onChange={(e) => setFullName(e.target.value)}
-                  className="w-full px-4 py-3 bg-background border border-gray-medium rounded-lg focus:outline-none focus:border-silver transition-colors"
+                  className="w-full px-4 py-3 bg-blur border border-gray-medium rounded-lg focus:outline-none focus:border-silver transition-colors"
                   placeholder="Іван Петренко"
                   disabled={loading}
                   autoFocus

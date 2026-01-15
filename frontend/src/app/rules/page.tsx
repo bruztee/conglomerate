@@ -15,7 +15,7 @@ export default function RulesPage() {
             <p className="text-gray-light">Ознайомтесь з умовами використання платформи</p>
           </div>
 
-          <div className="bg-gray-dark border border-gray-medium rounded-lg p-6 sm:p-8 space-y-8">
+          <div className="bg-blur-dark border border-gray-medium rounded-lg p-6 sm:p-8 space-y-8">
             <section>
               <h2 className="text-2xl font-bold mb-4 text-accent">1. Загальні положення</h2>
               <div className="space-y-3 text-gray-light leading-relaxed">
@@ -187,7 +187,7 @@ export default function RulesPage() {
               <h2 className="text-2xl font-bold mb-4 text-accent">11. Контакти та підтримка</h2>
               <div className="space-y-3 text-gray-light leading-relaxed">
                 <p>Якщо у вас виникли питання або проблеми, зв'яжіться з нашою службою підтримки:</p>
-                <div className="bg-background border border-gray-medium rounded-lg p-4 mt-4">
+                <div className="bg-blur border border-gray-medium rounded-lg p-4 mt-4">
                   <div className="space-y-2">
                     <div className="flex items-center gap-2">
                       <EmailIcon className="w-5 h-5 text-accent" />

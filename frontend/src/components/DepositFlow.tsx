@@ -133,7 +133,7 @@ export default function DepositFlow({ onSuccess, userRate }: DepositFlowProps) {
                 id="amount"
                 value={amount}
                 onChange={(e) => setAmount(e.target.value)}
-                className="w-full pl-8 pr-4 py-3 bg-background border border-gray-medium rounded-lg focus:outline-none focus:border-silver transition-colors font-sans"
+                className="w-full pl-8 pr-4 py-3 bg-blur border border-gray-medium rounded-lg focus:outline-none focus:border-silver transition-colors font-sans"
                 placeholder="0.00"
                 min={minAmount}
                 max={maxAmount}
@@ -166,7 +166,7 @@ export default function DepositFlow({ onSuccess, userRate }: DepositFlowProps) {
           
           <div className="text-center mt-4 pt-4 border-t border-gray-medium/30">
             <p className="text-sm text-gray-light mb-1">Ваша місячна ставка</p>
-            <p className="text-2xl font-bold bg-gradient-to-r from-[#C0A062] to-[#E8D4A0] bg-clip-text text-transparent">{userRate}%</p>
+            <p className="text-2xl font-bold text-white">{userRate}%</p>
           </div>
         </div>
       )}
@@ -255,7 +255,7 @@ export default function DepositFlow({ onSuccess, userRate }: DepositFlowProps) {
               </div>
               <div className="pt-3 border-t border-gray-medium/30">
                 <div className="text-xs text-gray-light mb-2">Адреса гаманця:</div>
-                <div className="font-mono text-sm bg-background p-3 rounded break-all text-white">
+                <div className="font-mono text-sm bg-blur p-3 rounded break-all text-white">
                   {selectedWallet.wallet_address}
                 </div>
                 <button

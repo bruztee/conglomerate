@@ -185,7 +185,7 @@ export default function AdminWithdrawalsPage() {
         {withdrawals.map((withdrawal) => (
           <div
             key={withdrawal.id}
-            className={`bg-gray-dark border rounded-lg p-6 ${
+            className={`bg-blur-dark border rounded-lg p-6 ${
               withdrawal.status === 'requested' ? 'border-yellow-500/30' : 'border-gray-medium'
             }`}
           >
@@ -296,7 +296,7 @@ export default function AdminWithdrawalsPage() {
         ))}
 
         {withdrawals.length === 0 && (
-          <div className="bg-gray-dark border border-gray-medium rounded-lg p-12 text-center">
+          <div className="bg-blur-dark border border-gray-medium rounded-lg p-12 text-center">
             <p className="text-gray-light">
               {tab === 'pending' ? 'Немає виводів на підтвердження' : 'Історія виводів порожня'}
             </p>
@@ -306,13 +306,13 @@ export default function AdminWithdrawalsPage() {
 
       {/* Action Modal */}
       {showModal && selectedWithdrawal && (
-        <div className="fixed inset-0 bg-background/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-gray-dark border border-gray-medium rounded-lg max-w-2xl w-full p-6">
+        <div className="fixed inset-0 bg-blur/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-blur-dark border border-gray-medium rounded-lg max-w-2xl w-full p-6">
             <h2 className="text-2xl font-bold mb-6">
               {action === 'approve' ? 'Схвалити вивід' : 'Відхилити вивід'}
             </h2>
 
-            <div className="bg-background border border-gray-medium rounded-lg p-4 mb-6">
+            <div className="bg-blur border border-gray-medium rounded-lg p-4 mb-6">
               <div className="grid grid-cols-2 gap-4 text-sm">
                 <div>
                   <div className="text-gray-light">Користувач:</div>
@@ -341,7 +341,7 @@ export default function AdminWithdrawalsPage() {
                     type="number"
                     value={formData.network_fee}
                     onChange={(e) => setFormData({ ...formData, network_fee: Number(e.target.value) })}
-                    className="w-full px-4 py-3 bg-background border border-gray-medium rounded-lg focus:outline-none focus:border-silver font-sans"
+                    className="w-full px-4 py-3 bg-blur border border-gray-medium rounded-lg focus:outline-none focus:border-silver font-sans"
                     min="0"
                     step="0.01"
                     placeholder="Тільки комісія мережі (не мінімальна сума)"
@@ -360,7 +360,7 @@ export default function AdminWithdrawalsPage() {
                 <textarea
                   value={formData.admin_note}
                   onChange={(e) => setFormData({ ...formData, admin_note: e.target.value })}
-                  className="w-full px-4 py-3 bg-background border border-gray-medium rounded-lg focus:outline-none focus:border-silver resize-none"
+                  className="w-full px-4 py-3 bg-blur border border-gray-medium rounded-lg focus:outline-none focus:border-silver resize-none"
                   rows={3}
                   placeholder={action === 'reject' ? 'Причина відхилення (обов\'язково)' : 'Додаткова інформація (опціонально)'}
                   required={action === 'reject'}
@@ -394,7 +394,7 @@ export default function AdminWithdrawalsPage() {
                     setSelectedWithdrawal(null)
                     resetForm()
                   }}
-                  className="flex-1 px-4 py-3 bg-background border border-gray-medium rounded-lg hover:border-silver/30 transition-all"
+                  className="flex-1 px-4 py-3 bg-blur border border-gray-medium rounded-lg hover:border-silver/30 transition-all"
                 >
                   Скасувати
                 </button>

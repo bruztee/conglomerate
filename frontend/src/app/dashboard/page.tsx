@@ -7,6 +7,8 @@ import NetworkIcon from "@/components/icons/NetworkIcon"
 import BoltIcon from "@/components/icons/BoltIcon"
 import WarningIcon from "@/components/icons/WarningIcon"
 import CopyIcon from "@/components/icons/CopyIcon"
+import Pagination from "@/components/Pagination"
+import DepositFlow from "@/components/DepositFlow"
 
 import { useState, useEffect } from "react"
 import Link from "next/link"
@@ -15,7 +17,6 @@ import { useAuth } from "@/context/AuthContext"
 import { api } from "@/lib/api"
 import { useRouter } from "next/navigation"
 import Loading from "@/components/Loading"
-import DepositFlow from "@/components/DepositFlow"
 
 interface Deposit {
   id: string
@@ -44,6 +45,11 @@ export default function DashboardPage() {
   const [activeDeposits, setActiveDeposits] = useState<Deposit[]>([])
   const [depositHistory, setDepositHistory] = useState<Deposit[]>([])
   const [profitPercentage, setProfitPercentage] = useState(5) // Актуальний % користувача з БД
+  
+  // Pagination states
+  const [historyPage, setHistoryPage] = useState(1)
+  const [activeDepositsPage, setActiveDepositsPage] = useState(1)
+  const itemsPerPage = 10
 
   // Show loading while checking auth
   if (authLoading) {
@@ -392,11 +398,14 @@ export default function DashboardPage() {
               <h2 className="text-xl font-bold mb-4">Активні депозити</h2>
 
               {activeDeposits.length > 0 ? (
-                <div className="space-y-4 max-h-[600px] overflow-y-auto pr-2">
-                  {activeDeposits.map((deposit) => (
+                <>
+                  <div className="space-y-4">
+                    {activeDeposits
+                      .slice((activeDepositsPage - 1) * itemsPerPage, activeDepositsPage * itemsPerPage)
+                      .map((deposit) => (
                     <div
                       key={deposit.id}
-                      className="bg-background/50 border border-gray-medium/50 rounded-lg p-4 hover:border-silver/50 transition-colors"
+                      className="bg-blur/50 border border-gray-medium/50 rounded-lg p-4 hover:border-silver/50 transition-colors"
                     >
                       <div className="flex justify-between items-start mb-3">
                         <div className="flex-1">
@@ -444,7 +453,14 @@ export default function DashboardPage() {
                       </div>
                     </div>
                   ))}
-                </div>
+                  </div>
+                  
+                  <Pagination
+                    currentPage={activeDepositsPage}
+                    totalPages={Math.ceil(activeDeposits.length / itemsPerPage)}
+                    onPageChange={setActiveDepositsPage}
+                  />
+                </>
               ) : (
                 <div className="text-center py-12 text-gray-light">
                   <div className="mb-4">
@@ -465,10 +481,12 @@ export default function DashboardPage() {
                 <>
                   {/* Mobile Cards */}
                   <div className="md:hidden space-y-4">
-                    {depositHistory.map((deposit) => (
+                    {depositHistory
+                      .slice((historyPage - 1) * itemsPerPage, historyPage * itemsPerPage)
+                      .map((deposit) => (
                       <div
                         key={deposit.id}
-                        className="bg-background/50 border border-gray-medium/50 rounded-lg p-4"
+                        className="bg-blur/50 border border-gray-medium/50 rounded-lg p-4"
                       >
                         <div className="flex justify-between items-center mb-3 pb-3 border-b border-gray-medium/30">
                           <span className="text-sm font-sans text-gray-light">Deposit #{deposit.id}</span>
@@ -542,10 +560,12 @@ export default function DashboardPage() {
                         </tr>
                       </thead>
                       <tbody>
-                        {depositHistory.map((deposit) => (
+                        {depositHistory
+                          .slice((historyPage - 1) * itemsPerPage, historyPage * itemsPerPage)
+                          .map((deposit) => (
                           <tr
                             key={deposit.id}
-                            className="border-b border-gray-medium/20 hover:bg-background/30 transition-colors"
+                            className="border-b border-gray-medium/20 hover:bg-blur/30 transition-colors"
                           >
                             <td className="py-3 px-4 text-sm font-sans">#{deposit.id}</td>
                             <td className="py-3 px-4 text-sm font-medium font-sans">${deposit.amount.toFixed(2)}</td>
@@ -577,6 +597,12 @@ export default function DashboardPage() {
                       </tbody>
                     </table>
                   </div>
+                  
+                  <Pagination
+                    currentPage={historyPage}
+                    totalPages={Math.ceil(depositHistory.length / itemsPerPage)}
+                    onPageChange={setHistoryPage}
+                  />
                 </>
               ) : (
                 <div className="text-center py-8 text-gray-light">

@@ -150,7 +150,7 @@ export default function AdminPaymentMethodsPage() {
         {methods.map((method) => (
           <div
             key={method.id}
-            className={`bg-gray-dark border rounded-lg p-6 ${method.is_active ? 'border-gray-medium' : 'border-gray-medium/30 opacity-50'}`}
+            className={`bg-blur-dark border rounded-lg p-6 ${method.is_active ? 'border-gray-medium' : 'border-gray-medium/30 opacity-50'}`}
           >
             <div className="flex justify-between items-start">
               <div className="flex-1 grid grid-cols-1 md:grid-cols-4 gap-4">
@@ -171,7 +171,7 @@ export default function AdminPaymentMethodsPage() {
               <div className="flex gap-2 ml-4">
                 <button
                   onClick={() => openEditModal(method)}
-                  className="px-3 py-1 bg-background border border-gray-medium rounded text-sm hover:border-silver/30 transition-all"
+                  className="px-3 py-1 bg-blur border border-gray-medium rounded text-sm hover:border-silver/30 transition-all"
                 >
                   Редагувати
                 </button>
@@ -199,7 +199,7 @@ export default function AdminPaymentMethodsPage() {
         ))}
 
         {methods.length === 0 && (
-          <div className="bg-gray-dark border border-gray-medium rounded-lg p-12 text-center">
+          <div className="bg-blur-dark border border-gray-medium rounded-lg p-12 text-center">
             <div className="flex justify-center mb-4">
               <CardIcon className="w-16 h-16 text-silver" />
             </div>
@@ -219,8 +219,8 @@ export default function AdminPaymentMethodsPage() {
 
       {/* Modal */}
       {showModal && (
-        <div className="fixed inset-0 bg-background/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-gray-dark border border-gray-medium rounded-lg max-w-2xl w-full p-6">
+        <div className="fixed inset-0 bg-blur/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-blur-dark border border-gray-medium rounded-lg max-w-2xl w-full p-6">
             <h2 className="text-2xl font-bold mb-6">{editingMethod ? 'Редагувати реквізити' : 'Додати новий гаманець'}</h2>
 
             <form onSubmit={handleSubmit} className="space-y-4">
@@ -230,7 +230,7 @@ export default function AdminPaymentMethodsPage() {
                   <select
                     value={formData.currency}
                     onChange={(e) => setFormData({ ...formData, currency: e.target.value })}
-                    className="w-full px-4 py-3 bg-background border border-gray-medium rounded-lg focus:outline-none focus:border-silver"
+                    className="w-full px-4 py-3 bg-blur border border-gray-medium rounded-lg focus:outline-none focus:border-silver"
                     required
                   >
                     {CURRENCIES.map(currency => (
@@ -244,7 +244,7 @@ export default function AdminPaymentMethodsPage() {
                   <select
                     value={formData.network}
                     onChange={(e) => setFormData({ ...formData, network: e.target.value })}
-                    className="w-full px-4 py-3 bg-background border border-gray-medium rounded-lg focus:outline-none focus:border-silver"
+                    className="w-full px-4 py-3 bg-blur border border-gray-medium rounded-lg focus:outline-none focus:border-silver"
                     required
                   >
                     {NETWORKS.map(network => (
@@ -260,7 +260,7 @@ export default function AdminPaymentMethodsPage() {
                   type="text"
                   value={formData.wallet_address}
                   onChange={(e) => setFormData({ ...formData, wallet_address: e.target.value })}
-                  className="w-full px-4 py-3 bg-background border border-gray-medium rounded-lg focus:outline-none focus:border-silver font-mono"
+                  className="w-full px-4 py-3 bg-blur border border-gray-medium rounded-lg focus:outline-none focus:border-silver font-mono"
                   placeholder="TXyz...abc123"
                   required
                 />
@@ -272,7 +272,7 @@ export default function AdminPaymentMethodsPage() {
                   type="number"
                   value={formData.min_amount}
                   onChange={(e) => setFormData({ ...formData, min_amount: Number(e.target.value) })}
-                  className="w-full px-4 py-3 bg-background border border-gray-medium rounded-lg focus:outline-none focus:border-silver font-sans"
+                  className="w-full px-4 py-3 bg-blur border border-gray-medium rounded-lg focus:outline-none focus:border-silver font-sans"
                   min="0"
                   step="0.01"
                 />
@@ -303,7 +303,7 @@ export default function AdminPaymentMethodsPage() {
                     setEditingMethod(null)
                     resetForm()
                   }}
-                  className="flex-1 px-4 py-3 bg-background border border-gray-medium rounded-lg hover:border-silver/30 transition-all"
+                  className="flex-1 px-4 py-3 bg-blur border border-gray-medium rounded-lg hover:border-silver/30 transition-all"
                 >
                   Скасувати
                 </button>

@@ -85,9 +85,9 @@ export default function PhoneVerificationPopup({ onVerified, onClose }: PhoneVer
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-background/80 backdrop-blur-sm">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-blur/80 backdrop-blur-sm">
       <div className="w-full max-w-md mx-4">
-        <div className="bg-gray-dark border border-gray-medium rounded-lg p-8 shadow-2xl relative">
+        <div className="bg-blur-dark border border-gray-medium rounded-lg p-8 shadow-2xl relative">
           {onClose && (
             <button
               onClick={onClose}
@@ -124,7 +124,7 @@ export default function PhoneVerificationPopup({ onVerified, onClose }: PhoneVer
                   type="tel"
                   value={phone}
                   onChange={(e) => setPhone(e.target.value)}
-                  className="w-full px-4 py-3 bg-background border border-gray-medium rounded-lg focus:outline-none focus:border-silver transition-colors"
+                  className="w-full px-4 py-3 bg-blur border border-gray-medium rounded-lg focus:outline-none focus:border-silver transition-colors"
                   placeholder="+380123456789"
                   disabled={loading}
                   autoFocus
@@ -156,7 +156,7 @@ export default function PhoneVerificationPopup({ onVerified, onClose }: PhoneVer
                     const value = e.target.value.replace(/\D/g, '').slice(0, 6)
                     setCode(value)
                   }}
-                  className="w-full px-4 py-3 bg-background border border-gray-medium rounded-lg focus:outline-none focus:border-silver transition-colors text-center text-2xl tracking-widest font-mono"
+                  className="w-full px-4 py-3 bg-blur border border-gray-medium rounded-lg focus:outline-none focus:border-silver transition-colors text-center text-2xl tracking-widest font-mono"
                   placeholder="000000"
                   disabled={loading}
                   autoFocus

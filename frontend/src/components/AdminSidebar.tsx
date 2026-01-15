@@ -34,7 +34,7 @@ export default function AdminSidebar() {
   }
 
   return (
-    <div className="w-64 bg-gray-dark border-r border-gray-medium min-h-screen flex flex-col">
+    <div className="w-64 bg-blur-dark border-r border-gray-medium min-h-screen flex flex-col">
       <div className="p-6">
         <h1 className="text-xl font-bold text-silver mb-1">Адмін-панель</h1>
       </div>

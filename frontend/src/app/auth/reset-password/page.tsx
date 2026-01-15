@@ -83,7 +83,7 @@ function ResetPasswordContent() {
   return (
     <main className="min-h-screen flex items-center justify-center px-4 py-12">
       <div className="w-full max-w-md">
-        <div className="bg-gray-dark border border-gray-medium rounded-lg p-8">
+        <div className="bg-blur-dark border border-gray-medium rounded-lg p-8">
           <div className="text-center mb-8">
             <h1 className="text-2xl font-bold mb-2">Новий пароль</h1>
             <p className="text-gray-light text-sm">
@@ -102,7 +102,7 @@ function ResetPasswordContent() {
                 type="password"
                 value={formData.password}
                 onChange={handleChange}
-                className="w-full px-4 py-3 bg-background border border-gray-medium rounded-lg focus:outline-none focus:border-silver transition-colors"
+                className="w-full px-4 py-3 bg-blur border border-gray-medium rounded-lg focus:outline-none focus:border-silver transition-colors"
                 placeholder="Мінімум 6 символів"
                 disabled={loading}
               />
@@ -118,7 +118,7 @@ function ResetPasswordContent() {
                 type="password"
                 value={formData.confirmPassword}
                 onChange={handleChange}
-                className="w-full px-4 py-3 bg-background border border-gray-medium rounded-lg focus:outline-none focus:border-silver transition-colors"
+                className="w-full px-4 py-3 bg-blur border border-gray-medium rounded-lg focus:outline-none focus:border-silver transition-colors"
                 placeholder="Повторіть пароль"
                 disabled={loading}
               />

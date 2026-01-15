@@ -111,34 +111,34 @@ export default function AdminDashboard() {
 
       {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-        <Link href="/admin/users" className="bg-gray-dark border border-gray-medium rounded-lg p-6 hover:border-silver/30 transition-all cursor-pointer">
+        <Link href="/admin/users" className="bg-blur-dark border border-gray-medium rounded-lg p-6 hover:border-silver/30 transition-all cursor-pointer">
           <div className="text-sm text-gray-light mb-2">Всього користувачів</div>
           <div className="text-3xl font-bold text-foreground font-sans">{stats.totalUsers}</div>
         </Link>
 
-        <Link href="/admin/deposits" className="bg-gray-dark border border-gray-medium rounded-lg p-6 hover:border-silver/30 transition-all cursor-pointer">
+        <Link href="/admin/deposits" className="bg-blur-dark border border-gray-medium rounded-lg p-6 hover:border-silver/30 transition-all cursor-pointer">
           <div className="text-sm text-gray-light mb-2">Депозити на підтвердженні</div>
           <div className="text-3xl font-bold text-yellow-500 font-sans">{stats.pendingDeposits}</div>
         </Link>
 
-        <Link href="/admin/withdrawals" className="bg-gray-dark border border-gray-medium rounded-lg p-6 hover:border-silver/30 transition-all cursor-pointer">
+        <Link href="/admin/withdrawals" className="bg-blur-dark border border-gray-medium rounded-lg p-6 hover:border-silver/30 transition-all cursor-pointer">
           <div className="text-sm text-gray-light mb-2">Виводи на підтвердженні</div>
           <div className="text-3xl font-bold text-yellow-500 font-sans">{stats.pendingWithdrawals}</div>
         </Link>
 
-        <Link href="/admin/payment-methods" className="bg-gray-dark border border-gray-medium rounded-lg p-6 hover:border-silver/30 transition-all cursor-pointer">
+        <Link href="/admin/payment-methods" className="bg-blur-dark border border-gray-medium rounded-lg p-6 hover:border-silver/30 transition-all cursor-pointer">
           <div className="text-sm text-gray-light mb-2">Активні реквізити</div>
           <div className="text-3xl font-bold text-silver font-sans">{stats.activePaymentMethods}</div>
         </Link>
       </div>
 
       {/* Quick Actions */}
-      <div className="bg-gray-dark border border-gray-medium rounded-lg p-6">
+      <div className="bg-blur-dark border border-gray-medium rounded-lg p-6">
         <h2 className="text-xl font-bold mb-4">Швидкі дії</h2>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           <Link
             href="/admin/users"
-            className="flex items-center gap-3 p-4 bg-background border border-gray-medium rounded-lg hover:border-silver/30 transition-all cursor-pointer"
+            className="flex items-center gap-3 p-4 bg-blur border border-gray-medium rounded-lg hover:border-silver/30 transition-all cursor-pointer"
           >
             <div className="text-silver"><UsersIcon /></div>
             <div>
@@ -149,7 +149,7 @@ export default function AdminDashboard() {
 
           <Link
             href="/admin/payment-methods"
-            className="flex items-center gap-3 p-4 bg-background border border-gray-medium rounded-lg hover:border-silver/30 transition-all cursor-pointer"
+            className="flex items-center gap-3 p-4 bg-blur border border-gray-medium rounded-lg hover:border-silver/30 transition-all cursor-pointer"
           >
             <div className="text-silver"><WalletIcon /></div>
             <div>
@@ -160,7 +160,7 @@ export default function AdminDashboard() {
 
           <Link
             href="/admin/deposits"
-            className="flex items-center gap-3 p-4 bg-background border border-gray-medium rounded-lg hover:border-silver/30 transition-all cursor-pointer"
+            className="flex items-center gap-3 p-4 bg-blur border border-gray-medium rounded-lg hover:border-silver/30 transition-all cursor-pointer"
           >
             <div className="text-silver"><DepositIcon /></div>
             <div>
@@ -171,7 +171,7 @@ export default function AdminDashboard() {
 
           <Link
             href="/admin/withdrawals"
-            className="flex items-center gap-3 p-4 bg-background border border-gray-medium rounded-lg hover:border-silver/30 transition-all cursor-pointer"
+            className="flex items-center gap-3 p-4 bg-blur border border-gray-medium rounded-lg hover:border-silver/30 transition-all cursor-pointer"
           >
             <div className="text-silver"><WithdrawIcon /></div>
             <div>
@@ -182,7 +182,7 @@ export default function AdminDashboard() {
 
           <Link
             href="/admin/security"
-            className="flex items-center gap-3 p-4 bg-background border border-gray-medium rounded-lg hover:border-silver/30 transition-all cursor-pointer"
+            className="flex items-center gap-3 p-4 bg-blur border border-gray-medium rounded-lg hover:border-silver/30 transition-all cursor-pointer"
           >
             <div className="text-silver"><SecurityIcon /></div>
             <div>

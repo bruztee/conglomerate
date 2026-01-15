@@ -122,38 +122,38 @@ export default function ReferralPage() {
           </div>
 
           <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4 mb-8">
-            <div className="bg-gray-dark border border-gray-medium rounded-lg p-6">
+            <div className="bg-blur-dark border border-gray-medium rounded-lg p-6">
               <div className="text-gray-light text-sm mb-2">Всього рефералів</div>
               <div className="text-3xl font-bold text-foreground font-sans">{totalReferrals}</div>
             </div>
 
-            <div className="bg-gray-dark border border-gray-medium rounded-lg p-6">
+            <div className="bg-blur-dark border border-gray-medium rounded-lg p-6">
               <div className="text-gray-light text-sm mb-2">Активні реферали</div>
               <div className="text-3xl font-bold text-silver font-sans">{activeReferrals}</div>
             </div>
 
-            <div className="bg-gray-dark border border-gray-medium rounded-lg p-6">
+            <div className="bg-blur-dark border border-gray-medium rounded-lg p-6">
               <div className="text-gray-light text-sm mb-2">Загальний заробіток</div>
               <div className="text-3xl font-bold text-foreground font-sans">${totalEarnings.toFixed(2)}</div>
             </div>
 
-            <div className="bg-gray-dark border border-gray-medium rounded-lg p-6">
+            <div className="bg-blur-dark border border-gray-medium rounded-lg p-6">
               <div className="text-gray-light text-sm mb-2">Реферальний код</div>
               <div className="text-2xl font-bold text-silver font-mono">{referralCode || '—'}</div>
             </div>
           </div>
 
           <div className="grid lg:grid-cols-3 gap-6 mb-8">
-            <div className="lg:col-span-2 bg-gray-dark border border-gray-medium rounded-lg p-6">
+            <div className="lg:col-span-2 bg-blur-dark border border-gray-medium rounded-lg p-6">
               <h2 className="text-xl font-bold mb-4">Ваше реферальне посилання</h2>
 
-              <div className="bg-background border border-gray-medium rounded-lg p-4 mb-6">
+              <div className="bg-blur border border-gray-medium rounded-lg p-4 mb-6">
                 <div className="flex flex-col sm:flex-row gap-3">
                   <input
                     type="text"
                     readOnly
                     value={referralLink}
-                    className="flex-1 px-4 py-3 bg-gray-dark border border-gray-medium rounded-lg text-sm focus:outline-none"
+                    className="flex-1 px-4 py-3 bg-blur-dark border border-gray-medium rounded-lg text-sm focus:outline-none"
                   />
                   <button
                     onClick={copyToClipboard}
@@ -186,7 +186,7 @@ export default function ReferralPage() {
               </div>
             </div>
 
-            <div className="bg-gray-dark border border-gray-medium rounded-lg p-6">
+            <div className="bg-blur-dark border border-gray-medium rounded-lg p-6">
               <h2 className="text-xl font-bold mb-4">Умови програми</h2>
 
               <div className="space-y-4 text-sm">
@@ -229,7 +229,7 @@ export default function ReferralPage() {
             </div>
           </div>
 
-          <div className="bg-gray-dark border border-gray-medium rounded-lg p-6">
+          <div className="bg-blur-dark border border-gray-medium rounded-lg p-6">
             <div className="flex items-center justify-between mb-6">
               <h2 className="text-xl font-bold">Ваші реферали</h2>
               <div className="text-sm text-gray-light">
@@ -285,7 +285,11 @@ export default function ReferralPage() {
               </div>
             ) : (
               <div className="text-center py-12 text-gray-light">
-                <div className="text-4xl mb-4">👥</div>
+                <div className="flex justify-center mb-4">
+                  <svg className="w-16 h-16 text-gray-medium" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                  </svg>
+                </div>
                 <p className="mb-2">У вас поки немає рефералів</p>
                 <p className="text-sm">Поділіться своїм посиланням, щоб почати заробляти</p>
               </div>
@@ -300,7 +304,7 @@ export default function ReferralPage() {
                 <span className="font-sans">2%</span> від їхніх депозитів
               </p>
               <div className="flex items-center gap-4">
-                <div className="flex-1 bg-background rounded-full h-3 overflow-hidden">
+                <div className="flex-1 bg-blur rounded-full h-3 overflow-hidden">
                   <div
                     className="h-full bg-silver transition-all"
                     style={{ width: `${(activeReferrals / 5) * 100}%` }}
@@ -310,7 +314,7 @@ export default function ReferralPage() {
               </div>
             </div>
 
-            <div className="bg-gray-dark border border-gray-medium rounded-lg p-6">
+            <div className="bg-blur-dark border border-gray-medium rounded-lg p-6">
               <h3 className="text-xl font-bold mb-3">Статистика</h3>
               <div className="space-y-2 text-sm">
                 <div className="flex justify-between">

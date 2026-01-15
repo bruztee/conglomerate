@@ -39,7 +39,7 @@ function VerifyEmailContent() {
   return (
     <main className="min-h-screen flex items-center justify-center px-4 py-12">
       <div className="w-full max-w-md">
-        <div className="bg-gray-dark border border-gray-medium rounded-lg p-8 text-center">
+        <div className="bg-blur-dark border border-gray-medium rounded-lg p-8 text-center">
           <div className="flex justify-center mb-4">
             <EmailIcon className="w-16 h-16 text-silver" />
           </div>

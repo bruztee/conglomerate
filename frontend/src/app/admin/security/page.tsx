@@ -96,7 +96,7 @@ export default function AdminSecurityPage() {
       </div>
 
       {/* Search */}
-      <div className="bg-gray-dark border border-gray-medium rounded-lg p-6 mb-6">
+      <div className="bg-blur-dark border border-gray-medium rounded-lg p-6 mb-6">
         <div className="flex gap-4 items-end">
           <div className="flex-1">
             <label className="block text-sm font-medium mb-2">Пошук</label>
@@ -104,7 +104,7 @@ export default function AdminSecurityPage() {
               type="text"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full px-4 py-2 bg-background border border-gray-medium rounded-lg focus:outline-none focus:border-silver"
+              className="w-full px-4 py-2 bg-blur border border-gray-medium rounded-lg focus:outline-none focus:border-silver"
               placeholder="Пошук по action, source, IP..."
             />
           </div>
@@ -118,7 +118,7 @@ export default function AdminSecurityPage() {
       </div>
 
       {/* Logs Table */}
-      <div className="bg-gray-dark border border-gray-medium rounded-lg overflow-hidden">
+      <div className="bg-blur-dark border border-gray-medium rounded-lg overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full">
             <thead className="bg-gray-medium/20">
@@ -198,7 +198,7 @@ export default function AdminSecurityPage() {
                         <summary className="cursor-pointer text-silver hover:text-foreground">
                           Показати
                         </summary>
-                        <pre className="mt-2 p-2 bg-background border border-gray-medium rounded text-xs overflow-x-auto">
+                        <pre className="mt-2 p-2 bg-blur border border-gray-medium rounded text-xs overflow-x-auto">
                           {JSON.stringify(log.meta, null, 2)}
                         </pre>
                       </details>
@@ -223,7 +223,7 @@ export default function AdminSecurityPage() {
       </div>
 
       {/* Info */}
-      <div className="mt-6 bg-background border border-gray-medium rounded-lg p-4">
+      <div className="mt-6 bg-blur border border-gray-medium rounded-lg p-4">
         <div className="text-sm text-gray-light">
           <div className="font-medium mb-2">Інформація про логування:</div>
           <ul className="space-y-1 text-xs">

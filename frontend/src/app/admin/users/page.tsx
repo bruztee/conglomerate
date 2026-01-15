@@ -98,7 +98,7 @@ export default function AdminUsersPage() {
       </div>
 
       {/* Users Table */}
-      <div className="bg-gray-dark border border-gray-medium rounded-lg overflow-hidden">
+      <div className="bg-blur-dark border border-gray-medium rounded-lg overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full">
             <thead className="bg-gray-medium/20">
@@ -185,11 +185,11 @@ export default function AdminUsersPage() {
 
       {/* Edit Modal */}
       {showModal && editingUser && (
-        <div className="fixed inset-0 bg-background/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-gray-dark border border-gray-medium rounded-lg max-w-2xl w-full p-6">
+        <div className="fixed inset-0 bg-blur/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-blur-dark border border-gray-medium rounded-lg max-w-2xl w-full p-6">
             <h2 className="text-2xl font-bold mb-6">Редагувати користувача</h2>
 
-            <div className="mb-6 p-4 bg-background border border-gray-medium rounded-lg">
+            <div className="mb-6 p-4 bg-blur border border-gray-medium rounded-lg">
               <div className="text-sm text-gray-light mb-1">Email:</div>
               <div className="font-medium">{editingUser.email}</div>
               <div className="text-sm text-gray-light mt-2 mb-1">ID:</div>
@@ -203,7 +203,7 @@ export default function AdminUsersPage() {
                   <select
                     value={formData.status}
                     onChange={(e) => setFormData({ ...formData, status: e.target.value })}
-                    className="w-full px-4 py-2 bg-background border border-gray-medium rounded-lg focus:outline-none focus:border-silver"
+                    className="w-full px-4 py-2 bg-blur border border-gray-medium rounded-lg focus:outline-none focus:border-silver"
                   >
                     <option value="active">Active</option>
                     <option value="blocked">Blocked</option>
@@ -219,7 +219,7 @@ export default function AdminUsersPage() {
                     max="100"
                     value={formData.monthly_percentage}
                     onChange={(e) => setFormData({ ...formData, monthly_percentage: parseFloat(e.target.value) })}
-                    className="w-full px-4 py-2 bg-background border border-gray-medium rounded-lg focus:outline-none focus:border-silver font-sans"
+                    className="w-full px-4 py-2 bg-blur border border-gray-medium rounded-lg focus:outline-none focus:border-silver font-sans"
                   />
                 </div>
               </div>
@@ -238,7 +238,7 @@ export default function AdminUsersPage() {
                     setShowModal(false)
                     setEditingUser(null)
                   }}
-                  className="flex-1 px-4 py-3 bg-background border border-gray-medium rounded-lg hover:border-silver/30 transition-all"
+                  className="flex-1 px-4 py-3 bg-blur border border-gray-medium rounded-lg hover:border-silver/30 transition-all"
                 >
                   Скасувати
                 </button>

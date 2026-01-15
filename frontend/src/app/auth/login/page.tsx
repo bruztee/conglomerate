@@ -90,7 +90,7 @@ export default function LoginPage() {
             <p className="text-gray-light">Увійдіть до свого акаунту</p>
           </div>
 
-          <form onSubmit={handleSubmit} className="bg-gray-dark border border-gray-medium rounded-lg p-6 space-y-4">
+          <form onSubmit={handleSubmit} className="bg-blur-dark border border-gray-medium rounded-lg p-6 space-y-4">
             {verificationMessage && (
               <div className="bg-green-900/20 border border-green-500 text-green-400 px-4 py-3 rounded-lg text-sm">
                 {verificationMessage}
@@ -113,7 +113,7 @@ export default function LoginPage() {
                 name="email"
                 value={email}
                 onChange={handleChange}
-                className="w-full px-4 py-3 bg-background border border-gray-medium rounded-lg focus:outline-none focus:border-silver transition-colors font-sans"
+                className="w-full px-4 py-3 bg-blur border border-gray-medium rounded-lg focus:outline-none focus:border-silver transition-colors font-sans"
                 placeholder="your@email.com"
               />
             </div>
@@ -128,14 +128,14 @@ export default function LoginPage() {
                 name="password"
                 value={password}
                 onChange={handleChange}
-                className="w-full px-4 py-3 bg-background border border-gray-medium rounded-lg focus:outline-none focus:border-silver transition-colors"
+                className="w-full px-4 py-3 bg-blur border border-gray-medium rounded-lg focus:outline-none focus:border-silver transition-colors"
                 placeholder="Введіть пароль"
               />
             </div>
 
             <div className="flex items-center justify-between text-sm">
               <label className="flex items-center gap-2 cursor-pointer">
-                <input type="checkbox" className="w-4 h-4 bg-background border border-gray-medium rounded" />
+                <input type="checkbox" className="w-4 h-4 bg-blur border border-gray-medium rounded" />
                 <span className="text-gray-light">Запам'ятати мене</span>
               </label>
               <Link href="/auth/forgot-password" className="text-silver hover:text-foreground transition-colors">

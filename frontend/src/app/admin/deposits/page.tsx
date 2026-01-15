@@ -144,7 +144,7 @@ export default function AdminDepositsPage() {
         {deposits.map((deposit) => (
           <div
             key={deposit.id}
-            className={`bg-gray-dark border rounded-lg p-6 ${
+            className={`bg-blur-dark border rounded-lg p-6 ${
               deposit.status === 'pending' ? 'border-yellow-500/30' : 'border-gray-medium'
             }`}
           >
@@ -236,7 +236,7 @@ export default function AdminDepositsPage() {
         ))}
 
         {deposits.length === 0 && (
-          <div className="bg-gray-dark border border-gray-medium rounded-lg p-12 text-center">
+          <div className="bg-blur-dark border border-gray-medium rounded-lg p-12 text-center">
             <p className="text-gray-light">
               {tab === 'pending' ? 'Немає депозитів на підтвердження' : 'Історія депозитів порожня'}
             </p>
@@ -246,13 +246,13 @@ export default function AdminDepositsPage() {
 
       {/* Action Modal */}
       {showModal && selectedDeposit && (
-        <div className="fixed inset-0 bg-background/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-gray-dark border border-gray-medium rounded-lg max-w-2xl w-full p-6">
+        <div className="fixed inset-0 bg-blur/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-blur-dark border border-gray-medium rounded-lg max-w-2xl w-full p-6">
             <h2 className="text-2xl font-bold mb-6">
               {action === 'approve' ? 'Підтвердити депозит' : 'Відхилити депозит'}
             </h2>
 
-            <div className="bg-background border border-gray-medium rounded-lg p-4 mb-6">
+            <div className="bg-blur border border-gray-medium rounded-lg p-4 mb-6">
               <div className="grid grid-cols-2 gap-4 text-sm">
                 <div>
                   <div className="text-gray-light">Користувач:</div>
@@ -273,7 +273,7 @@ export default function AdminDepositsPage() {
                 <textarea
                   value={note}
                   onChange={(e) => setNote(e.target.value)}
-                  className="w-full px-4 py-3 bg-background border border-gray-medium rounded-lg focus:outline-none focus:border-silver resize-none"
+                  className="w-full px-4 py-3 bg-blur border border-gray-medium rounded-lg focus:outline-none focus:border-silver resize-none"
                   rows={4}
                   placeholder={action === 'approve' ? 'Додаткова інформація (опціонально)' : 'Причина відхилення (обов\'язково)'}
                   required={action === 'reject'}
@@ -316,7 +316,7 @@ export default function AdminDepositsPage() {
                     setSelectedDeposit(null)
                     setNote('')
                   }}
-                  className="flex-1 px-4 py-3 bg-background border border-gray-medium rounded-lg hover:border-silver/30 transition-all"
+                  className="flex-1 px-4 py-3 bg-blur border border-gray-medium rounded-lg hover:border-silver/30 transition-all"
                 >
                   Скасувати
                 </button>

@@ -8,6 +8,7 @@ import { api } from "@/lib/api"
 import Header from "@/components/Header"
 import Loading from "@/components/Loading"
 import WarningIcon from "@/components/icons/WarningIcon"
+import Pagination from "@/components/Pagination"
 
 interface WithdrawalRequest {
   id: string
@@ -54,6 +55,8 @@ export default function WithdrawPage() {
   const [error, setError] = useState('')
   const [activeDeposits, setActiveDeposits] = useState<Deposit[]>([])
   const [withdrawalHistory, setWithdrawalHistory] = useState<WithdrawalRequest[]>([])
+  const [withdrawalPage, setWithdrawalPage] = useState(1)
+  const itemsPerPage = 10
 
   // Show loading while checking auth
   if (authLoading) {
@@ -342,7 +345,7 @@ export default function WithdrawPage() {
           </div>
 
           <div className="grid lg:grid-cols-2 gap-6 mb-8">
-            <div className="bg-gray-dark border border-gray-medium rounded-lg p-6">
+            <div className="bg-blur-dark border border-gray-medium rounded-lg p-6">
               <h2 className="text-xl font-bold mb-4">Створити заявку на вивід</h2>
 
               <form onSubmit={handleSubmit} className="space-y-4">
@@ -392,7 +395,7 @@ export default function WithdrawPage() {
 
                 {selectedDeposit && (
                   <>
-                    <div className="bg-background border border-gray-medium rounded-lg p-4">
+                    <div className="bg-blur border border-gray-medium rounded-lg p-4">
                       <div className="text-sm space-y-2">
                         <div className="flex justify-between">
                           <span className="text-gray-light">Обраний депозит:</span>
@@ -427,7 +430,7 @@ export default function WithdrawPage() {
                             setIsFullWithdrawal(false)
                           }}
                           disabled={isFullWithdrawal}
-                          className="w-full px-4 py-3 pr-20 bg-background border border-gray-medium rounded-lg focus:outline-none focus:border-silver transition-colors font-sans disabled:opacity-60 disabled:cursor-not-allowed"
+                          className="w-full px-4 py-3 pr-20 bg-blur border border-gray-medium rounded-lg focus:outline-none focus:border-silver transition-colors font-sans disabled:opacity-60 disabled:cursor-not-allowed"
                           placeholder="Введіть суму"
                         />
                         <button
@@ -457,7 +460,7 @@ export default function WithdrawPage() {
                     id="wallet"
                     value={walletAddress}
                     onChange={(e) => setWalletAddress(e.target.value)}
-                    className="w-full px-4 py-3 bg-background border border-gray-medium rounded-lg focus:outline-none focus:border-silver transition-colors font-sans"
+                    className="w-full px-4 py-3 bg-blur border border-gray-medium rounded-lg focus:outline-none focus:border-silver transition-colors font-sans"
                     placeholder="Введіть адресу вашого криптогаманця"
                   />
                 </div>
@@ -483,7 +486,7 @@ export default function WithdrawPage() {
             </div>
 
             <div className="space-y-6">
-              <div className="bg-gray-dark border border-gray-medium rounded-lg p-6">
+              <div className="bg-blur-dark border border-gray-medium rounded-lg p-6">
                 <h2 className="text-xl font-bold mb-4">Умови виводу</h2>
 
                 <div className="space-y-4 text-sm">
@@ -529,13 +532,16 @@ export default function WithdrawPage() {
                 </div>
               </div>
 
-              <div className="bg-gray-dark border border-gray-medium rounded-lg p-6">
+              <div className="bg-blur-dark border border-gray-medium rounded-lg p-6">
                 <h2 className="text-xl font-bold mb-4">Історія виводів</h2>
 
                 {withdrawalHistory.length > 0 ? (
-                  <div className="space-y-3 max-h-[400px] overflow-y-auto pr-2">
-                    {withdrawalHistory.map((request) => (
-                      <div key={request.id} className="bg-background border border-gray-medium rounded-lg p-4">
+                  <>
+                    <div className="space-y-3">
+                      {withdrawalHistory
+                        .slice((withdrawalPage - 1) * itemsPerPage, withdrawalPage * itemsPerPage)
+                        .map((request) => (
+                      <div key={request.id} className="bg-blur border border-gray-medium rounded-lg p-4">
                         <div className="flex justify-between items-start mb-2">
                           <div>
                             <div className="text-sm font-bold font-sans">${request.amount.toFixed(2)}</div>
@@ -578,7 +584,14 @@ export default function WithdrawPage() {
                         </div>
                       </div>
                     ))}
-                  </div>
+                    </div>
+                    
+                    <Pagination
+                      currentPage={withdrawalPage}
+                      totalPages={Math.ceil(withdrawalHistory.length / itemsPerPage)}
+                      onPageChange={setWithdrawalPage}
+                    />
+                  </>
                 ) : (
                   <div className="text-center py-8 text-gray-light">Історія виводів порожня</div>
                 )}

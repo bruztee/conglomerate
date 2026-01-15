@@ -77,7 +77,7 @@ function RegisterForm() {
           </div>
 
           {showVerificationMessage ? (
-            <div className="bg-gray-dark border border-gray-medium rounded-lg p-6 space-y-4">
+            <div className="bg-blur-dark border border-gray-medium rounded-lg p-6 space-y-4">
               <div className="text-center">
                 <div className="flex justify-center mb-4">
                   <EmailIcon className="w-16 h-16 text-silver" />
@@ -98,7 +98,7 @@ function RegisterForm() {
               </div>
             </div>
           ) : (
-            <form onSubmit={handleSubmit} className="bg-gray-dark border border-gray-medium rounded-lg p-6 space-y-4">
+            <form onSubmit={handleSubmit} className="bg-blur-dark border border-gray-medium rounded-lg p-6 space-y-4">
               {error && (
                 <div className="bg-red-900/20 border border-red-500 text-red-400 px-4 py-3 rounded-lg text-sm">
                   {error}
@@ -115,7 +115,7 @@ function RegisterForm() {
                   name="email"
                   value={formData.email}
                   onChange={handleChange}
-                  className="w-full px-4 py-3 bg-background border border-gray-medium rounded-lg focus:outline-none focus:border-silver transition-colors font-sans"
+                  className="w-full px-4 py-3 bg-blur border border-gray-medium rounded-lg focus:outline-none focus:border-silver transition-colors font-sans"
                   placeholder="your@email.com"
                 />
               </div>
@@ -130,7 +130,7 @@ function RegisterForm() {
                   name="referralCode"
                   value={formData.referralCode}
                   onChange={handleChange}
-                  className="w-full px-4 py-3 bg-background border border-gray-medium rounded-lg focus:outline-none focus:border-silver transition-colors"
+                  className="w-full px-4 py-3 bg-blur border border-gray-medium rounded-lg focus:outline-none focus:border-silver transition-colors"
                   placeholder="Введіть код, якщо маєте"
                 />
               </div>
@@ -145,7 +145,7 @@ function RegisterForm() {
                   name="password"
                   value={formData.password}
                   onChange={handleChange}
-                  className="w-full px-4 py-3 bg-background border border-gray-medium rounded-lg focus:outline-none focus:border-silver transition-colors"
+                  className="w-full px-4 py-3 bg-blur border border-gray-medium rounded-lg focus:outline-none focus:border-silver transition-colors"
                   placeholder="Мінімум 8 символів"
                 />
               </div>
@@ -160,7 +160,7 @@ function RegisterForm() {
                   name="confirmPassword"
                   value={formData.confirmPassword}
                   onChange={handleChange}
-                  className="w-full px-4 py-3 bg-background border border-gray-medium rounded-lg focus:outline-none focus:border-silver transition-colors"
+                  className="w-full px-4 py-3 bg-blur border border-gray-medium rounded-lg focus:outline-none focus:border-silver transition-colors"
                   placeholder="Повторіть пароль"
                 />
               </div>

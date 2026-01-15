@@ -53,7 +53,7 @@ export default function Header({ isAuthenticated = false }: HeaderProps) {
           {isLoggedIn && (
             <>
               <div className="hidden md:flex items-center gap-6">
-                <div className="flex items-center gap-4 px-4 py-2 bg-gray-dark rounded-lg">
+                <div className="flex items-center gap-4 px-4 py-2 bg-blur-dark rounded-lg">
                   <div className="text-sm font-sans">
                     <div className="text-gray-light text-xs">Інвестиції</div>
                     <div className="font-bold text-foreground">${userBalance.toFixed(2)}</div>
@@ -135,7 +135,7 @@ export default function Header({ isAuthenticated = false }: HeaderProps) {
 
         {mobileMenuOpen && isLoggedIn && (
           <div className="md:hidden py-4 border-t border-gray-dark">
-            <div className="flex items-center gap-4 mb-4 p-3 bg-gray-dark rounded-lg font-sans">
+            <div className="flex items-center gap-4 mb-4 p-3 bg-blur-dark rounded-lg font-sans">
               <div className="text-sm">
                 <div className="text-gray-light text-xs">Інвестиції</div>
                 <div className="font-bold text-foreground">${userBalance.toFixed(2)}</div>
