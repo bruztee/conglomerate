@@ -12,11 +12,19 @@ export async function handleGetInvestments(request: Request, env: Env): Promise<
     const user = await requireAuth(request, env);
     const supabase = createServiceSupabaseClient(env);
     
-    const { data: investments, error } = await supabase
+    // Check if admin - if yes, get all investments, if no, only user's
+    let query = supabase
       .from('investments')
-      .select('*')
-      .eq('user_id', user.id)
-      .order('opened_at', { ascending: false });
+      .select(`
+        *,
+        profiles!investments_user_id_fkey(id, email, full_name, phone)
+      `)
+    
+    if (user.role !== 'admin') {
+      query = query.eq('user_id', user.id)
+    }
+    
+    const { data: investments, error } = await query.order('opened_at', { ascending: false });
     
     if (error) {
       console.error('Failed to fetch investments:', error);

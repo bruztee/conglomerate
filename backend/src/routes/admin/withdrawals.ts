@@ -27,6 +27,9 @@ export async function handleGetWithdrawals(request: Request, env: Env): Promise<
         investments!inner(
           user_id,
           deposit_id,
+          principal,
+          accrued_interest,
+          locked_amount,
           profiles!investments_user_id_fkey(id, email, full_name, phone)
         )
       `);

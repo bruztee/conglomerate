@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation"
 import { useAuth } from "@/context/AuthContext"
 import { api } from "@/lib/api"
 import Loading from "@/components/Loading"
+import Pagination from "@/components/Pagination"
 import { CheckIcon, XIcon, EditIcon, KeyIcon, DotIcon } from "@/components/icons/AdminIcons"
 import LockIcon from "@/components/icons/LockIcon"
 
@@ -35,6 +36,8 @@ export default function AdminSecurityPage() {
     limit: 100,
   })
   const [searchTerm, setSearchTerm] = useState('')
+  const [currentPage, setCurrentPage] = useState(1)
+  const logsPerPage = 20
 
   useEffect(() => {
     fetchLogs()
@@ -87,9 +90,12 @@ export default function AdminSecurityPage() {
       log.actor_user_id?.toLowerCase().includes(search)
     )
   })
+  
+  const totalPages = Math.ceil(filteredLogs.length / logsPerPage)
+  const paginatedLogs = filteredLogs.slice((currentPage - 1) * logsPerPage, currentPage * logsPerPage)
 
   return (
-    <div className="p-8">
+    <div className="p-4 md:p-8 pt-16 md:pt-8">
       <div className="mb-8">
         <h1 className="text-3xl font-bold mb-2">Безпека та Audit Log</h1>
         <p className="text-gray-light">Auth логи + Admin дії - всього {logs.length} записів</p>
@@ -119,6 +125,10 @@ export default function AdminSecurityPage() {
 
       {/* Logs Table */}
       <div className="bg-blur-dark border border-gray-medium rounded-lg overflow-hidden">
+        {/* Mobile Warning */}
+        <div className="md:hidden p-4 bg-yellow-500/10 border-b border-yellow-500/30 text-yellow-500 text-sm">
+          На мобільному горизонтальне прокручування доступне
+        </div>
         <div className="overflow-x-auto">
           <table className="w-full">
             <thead className="bg-gray-medium/20">
@@ -132,7 +142,7 @@ export default function AdminSecurityPage() {
               </tr>
             </thead>
             <tbody>
-              {filteredLogs.map((log) => (
+              {paginatedLogs.map((log) => (
                 <tr key={log.id} className="border-t border-gray-medium/30 hover:bg-gray-medium/10">
                   <td className="py-4 px-6">
                     <div className="text-sm text-gray-light font-mono">
@@ -220,6 +230,12 @@ export default function AdminSecurityPage() {
             <p>Логи відсутні або не знайдено за заданими фільтрами</p>
           </div>
         )}
+        
+        <Pagination
+          currentPage={currentPage}
+          totalPages={totalPages}
+          onPageChange={setCurrentPage}
+        />
       </div>
 
       {/* Info */}

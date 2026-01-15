@@ -103,7 +103,7 @@ export default function AdminDashboard() {
   }
 
   return (
-    <div className="p-8">
+    <div className="p-4 md:p-8 pt-16 md:pt-8">
       <div className="mb-8">
         <h1 className="text-3xl font-bold mb-2">Адмін-панель</h1>
         <p className="text-gray-light">Огляд та управління платформою</p>

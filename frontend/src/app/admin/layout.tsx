@@ -53,7 +53,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       <AnimatedBackground />
       <div className="flex min-h-screen relative">
         <AdminSidebar />
-        <main className="flex-1 overflow-auto">
+        <main className="flex-1 overflow-auto md:ml-0">
           {children}
         </main>
       </div>

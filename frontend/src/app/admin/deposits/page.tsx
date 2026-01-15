@@ -111,7 +111,7 @@ export default function AdminDepositsPage() {
   const pendingCount = deposits.filter(d => d.status === 'pending').length
 
   return (
-    <div className="p-8">
+    <div className="p-4 md:p-8 pt-16 md:pt-8">
       <div className="mb-8">
         <h1 className="text-3xl font-bold mb-2">Депозити</h1>
         <p className="text-gray-light">
@@ -140,16 +140,16 @@ export default function AdminDepositsPage() {
       </div>
 
       {/* Deposits List */}
-      <div className="space-y-4">
+      <div className="space-y-4 overflow-x-hidden">
         {deposits.map((deposit) => (
           <div
             key={deposit.id}
-            className={`bg-blur-dark border rounded-lg p-6 ${
+            className={`bg-blur-dark border rounded-lg p-4 md:p-6 ${
               deposit.status === 'pending' ? 'border-yellow-500/30' : 'border-gray-medium'
             }`}
           >
-            <div className="grid md:grid-cols-4 gap-6">
-              <div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 md:gap-6 text-sm">
+              <div className="sm:col-span-2 md:col-span-1">
                 <div className="text-xs text-gray-light mb-1">Користувач</div>
                 {deposit.user ? (
                   <>
@@ -163,7 +163,7 @@ export default function AdminDepositsPage() {
 
               <div>
                 <div className="text-xs text-gray-light mb-1">Сума</div>
-                <div className="text-2xl font-bold text-silver font-sans">${deposit.amount.toFixed(2)}</div>
+                <div className="text-xl md:text-2xl font-bold text-silver font-sans">${deposit.amount.toFixed(2)}</div>
               </div>
 
               <div>
@@ -216,16 +216,16 @@ export default function AdminDepositsPage() {
               </div>
 
               {deposit.status === 'pending' && (
-                <div className="flex gap-2">
+                <div className="flex flex-col sm:flex-row gap-2">
                   <button
                     onClick={() => openModal(deposit, 'approve')}
-                    className="flex items-center gap-2 px-4 py-2 bg-green-900/20 border border-green-500/30 text-green-400 rounded hover:bg-green-900/30 transition-all cursor-pointer"
+                    className="flex items-center gap-1.5 px-3 py-1.5 bg-green-900/20 border border-green-500/30 text-green-400 rounded hover:bg-green-900/30 transition-all cursor-pointer text-xs sm:text-sm whitespace-nowrap"
                   >
                     <CheckIcon /> Зарахувати
                   </button>
                   <button
                     onClick={() => openModal(deposit, 'reject')}
-                    className="flex items-center gap-2 px-4 py-2 bg-red-900/20 border border-red-500/30 text-red-400 rounded hover:bg-red-900/30 transition-all cursor-pointer"
+                    className="flex items-center gap-1.5 px-3 py-1.5 bg-red-900/20 border border-red-500/30 text-red-400 rounded hover:bg-red-900/30 transition-all cursor-pointer text-xs sm:text-sm whitespace-nowrap"
                   >
                     <XIcon /> Відхилити
                   </button>

@@ -46,28 +46,47 @@ export async function handleGetUsers(request: Request, env: Env): Promise<Respon
       (authUsers || []).map((u: any) => [u.id, u.email_confirmed_at !== null])
     );
 
-    // Для кожного користувача отримати суми депозитів та виводів
+    // Для кожного користувача отримати суми депозитів, виводів та інвестицій
     const usersWithStats = await Promise.all(
       (profiles || []).map(async (user) => {
-        const [depositsRes, withdrawalsRes] = await Promise.all([
+        const [depositsRes, investmentsRes] = await Promise.all([
           supabase
             .from('deposits')
             .select('amount, status')
             .eq('user_id', user.id),
           supabase
-            .from('withdrawals')
-            .select('amount, status')
+            .from('investments')
+            .select('id, principal, accrued_interest, status')
             .eq('user_id', user.id),
         ]);
 
+        // Withdrawals через investments
+        const investmentIds = investmentsRes.data?.map(inv => inv.id) || [];
+        let totalWithdrawals = 0;
+        if (investmentIds.length > 0) {
+          const { data: withdrawalsData } = await supabase
+            .from('withdrawals')
+            .select('amount, status')
+            .in('investment_id', investmentIds)
+            .in('status', ['approved', 'sent']);
+          totalWithdrawals = withdrawalsData?.reduce((sum, w) => sum + Number(w.amount), 0) || 0;
+        }
+
         const totalDeposits = depositsRes.data?.filter(d => d.status === 'confirmed').reduce((sum, d) => sum + Number(d.amount), 0) || 0;
-        const totalWithdrawals = withdrawalsRes.data?.filter(w => w.status === 'approved' || w.status === 'sent').reduce((sum, w) => sum + Number(w.amount), 0) || 0;
+        
+        // Profit and current investments - only from active investments
+        const activeInvestments = investmentsRes.data?.filter(inv => inv.status === 'active') || [];
+        const totalProfit = activeInvestments.reduce((sum, inv) => sum + Number(inv.accrued_interest || 0), 0);
+        const currentInvestments = activeInvestments.reduce((sum, inv) => sum + Number(inv.principal || 0), 0);
 
         return {
           ...user,
           email_verified: emailVerifiedMap.get(user.id) || false,
+          phone_verified: user.phone_verified || !!user.phone, // True if phone exists
           total_deposits: totalDeposits,
           total_withdrawals: totalWithdrawals,
+          total_profit: totalProfit,
+          current_investments: currentInvestments,
         };
       })
     );

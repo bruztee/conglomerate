@@ -26,6 +26,9 @@ interface Withdrawal {
   investments: {
     user_id: string
     deposit_id: string
+    principal: number
+    accrued_interest: number
+    locked_amount: number
     profiles: {
       id: string
       email: string
@@ -48,8 +51,6 @@ export default function AdminWithdrawalsPage() {
   const [action, setAction] = useState<'approve' | 'reject'>('approve')
   const [formData, setFormData] = useState({
     admin_note: '',
-    network_fee: 0,
-    tx_hash: '',
   })
 
   if (authLoading) return <Loading />
@@ -106,7 +107,6 @@ export default function AdminWithdrawalsPage() {
       if (action === 'approve') {
         result = await api.adminApproveWithdrawal(selectedWithdrawal.id, {
           admin_note: formData.admin_note,
-          network_fee: formData.network_fee,
         })
       } else if (action === 'reject') {
         if (!formData.admin_note.trim()) {
@@ -116,14 +116,14 @@ export default function AdminWithdrawalsPage() {
         result = await api.adminRejectWithdrawal(selectedWithdrawal.id, formData.admin_note)
       }
 
-      if (result && result.success) {
+      if (result?.success) {
         alert(action === 'approve' ? 'Вивід підтверджено' : 'Вивід відхилено')
         setShowModal(false)
         setSelectedWithdrawal(null)
         resetForm()
         fetchWithdrawals()
       } else {
-        alert('Помилка: ' + (result.error?.message || 'Unknown error'))
+        alert('Помилка: ' + (result?.error?.message || 'Unknown error'))
       }
     } catch (error) {
       alert('Помилка обробки виводу')
@@ -133,8 +133,6 @@ export default function AdminWithdrawalsPage() {
   function resetForm() {
     setFormData({
       admin_note: '',
-      network_fee: 0,
-      tx_hash: '',
     })
   }
 
@@ -152,7 +150,7 @@ export default function AdminWithdrawalsPage() {
   const pendingCount = withdrawals.filter(w => w.status === 'requested').length
 
   return (
-    <div className="p-8">
+    <div className="p-4 md:p-8 pt-16 md:pt-8">
       <div className="mb-8">
         <h1 className="text-3xl font-bold mb-2">Виводи</h1>
         <p className="text-gray-light">
@@ -181,22 +179,24 @@ export default function AdminWithdrawalsPage() {
       </div>
 
       {/* Withdrawals List */}
-      <div className="space-y-4">
+      <div className="space-y-4 overflow-x-hidden">
         {withdrawals.map((withdrawal) => (
           <div
             key={withdrawal.id}
-            className={`bg-blur-dark border rounded-lg p-6 ${
+            className={`bg-blur-dark border rounded-lg p-4 md:p-6 ${
               withdrawal.status === 'requested' ? 'border-yellow-500/30' : 'border-gray-medium'
             }`}
           >
-            <div className="grid grid-cols-7 gap-6 text-sm">
-              <div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-7 gap-4 md:gap-6 text-sm">
+              <div className="sm:col-span-2 md:col-span-1">
+                <div className="md:hidden text-xs text-gray-light mb-1">Користувач</div>
                 <div className="font-medium">{withdrawal.investments?.profiles?.full_name || 'Без імені'}</div>
                 <div className="text-xs text-gray-light">{withdrawal.investments?.profiles?.email}</div>
               </div>
 
               <div>
-                <div className="text-2xl font-bold text-silver font-sans">${withdrawal.amount.toFixed(2)}</div>
+                <div className="md:hidden text-xs text-gray-light mb-1">Сума виводу</div>
+                <div className="text-xl md:text-2xl font-bold text-silver font-sans">${withdrawal.amount.toFixed(2)}</div>
                 {withdrawal.network_fee > 0 && (
                   <div className="text-xs text-gray-light mt-1">
                     Комісія мережі: <span className="font-sans">${withdrawal.network_fee.toFixed(2)}</span>
@@ -205,43 +205,45 @@ export default function AdminWithdrawalsPage() {
               </div>
 
               <div>
-                <div className="text-xs text-gray-light mb-1">Баланс</div>
-                {withdrawal.balance_before_withdrawal && withdrawal.balance_after_withdrawal ? (
-                  <div className="font-medium font-sans">
-                    ${withdrawal.balance_before_withdrawal.toFixed(2)} → ${withdrawal.balance_after_withdrawal.toFixed(2)}
+                <div className="text-xs text-gray-light mb-1">Інвестиція</div>
+                <div className="font-medium font-sans">
+                  ${(withdrawal.investments?.principal || 0).toFixed(2)}
+                </div>
+                {withdrawal.investments?.accrued_interest > 0 && (
+                  <div className="text-xs text-green-400 mt-1">
+                    +${withdrawal.investments.accrued_interest.toFixed(2)} профіт
                   </div>
-                ) : (
-                  <div className="text-xs text-gray-light">Не вказано</div>
                 )}
-                
-                {withdrawal.deposit_amount_before && (
-                  <>
-                    <div className="text-xs text-gray-light mt-2 mb-1">Депозит</div>
-                    <div className="font-medium font-sans">
-                      ${withdrawal.deposit_amount_before.toFixed(2)}
-                      {withdrawal.deposit_amount_after !== null && (
-                        <> → ${withdrawal.deposit_amount_after.toFixed(2)}</>
-                      )}
-                    </div>
-                  </>
+                {withdrawal.investments?.locked_amount > 0 && (
+                  <div className="text-xs text-orange-400 mt-1">
+                    ${withdrawal.investments.locked_amount.toFixed(2)} заморожено
+                  </div>
                 )}
               </div>
 
               <div>
-                <div className="font-medium font-sans">{withdrawal.method || 'USDT'}</div>
+                <div className="md:hidden text-xs text-gray-light mb-1">Валюта та мережа</div>
+                <div className="font-medium font-sans">
+                  {withdrawal.destination?.coin || withdrawal.method || 'USDT'}
+                </div>
+                {withdrawal.destination?.network && (
+                  <div className="text-xs text-gray-light mt-1">
+                    {withdrawal.destination.network}
+                  </div>
+                )}
                 {withdrawal.destination?.wallet_address && (
-                  <div className="text-xs text-gray-light font-mono mt-1 truncate">
+                  <div className="text-xs text-gray-light font-mono mt-1 truncate max-w-[200px]">
                     {withdrawal.destination.wallet_address}
                   </div>
                 )}
                 {withdrawal.destination?.address && (
-                  <div className="text-xs text-gray-light font-mono mt-1 truncate">
+                  <div className="text-xs text-gray-light font-mono mt-1 truncate max-w-[200px]">
                     {withdrawal.destination.address}
                   </div>
                 )}
               </div>
 
-              <div>
+              <div className="sm:col-span-2 md:col-span-1">
                 <div className="text-xs text-gray-light mb-1">Дата створення</div>
                 <div className="text-sm">{new Date(withdrawal.created_at).toLocaleString('uk-UA')}</div>
                 {withdrawal.processed_at && (
@@ -275,16 +277,16 @@ export default function AdminWithdrawalsPage() {
               </div>
 
               {withdrawal.status === 'requested' && (
-                <div className="flex gap-2">
+                <div className="flex flex-col sm:flex-row gap-2">
                   <button
                     onClick={() => openModal(withdrawal, 'approve')}
-                    className="flex items-center gap-2 px-4 py-2 bg-green-900/20 border border-green-500/30 text-green-400 rounded hover:bg-green-900/30 transition-all cursor-pointer"
+                    className="flex items-center gap-1.5 px-3 py-1.5 bg-green-900/20 border border-green-500/30 text-green-400 rounded hover:bg-green-900/30 transition-all cursor-pointer text-xs sm:text-sm whitespace-nowrap"
                   >
                     <CheckIcon /> Схвалити
                   </button>
                   <button
                     onClick={() => openModal(withdrawal, 'reject')}
-                    className="flex items-center gap-2 px-4 py-2 bg-red-900/20 border border-red-500/30 text-red-400 rounded hover:bg-red-900/30 transition-all cursor-pointer"
+                    className="flex items-center gap-1.5 px-3 py-1.5 bg-red-900/20 border border-red-500/30 text-red-400 rounded hover:bg-red-900/30 transition-all cursor-pointer text-xs sm:text-sm whitespace-nowrap"
                   >
                     <XIcon /> Відхилити
                   </button>
@@ -322,6 +324,10 @@ export default function AdminWithdrawalsPage() {
                   <div className="text-gray-light">Сума:</div>
                   <div className="font-bold text-silver font-sans">${selectedWithdrawal.amount.toFixed(2)}</div>
                 </div>
+                <div>
+                  <div className="text-gray-light">Мережа:</div>
+                  <div className="font-medium">{selectedWithdrawal.destination?.network || selectedWithdrawal.destination?.coin || 'USDT TRC20'}</div>
+                </div>
                 <div className="col-span-2">
                   <div className="text-gray-light">Адреса виводу:</div>
                   <div className="font-mono text-xs break-all">
@@ -332,26 +338,6 @@ export default function AdminWithdrawalsPage() {
             </div>
 
             <form onSubmit={handleAction} className="space-y-4">
-              {action === 'approve' && (
-                <div>
-                  <label className="block text-sm font-medium mb-2">
-                    Комісія мережі ($)
-                  </label>
-                  <input
-                    type="number"
-                    value={formData.network_fee}
-                    onChange={(e) => setFormData({ ...formData, network_fee: Number(e.target.value) })}
-                    className="w-full px-4 py-3 bg-blur border border-gray-medium rounded-lg focus:outline-none focus:border-silver font-sans"
-                    min="0"
-                    step="0.01"
-                    placeholder="Тільки комісія мережі (не мінімальна сума)"
-                  />
-                  <p className="flex items-center gap-1 text-xs text-gray-light mt-1">
-                    <WarningIcon className="w-3 h-3 flex-shrink-0" />
-                    Вказуйте тільки комісію мережі. Мінімальної суми виводу немає.
-                  </p>
-                </div>
-              )}
 
               <div>
                 <label className="block text-sm font-medium mb-2">

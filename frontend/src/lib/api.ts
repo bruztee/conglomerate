@@ -341,6 +341,14 @@ class ApiClient {
     });
   }
 
+  // Investments Management (Admin)
+  async adminUpdateInvestment(investmentId: string, data: { rate_monthly?: number; status?: 'active' | 'closed'; locked_amount?: number }): Promise<ApiResponse> {
+    return this.request(`/admin/investments/${investmentId}`, {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    });
+  }
+
   // Audit Log (Admin) - з обох таблиць auth + public
   async adminGetAuditLog(filters?: { action?: string; userId?: string; limit?: number }): Promise<ApiResponse> {
     const params = new URLSearchParams();

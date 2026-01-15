@@ -12,6 +12,7 @@ import { handleGetDeposits as handleAdminGetDeposits, handleApproveDeposit, hand
 import { handleGetWithdrawals as handleAdminGetWithdrawals, handleApproveWithdrawal as handleAdminApproveWithdrawal, handleRejectWithdrawal, handleMarkWithdrawalSent } from './routes/admin/withdrawals';
 import { handleGetAuditLogs } from './routes/admin/security';
 import { handleGetInvestments } from './routes/investments';
+import { handleUpdateInvestment } from './routes/admin/investments';
 
 interface RouteHandler {
   (request: Request, env: Env, ...args: string[]): Promise<Response>;
@@ -77,6 +78,9 @@ const routes: Route[] = [
   { method: 'POST', pattern: /^\/admin\/withdrawals\/([a-f0-9-]+)\/approve$/, handler: handleAdminApproveWithdrawal },
   { method: 'POST', pattern: /^\/admin\/withdrawals\/([a-f0-9-]+)\/reject$/, handler: handleRejectWithdrawal },
   { method: 'POST', pattern: /^\/admin\/withdrawals\/([a-f0-9-]+)\/mark-sent$/, handler: handleMarkWithdrawalSent },
+  
+  // Admin routes - Investments Management
+  { method: 'PUT', pattern: /^\/admin\/investments\/([a-f0-9-]+)$/, handler: handleUpdateInvestment },
   
   // Security
   { method: 'GET', pattern: /^\/admin\/security\/audit-logs$/, handler: handleGetAuditLogs },
