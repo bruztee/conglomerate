@@ -15,11 +15,15 @@ interface Investment {
   accrued_interest: number
   rate_monthly: number
   locked_amount: number
-  status: string
+  status: 'active' | 'frozen' | 'closed'
   opened_at: string
   closed_at: string | null
   deposit_id: string
-  is_frozen: boolean
+  total_value: number
+  available: number
+  total_withdrawn: number
+  initial_amount: number
+  real_profit: number
   profiles: {
     id: string
     email: string
@@ -56,10 +60,45 @@ export default function AdminInvestmentsPage() {
   async function fetchInvestments() {
     setLoading(true)
     try {
-      const result = await api.getInvestments()
-      if (result.success && result.data) {
-        const responseData = result.data as any
+      // Fetch investments and deposits
+      const [investmentsResult, depositsResult] = await Promise.all([
+        api.getInvestments(),
+        api.adminGetDeposits('all')
+      ])
+      
+      if (investmentsResult.success && investmentsResult.data) {
+        const responseData = investmentsResult.data as any
         let data = responseData.investments || []
+        
+        // Create deposits map
+        const depositsMap = new Map()
+        if (depositsResult.success && depositsResult.data) {
+          const deposits = depositsResult.data.deposits || []
+          deposits.forEach((d: any) => {
+            depositsMap.set(d.id, parseFloat(d.amount))
+          })
+        }
+        
+        // Enrich investments with initial amount and real profit
+        data = data.map((inv: any) => {
+          const initialAmount = depositsMap.get(inv.deposit_id) || 0
+          let realProfit = 0
+          
+          // Calculate real profit
+          if (inv.status === 'closed') {
+            // For closed: withdrawn - initial
+            realProfit = parseFloat(inv.total_withdrawn || 0) - initialAmount
+          } else {
+            // For active/frozen: accrued interest
+            realProfit = parseFloat(inv.accrued_interest || 0)
+          }
+          
+          return {
+            ...inv,
+            initial_amount: initialAmount,
+            real_profit: realProfit
+          }
+        })
         
         // Filter based on status
         if (filter === 'active') {
@@ -133,8 +172,9 @@ export default function AdminInvestmentsPage() {
       {/* Investments List */}
       <div className="space-y-4 overflow-x-hidden">
         {paginatedInvestments.map((investment) => {
-          const totalValue = parseFloat(investment.principal.toString()) + parseFloat(investment.accrued_interest.toString())
-          const available = totalValue - parseFloat(investment.locked_amount.toString())
+          // Використовуємо total_value та available з API
+          const totalValue = investment.total_value || 0
+          const available = investment.available || 0
           
           return (
             <div
@@ -153,8 +193,8 @@ export default function AdminInvestmentsPage() {
 
                 <div>
                   <div className="text-xs text-gray-light mb-1">Початкова сума</div>
-                  <div className="text-lg md:text-xl font-bold text-silver font-sans">
-                    ${parseFloat(investment.principal.toString()).toFixed(2)}
+                  <div className="text-lg md:text-xl font-bold text-foreground font-sans">
+                    ${investment.initial_amount.toFixed(2)}
                   </div>
                   <div className="text-xs text-gray-light mt-1">
                     {investment.rate_monthly}% місячних
@@ -162,24 +202,42 @@ export default function AdminInvestmentsPage() {
                 </div>
 
                 <div>
-                  <div className="text-xs text-gray-light mb-1">Нарахований профіт</div>
-                  <div className="text-lg font-bold text-green-400 font-sans">
-                    +${parseFloat(investment.accrued_interest.toString()).toFixed(2)}
+                  <div className="text-xs text-gray-light mb-1">{investment.status === 'closed' ? 'Поточна сума' : 'Поточна сума'}</div>
+                  <div className="text-lg font-bold text-silver font-sans">
+                    ${investment.status === 'closed' ? '0.00' : totalValue.toFixed(2)}
                   </div>
                   <div className="text-xs text-gray-light mt-1">
-                    Всього: ${totalValue.toFixed(2)}
+                    Principal: ${parseFloat(investment.principal.toString()).toFixed(2)}
                   </div>
                 </div>
 
                 <div>
-                  <div className="text-xs text-gray-light mb-1">Заморожено</div>
-                  <div className="font-medium font-sans text-orange-400">
-                    ${parseFloat(investment.locked_amount.toString()).toFixed(2)}
+                  <div className="text-xs text-gray-light mb-1">{investment.status === 'closed' ? 'Виведено' : 'Профіт'}</div>
+                  <div className="text-lg font-bold text-green-400 font-sans">
+                    {investment.status === 'closed' 
+                      ? `$${parseFloat(investment.total_withdrawn.toString()).toFixed(2)}`
+                      : `+$${investment.real_profit.toFixed(2)}`
+                    }
                   </div>
-                  <div className="text-xs text-green-400 mt-1">
-                    Доступно: ${available.toFixed(2)}
+                  <div className="text-xs text-gray-light mt-1">
+                    {investment.status === 'closed' 
+                      ? `Прибуток: +$${investment.real_profit.toFixed(2)}`
+                      : `Accrued: $${parseFloat(investment.accrued_interest.toString()).toFixed(2)}`
+                    }
                   </div>
                 </div>
+
+                {investment.status !== 'closed' && (
+                  <div>
+                    <div className="text-xs text-gray-light mb-1">Заморожено</div>
+                    <div className="font-medium font-sans text-orange-400">
+                      ${parseFloat(investment.locked_amount.toString()).toFixed(2)}
+                    </div>
+                    <div className="text-xs text-green-400 mt-1">
+                      Доступно: ${available.toFixed(2)}
+                    </div>
+                  </div>
+                )}
 
                 <div>
                   <div className="text-xs text-gray-light mb-1">Дата відкриття</div>
@@ -197,13 +255,13 @@ export default function AdminInvestmentsPage() {
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2 flex-wrap">
                     <span className={`px-3 py-1 rounded text-xs ${
-                      investment.status === 'active' && !investment.is_frozen 
+                      investment.status === 'active' 
                         ? 'bg-green-500/20 text-green-500' 
-                        : investment.is_frozen 
+                        : investment.status === 'frozen'
                         ? 'bg-orange-500/20 text-orange-400'
                         : 'bg-gray-500/20 text-gray-400'
                     }`}>
-                      {investment.status === 'active' && !investment.is_frozen ? 'Активна' : investment.is_frozen ? 'Заморожено' : 'Закрита'}
+                      {investment.status === 'active' ? 'Активна' : investment.status === 'frozen' ? 'Заморожено' : 'Закрита'}
                     </span>
                     
                     <span className="text-xs text-gray-light">

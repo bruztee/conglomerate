@@ -45,7 +45,7 @@ export default function WithdrawPage() {
   // ВСІ useState МАЮТЬ БУТИ НА ПОЧАТКУ
   const [walletAddress, setWalletAddress] = useState("")
   const [withdrawAmount, setWithdrawAmount] = useState("")
-  const [isFullWithdrawal, setIsFullWithdrawal] = useState(false)
+  const [withdrawalType, setWithdrawalType] = useState<'partial' | 'full' | null>(null)
   const [selectedDepositId, setSelectedDepositId] = useState<string>("")
   const [userBalance, setUserBalance] = useState(0)
   const [userProfit, setUserProfit] = useState(0)
@@ -190,9 +190,15 @@ export default function WithdrawPage() {
         return
       }
 
-      const amount = parseFloat(withdrawAmount)
+      if (!withdrawalType) {
+        setError('Оберіть тип виводу')
+        setSubmitting(false)
+        return
+      }
+
+      const amount = withdrawalType === 'full' ? maxWithdrawAmount : parseFloat(withdrawAmount)
       
-      if (!isFullWithdrawal && (!amount || amount <= 0)) {
+      if (withdrawalType === 'partial' && (!amount || amount <= 0)) {
         setError('Введіть суму для виводу')
         setSubmitting(false)
         return
@@ -206,8 +212,8 @@ export default function WithdrawPage() {
 
       // Створити withdrawal request - backend валідує доступну суму
       const result = await api.createWithdrawal({
-        amount: isFullWithdrawal ? maxWithdrawAmount : parseFloat(withdrawAmount),
-        close: isFullWithdrawal, // Якщо full withdrawal - сервер сам візьме всю суму
+        amount: amount,
+        close: withdrawalType === 'full', // Якщо full withdrawal - сервер сам візьме всю суму
         destination: {
           wallet_address: walletAddress,
           network: selectedNetwork,
@@ -219,7 +225,7 @@ export default function WithdrawPage() {
         setMessage('Заявка на вивід успішно створена! Очікуйте обробки протягом 24-48 годин.')
         setWalletAddress('')
         setWithdrawAmount('')
-        setIsFullWithdrawal(false)
+        setWithdrawalType(null)
         setSelectedDepositId('')
         
         // ВАЖЛИВО: Перезавантажити ВСІ дані - баланс, deposits, withdrawals
@@ -416,72 +422,116 @@ export default function WithdrawPage() {
                       </div>
                     </div>
 
+                    {/* Тип виводу */}
                     <div>
-                      <label htmlFor="amount" className="block text-sm font-medium mb-2">
-                        Сума виводу
-                      </label>
-                      <div className="relative">
-                        <input
-                          type="text"
-                          id="amount"
-                          value={isFullWithdrawal ? "MAX" : withdrawAmount}
-                          onChange={(e) => {
-                            setWithdrawAmount(e.target.value)
-                            setIsFullWithdrawal(false)
-                          }}
-                          disabled={isFullWithdrawal}
-                          className="w-full px-4 py-3 pr-20 bg-blur border border-gray-medium rounded-lg focus:outline-none focus:border-silver transition-colors font-sans disabled:opacity-60 disabled:cursor-not-allowed"
-                          placeholder="Введіть суму"
-                        />
+                      <label className="block text-sm font-medium mb-3">Оберіть тип виводу</label>
+                      <div className="grid grid-cols-2 gap-3">
                         <button
                           type="button"
                           onClick={() => {
-                            setIsFullWithdrawal(true)
+                            setWithdrawalType('partial')
+                            setWithdrawAmount('')
+                          }}
+                          className={`px-4 py-3 border-2 rounded-lg font-medium transition-all ${
+                            withdrawalType === 'partial'
+                              ? 'border-silver bg-silver/10 text-silver'
+                              : 'border-gray-medium hover:border-gray-light text-gray-light hover:text-foreground'
+                          }`}
+                        >
+                          Зняти частину
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setWithdrawalType('full')
                             setWithdrawAmount(maxWithdrawAmount.toFixed(2))
                           }}
-                          className="absolute right-3 top-1/2 -translate-y-1/2 btn-gradient-small px-3 py-1.5 text-foreground text-xs font-bold rounded transition-colors font-sans"
+                          className={`px-4 py-3 border-2 rounded-lg font-medium transition-all ${
+                            withdrawalType === 'full'
+                              ? 'border-silver bg-silver/10 text-silver'
+                              : 'border-gray-medium hover:border-gray-light text-gray-light hover:text-foreground'
+                          }`}
                         >
-                          Все
+                          Зняти все
                         </button>
                       </div>
-                      <p className="text-xs text-gray-light mt-1">
-                        Можна вивести будь-яку суму до ${maxWithdrawAmount.toFixed(2)}
-                      </p>
                     </div>
+
+                    {/* Показати input суми тільки якщо обрано partial */}
+                    {withdrawalType === 'partial' && (
+                      <div>
+                        <label htmlFor="amount" className="block text-sm font-medium mb-2">
+                          Сума виводу
+                        </label>
+                        <input
+                          type="text"
+                          id="amount"
+                          value={withdrawAmount}
+                          onChange={(e) => setWithdrawAmount(e.target.value)}
+                          className="w-full px-4 py-3 bg-blur border border-gray-medium rounded-lg focus:outline-none focus:border-silver transition-colors font-sans"
+                          placeholder="Введіть суму"
+                        />
+                        <p className="text-xs text-gray-light mt-1">
+                          Можна вивести будь-яку суму до ${maxWithdrawAmount.toFixed(2)}
+                        </p>
+                      </div>
+                    )}
+
+                    {/* Показати повідомлення якщо обрано full */}
+                    {withdrawalType === 'full' && (
+                      <div className="bg-orange-900/20 border border-orange-500/30 rounded-lg p-4">
+                        <div className="flex gap-2">
+                          <WarningIcon className="w-5 h-5 text-orange-400 flex-shrink-0 mt-0.5" />
+                          <div>
+                            <p className="font-medium text-orange-400 mb-1">Повний вивід</p>
+                            <p className="text-sm text-gray-light">
+                              Ваш депозит буде закритий і всі кошти (${maxWithdrawAmount.toFixed(2)}) будуть виведені на вказаний гаманець.
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                    )}
                   </>
                 )}
 
-                <div>
-                  <label htmlFor="wallet" className="block text-sm font-medium mb-2">
-                    Адреса гаманця
-                  </label>
-                  <input
-                    type="text"
-                    id="wallet"
-                    value={walletAddress}
-                    onChange={(e) => setWalletAddress(e.target.value)}
-                    className="w-full px-4 py-3 bg-blur border border-gray-medium rounded-lg focus:outline-none focus:border-silver transition-colors font-sans"
-                    placeholder="Введіть адресу вашого криптогаманця"
-                  />
-                </div>
-
-                <div className="bg-silver/10 border border-silver/30 rounded-lg p-4">
-                  <div className="flex gap-2 text-xs">
-                    <WarningIcon className="w-4 h-4 text-silver flex-shrink-0 mt-0.5" />
-                    <p className="text-gray-light">
-                      Перевірте правильність адреси гаманця. Кошти, відправлені на невірну адресу, не можуть бути
-                      повернені.
-                    </p>
+                {/* Показати wallet input тільки після вибору типу виводу */}
+                {withdrawalType && (
+                  <div>
+                    <label htmlFor="wallet" className="block text-sm font-medium mb-2">
+                      Адреса гаманця
+                    </label>
+                    <input
+                      type="text"
+                      id="wallet"
+                      value={walletAddress}
+                      onChange={(e) => setWalletAddress(e.target.value)}
+                      className="w-full px-4 py-3 bg-blur border border-gray-medium rounded-lg focus:outline-none focus:border-silver transition-colors font-sans"
+                      placeholder="Введіть адресу вашого криптогаманця"
+                    />
                   </div>
-                </div>
+                )}
 
-                <button
-                  type="submit"
-                  disabled={!selectedDepositId || !withdrawAmount || !walletAddress || submitting}
-                  className="btn-gradient-primary w-full px-4 py-3 disabled:bg-gray-medium disabled:cursor-not-allowed disabled:border-gray-medium disabled:shadow-none text-foreground font-bold rounded-lg transition-all font-sans"
-                >
-                  {submitting ? 'Створення заявки...' : 'Подати заявку на вивід'}
-                </button>
+                {withdrawalType && (
+                  <>
+                    <div className="bg-silver/10 border border-silver/30 rounded-lg p-4">
+                      <div className="flex gap-2 text-xs">
+                        <WarningIcon className="w-4 h-4 text-silver flex-shrink-0 mt-0.5" />
+                        <p className="text-gray-light">
+                          Перевірте правильність адреси гаманця. Кошти, відправлені на невірну адресу, не можуть бути
+                          повернені.
+                        </p>
+                      </div>
+                    </div>
+
+                    <button
+                      type="submit"
+                      disabled={!selectedDepositId || (withdrawalType === 'partial' && !withdrawAmount) || !walletAddress || submitting}
+                      className="btn-gradient-primary w-full px-4 py-3 disabled:bg-gray-medium disabled:cursor-not-allowed disabled:border-gray-medium disabled:shadow-none text-foreground font-bold rounded-lg transition-all font-sans"
+                    >
+                      {submitting ? 'Створення заявки...' : 'Подати заявку на вивід'}
+                    </button>
+                  </>
+                )}
               </form>
             </div>
 

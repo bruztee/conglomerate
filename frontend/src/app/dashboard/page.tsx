@@ -27,9 +27,9 @@ interface Deposit {
   date: string
   withdrawDate?: string
   status: string
-  isFrozen?: boolean
   withdrawn?: number
   locked?: number
+  available?: number
 }
 
 export default function DashboardPage() {
@@ -73,19 +73,11 @@ export default function DashboardPage() {
       case "frozen":
         return "Заморожено"
       case "closed":
-        return "Виведено"
+        return "Закрито"
       case "pending":
-        return "Очікує підтвердження"
-      case "confirmed":
-        return "Активний"
+        return "Очікує"
       case "rejected":
         return "Відхилено"
-      case "withdrawal_pending":
-        return "Очікує виводу"
-      case "withdrawn":
-        return "Виведено"
-      case "cancelled":
-        return "Скасовано"
       default:
         return status
     }
@@ -101,15 +93,7 @@ export default function DashboardPage() {
         return "bg-gray-500/20 text-gray-400"
       case "pending":
         return "bg-yellow-500/20 text-yellow-400"
-      case "confirmed":
-        return "bg-green-500/20 text-green-400"
       case "rejected":
-        return "bg-red-500/20 text-red-400"
-      case "withdrawal_pending":
-        return "bg-orange-500/20 text-orange-400"
-      case "withdrawn":
-        return "bg-gray-500/20 text-gray-400"
-      case "cancelled":
         return "bg-red-500/20 text-red-400"
       default:
         return "bg-gray-medium/30 text-gray-light"
@@ -178,7 +162,7 @@ export default function DashboardPage() {
           const lockedAmount = investment ? parseFloat(investment.locked_amount || 0) : 0
           // Показуємо investment.principal (поточна сума після виводів), а не deposit.amount (початкова)
           const currentAmount = investment ? parseFloat(investment.principal || 0) : parseFloat(d.amount)
-          const isFrozen = investment?.is_frozen || false
+          const available = investment ? parseFloat(investment.available || 0) : 0
           return {
             id: d.id,
             amount: currentAmount,
@@ -186,8 +170,8 @@ export default function DashboardPage() {
             profit: investment ? parseFloat(investment.accrued_interest || 0) : 0,
             percentage: investment ? parseFloat(investment.rate_monthly) : parseFloat(d.monthly_percentage || 5),
             date: d.created_at,
-            status: d.status,
-            isFrozen: isFrozen,
+            status: investment?.status || d.status,
+            available: available,
           }
         }))
         
@@ -201,29 +185,19 @@ export default function DashboardPage() {
           // ВИВЕДЕНО: брати з investment.total_withdrawn (реальна сума з withdrawals)
           const withdrawnAmount = investment?.total_withdrawn ? parseFloat(investment.total_withdrawn) : 0
           
-          // СТАТУС: показувати investment.status (active/closed), а не deposit.status
+          // СТАТУС: показувати investment.status (active/frozen/closed)
           let displayStatus = investment?.status || 'pending'
-          // Якщо заморожено - показувати frozen замість active
-          if (investment?.is_frozen && displayStatus === 'active') {
-            displayStatus = 'frozen'
-          }
-          // Якщо заморожено - показувати frozen замість active
-          if (investment?.is_frozen && displayStatus === 'active') {
-            displayStatus = 'frozen'
-          }
           
           // ДАТА ВИВОДУ: якщо позиція закрита - показувати investment.closed_at
           const withdrawDate = investment?.closed_at || null
           
-          // PROFIT: ВЕСЬ згенерований профіт
-          // Якщо закрито: withdrawn - original (бо всі кошти виведено)
-          // Якщо активно: current_accrued (поточний нарахований)
+          // PROFIT: з API
+          // Для закритих: виведено - початкова сума
+          // Для активних: current accrued_interest з API
           let generatedProfit = 0
           if (displayStatus === 'closed') {
-            // Закрита позиція: профіт = виведено - початкова сума
             generatedProfit = withdrawnAmount - originalAmount
           } else {
-            // Активна позиція: поточний accrued_interest
             generatedProfit = currentAccrued
           }
           
@@ -233,11 +207,11 @@ export default function DashboardPage() {
           return {
             id: d.id,
             amount: originalAmount, // Початкова сума депозиту
-            currentAmount: currentPrincipal + currentAccrued, // Поточна сума
+            currentAmount: investment?.total_value || (currentPrincipal + currentAccrued), // Поточна сума з API
             withdrawn: withdrawnAmount, // Реальна виведена сума з withdrawals
             profit: generatedProfit, // Згенерований профіт
             locked: lockedAmount, // Заморожено
-            percentage: investment ? parseFloat(investment.rate_monthly || profitPercentage) : profitPercentage,
+            percentage: investment ? parseFloat(investment.rate_monthly) : parseFloat(d.monthly_percentage || 5),
             date: d.created_at, // Дата створення депозиту
             withdrawDate: withdrawDate, // Дата закриття позиції (якщо є)
             status: displayStatus, // investment.status (active/closed)
@@ -293,8 +267,7 @@ export default function DashboardPage() {
           profit: investment ? parseFloat(investment.accrued_interest || 0) : 0,
           percentage: investment ? parseFloat(investment.rate_monthly) : parseFloat(d.monthly_percentage || 5),
           date: d.created_at,
-          status: d.status,
-          isFrozen: investment?.is_frozen || false,
+          status: investment?.status || d.status,
         }
       }))
       
@@ -416,7 +389,7 @@ export default function DashboardPage() {
                           )}
                           {deposit.frozen > 0 && (
                             <div className="text-xs text-white mt-1">
-                              Доступно: ${Math.max(0, deposit.amount - deposit.frozen).toFixed(2)}
+                              Доступно: ${(deposit.available || 0).toFixed(2)}
                             </div>
                           )}
                         </div>
@@ -430,17 +403,11 @@ export default function DashboardPage() {
                           <span className="text-xs sm:text-sm text-gray-light whitespace-nowrap">
                             {new Date(deposit.date).toLocaleDateString("uk-UA")}
                           </span>
-                          {deposit.isFrozen ? (
-                            <span className="inline-block px-2 py-1 rounded text-xs bg-orange-500/20 text-orange-400 whitespace-nowrap">
-                              Заморожен
-                            </span>
-                          ) : (
-                            <span className={`inline-block px-2 py-1 rounded text-xs whitespace-nowrap ${getStatusColor(deposit.status)}`}>
-                              {getStatusLabel(deposit.status)}
-                            </span>
-                          )}
+                          <span className={`inline-block px-2 py-1 rounded text-xs whitespace-nowrap ${getStatusColor(deposit.status)}`}>
+                            {getStatusLabel(deposit.status)}
+                          </span>
                         </div>
-                        {deposit.status !== 'withdrawal_pending' && !deposit.isFrozen && (
+                        {deposit.status === 'active' && (
                           <button
                             onClick={() => handleWithdraw(deposit.id)}
                             className="btn-gradient-primary w-full sm:w-auto px-4 py-2 text-foreground font-bold text-sm rounded-lg transition-colors font-sans whitespace-nowrap"
@@ -515,7 +482,7 @@ export default function DashboardPage() {
                           {(deposit.locked || 0) > 0 && (
                             <div>
                               <div className="text-xs text-gray-light mb-1">Доступно</div>
-                              <div className="font-medium font-sans">${Math.max(0, deposit.amount - (deposit.locked || 0)).toFixed(2)}</div>
+                              <div className="font-medium font-sans">${(deposit.available || 0).toFixed(2)}</div>
                             </div>
                           )}
                           <div>
