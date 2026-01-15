@@ -185,8 +185,8 @@ export default function DashboardPage() {
           // ВИВЕДЕНО: брати з investment.total_withdrawn (реальна сума з withdrawals)
           const withdrawnAmount = investment?.total_withdrawn ? parseFloat(investment.total_withdrawn) : 0
           
-          // СТАТУС: показувати investment.status (active/frozen/closed)
-          let displayStatus = investment?.status || 'pending'
+          // СТАТУС: якщо є investment - його статус, інакше deposit.status (pending/rejected)
+          let displayStatus = investment?.status || d.status
           
           // ДАТА ВИВОДУ: якщо позиція закрита - показувати investment.closed_at
           const withdrawDate = investment?.closed_at || null
@@ -278,7 +278,7 @@ export default function DashboardPage() {
         const currentPrincipal = investment ? parseFloat(investment.principal || 0) : originalAmount
         const currentAccrued = investment ? parseFloat(investment.accrued_interest || 0) : 0
         const withdrawnAmount = investment?.total_withdrawn ? parseFloat(investment.total_withdrawn) : 0
-        const displayStatus = investment?.status || 'pending'
+        const displayStatus = investment?.status || d.status
         const withdrawDate = investment?.closed_at || null
         
         let generatedProfit = 0

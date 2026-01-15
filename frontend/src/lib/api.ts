@@ -280,7 +280,7 @@ class ApiClient {
     return this.request('/admin/users', { method: 'GET' });
   }
 
-  async adminUpdateUser(userId: string, data: { status?: string; monthly_percentage?: number }): Promise<ApiResponse> {
+  async adminUpdateUser(userId: string, data: { status?: string; monthly_percentage?: number; max_deposit?: number | null }): Promise<ApiResponse> {
     return this.request(`/admin/users/${userId}`, {
       method: 'PUT',
       body: JSON.stringify(data),

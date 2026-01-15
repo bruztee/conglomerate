@@ -52,6 +52,12 @@ export default function AdminDashboard() {
     pendingDeposits: 0,
     pendingWithdrawals: 0,
     activePaymentMethods: 0,
+    totalInvestments: 0,
+    totalInvested: 0,
+    totalEarned: 0,
+    currentBalances: 0,
+    lockedFunds: 0,
+    totalWithdrawn: 0,
   })
 
   // Show loading while checking auth
@@ -75,18 +81,70 @@ export default function AdminDashboard() {
     async function fetchStats() {
       setLoading(true)
       try {
-        const [usersRes, depositsRes, withdrawalsRes, methodsRes] = await Promise.all([
+        const [usersRes, depositsRes, withdrawalsRes, methodsRes, investmentsRes, allDepositsRes] = await Promise.all([
           api.adminGetUsers(),
           api.adminGetDeposits('pending'),
           api.adminGetWithdrawals('requested'),
           api.adminGetPaymentMethods(),
+          api.getInvestments(),
+          api.adminGetDeposits('all'),
         ])
+
+        const investments = investmentsRes.data?.investments || []
+        const allDeposits = allDepositsRes.data?.deposits || []
+        
+        // Поточна сума балансів користувачів (тільки активні/frozen: principal + accrued_interest)
+        const currentBalances = investments
+          .filter((inv: any) => inv.status === 'active' || inv.status === 'frozen')
+          .reduce((sum: number, inv: any) => {
+            return sum + parseFloat(inv.principal || 0) + parseFloat(inv.accrued_interest || 0)
+          }, 0)
+        
+        // Всього користувачі проінвестували = всі підтверджені депозити
+        const totalUserInvested = allDeposits
+          .filter((d: any) => d.status === 'confirmed')
+          .reduce((sum: number, d: any) => sum + parseFloat(d.amount || 0), 0)
+        
+        // Створити мапу deposit_id -> amount для пошуку початкових сум
+        const depositsMap = new Map()
+        allDeposits.forEach((d: any) => {
+          depositsMap.set(d.id, parseFloat(d.amount || 0))
+        })
+        
+        // Всього заробили (прибуток) = по всім позиціям (активним і закритим)
+        const totalEarned = investments.reduce((sum: number, inv: any) => {
+          if (inv.status === 'closed') {
+            // Для закритих: withdrawn - початкова сума з депозиту
+            const withdrawn = parseFloat(inv.total_withdrawn || 0)
+            const initialDeposit = depositsMap.get(inv.deposit_id) || 0
+            return sum + (withdrawn - initialDeposit)
+          } else {
+            // Для активних/frozen: accrued_interest
+            return sum + parseFloat(inv.accrued_interest || 0)
+          }
+        }, 0)
+        
+        // Заморожені кошти (на виводі)
+        const lockedFunds = investments.reduce((sum: number, inv: any) => {
+          return sum + parseFloat(inv.locked_amount || 0)
+        }, 0)
+        
+        // Всього виведено
+        const totalWithdrawn = investments.reduce((sum: number, inv: any) => {
+          return sum + parseFloat(inv.total_withdrawn || 0)
+        }, 0)
 
         setStats({
           totalUsers: usersRes.data?.users?.length || 0,
           pendingDeposits: depositsRes.data?.deposits?.length || 0,
           pendingWithdrawals: withdrawalsRes.data?.withdrawals?.length || 0,
           activePaymentMethods: methodsRes.data?.payment_methods?.filter((m: any) => m.is_active).length || 0,
+          totalInvestments: investments.length,
+          totalInvested: totalUserInvested,
+          totalEarned: totalEarned,
+          currentBalances: currentBalances,
+          lockedFunds: lockedFunds,
+          totalWithdrawn: totalWithdrawn,
         })
       } catch (error) {
         // Silent fail
@@ -129,6 +187,41 @@ export default function AdminDashboard() {
         <Link href="/admin/payment-methods" className="bg-blur-dark border border-gray-medium rounded-lg p-6 hover:border-silver/30 transition-all cursor-pointer">
           <div className="text-sm text-gray-light mb-2">Активні реквізити</div>
           <div className="text-3xl font-bold text-silver font-sans">{stats.activePaymentMethods}</div>
+        </Link>
+
+        <Link href="/admin/investments" className="bg-blur-dark border border-gray-medium rounded-lg p-6 hover:border-silver/30 transition-all cursor-pointer">
+          <div className="text-sm text-gray-light mb-2">Всього інвестицій</div>
+          <div className="text-3xl font-bold text-foreground font-sans">{stats.totalInvestments}</div>
+        </Link>
+
+        <Link href="/admin/investments" className="bg-blur-dark border border-gray-medium rounded-lg p-6 hover:border-silver/30 transition-all cursor-pointer">
+          <div className="text-sm text-gray-light mb-2">Поточний баланс користувачів</div>
+          <div className="text-3xl font-bold text-silver font-sans">${stats.currentBalances.toFixed(2)}</div>
+          <div className="text-xs text-gray-light mt-1">Principal + нарахований прибуток</div>
+        </Link>
+
+        <Link href="/admin/investments" className="bg-blur-dark border border-gray-medium rounded-lg p-6 hover:border-silver/30 transition-all cursor-pointer">
+          <div className="text-sm text-gray-light mb-2">Всього проінвестували користувачі</div>
+          <div className="text-3xl font-bold text-foreground font-sans">${stats.totalInvested.toFixed(2)}</div>
+          <div className="text-xs text-gray-light mt-1">Початкові депозити + виведені</div>
+        </Link>
+
+        <Link href="/admin/investments" className="bg-blur-dark border border-gray-medium rounded-lg p-6 hover:border-silver/30 transition-all cursor-pointer">
+          <div className="text-sm text-gray-light mb-2">Всього заробили</div>
+          <div className="text-3xl font-bold text-green-400 font-sans">+${stats.totalEarned.toFixed(2)}</div>
+          <div className="text-xs text-gray-light mt-1">Нарахований прибуток</div>
+        </Link>
+
+        <Link href="/admin/withdrawals" className="bg-blur-dark border border-gray-medium rounded-lg p-6 hover:border-silver/30 transition-all cursor-pointer">
+          <div className="text-sm text-gray-light mb-2">Заморожено на виводі</div>
+          <div className="text-3xl font-bold text-orange-400 font-sans">${stats.lockedFunds.toFixed(2)}</div>
+          <div className="text-xs text-gray-light mt-1">Очікують підтвердження</div>
+        </Link>
+
+        <Link href="/admin/withdrawals" className="bg-blur-dark border border-gray-medium rounded-lg p-6 hover:border-silver/30 transition-all cursor-pointer">
+          <div className="text-sm text-gray-light mb-2">Всього виведено</div>
+          <div className="text-3xl font-bold text-foreground font-sans">${stats.totalWithdrawn.toFixed(2)}</div>
+          <div className="text-xs text-gray-light mt-1">Схвалені виводи</div>
         </Link>
       </div>
 
@@ -177,6 +270,17 @@ export default function AdminDashboard() {
             <div>
               <div className="font-medium">Виводи</div>
               <div className="text-xs text-gray-light">Обробка запитів</div>
+            </div>
+          </Link>
+
+          <Link
+            href="/admin/investments"
+            className="flex items-center gap-3 p-4 bg-blur border border-gray-medium rounded-lg hover:border-silver/30 transition-all cursor-pointer"
+          >
+            <div className="text-silver"><WalletIcon /></div>
+            <div>
+              <div className="font-medium">Інвестиції</div>
+              <div className="text-xs text-gray-light">Огляд позицій</div>
             </div>
           </Link>
 

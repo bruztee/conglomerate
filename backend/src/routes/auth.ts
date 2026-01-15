@@ -321,6 +321,20 @@ export async function handleMe(request: Request, env: Env): Promise<Response> {
     const { data: authUserData } = await supabase.auth.admin.getUserById(user.id);
     const authUser = authUserData?.user;
     
+    // Отримати глобальні ліміти депозитів
+    const { data: settings } = await supabase
+      .from('system_settings')
+      .select('key, value')
+      .in('key', ['min_deposit', 'max_deposit']);
+    
+    const settingsMap = new Map(settings?.map(s => [s.key, s.value]) || []);
+    const globalMin = parseFloat(settingsMap.get('min_deposit') || '10');
+    const globalMax = parseFloat(settingsMap.get('max_deposit') || '100000');
+    
+    // Якщо у користувача є індивідуальний ліміт - використати його
+    const userMax = profile.max_deposit ? parseFloat(profile.max_deposit) : null;
+    const maxDeposit = userMax !== null ? userMax : globalMax;
+    
     return jsonResponse({
       user: {
         id: user.id,
@@ -328,12 +342,17 @@ export async function handleMe(request: Request, env: Env): Promise<Response> {
         role: profile.role,
         referral_code: profile.referral_code,
         full_name: profile.full_name,
-        // Phone з auth.users (верифікований через OTP)
         phone: authUser?.phone || null,
         phone_verified: !!authUser?.phone_confirmed_at,
         // Додаткові дані з profiles
         plan: profile.plan || 'Стандарт',
         monthly_percentage: profile.monthly_percentage || 0,
+        deposit_limits: {
+          min_deposit: globalMin,
+          max_deposit: maxDeposit,
+          user_max_deposit: userMax,
+          global_max_deposit: globalMax,
+        },
       },
     });
   } catch (error) {

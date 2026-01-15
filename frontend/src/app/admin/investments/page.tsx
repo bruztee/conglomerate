@@ -38,7 +38,7 @@ export default function AdminInvestmentsPage() {
   
   const [loading, setLoading] = useState(true)
   const [investments, setInvestments] = useState<Investment[]>([])
-  const [filter, setFilter] = useState<'all' | 'active' | 'closed'>('active')
+  const [filter, setFilter] = useState<'all' | 'active' | 'frozen' | 'closed'>('active')
   const [currentPage, setCurrentPage] = useState(1)
   const [selectedInvestment, setSelectedInvestment] = useState<Investment | null>(null)
   const [showModal, setShowModal] = useState(false)
@@ -103,6 +103,8 @@ export default function AdminInvestmentsPage() {
         // Filter based on status
         if (filter === 'active') {
           data = data.filter((inv: Investment) => inv.status === 'active')
+        } else if (filter === 'frozen') {
+          data = data.filter((inv: Investment) => inv.status === 'frozen')
         } else if (filter === 'closed') {
           data = data.filter((inv: Investment) => inv.status === 'closed')
         }
@@ -150,6 +152,14 @@ export default function AdminInvestmentsPage() {
           }`}
         >
           Активні
+        </button>
+        <button
+          onClick={() => { setFilter('frozen'); setCurrentPage(1); }}
+          className={`px-4 md:px-6 py-3 font-medium transition-colors whitespace-nowrap ${
+            filter === 'frozen' ? 'text-silver border-b-2 border-silver' : 'text-gray-light hover:text-foreground'
+          }`}
+        >
+          Заморожені
         </button>
         <button
           onClick={() => { setFilter('all'); setCurrentPage(1); }}

@@ -188,21 +188,7 @@ export async function handleApproveWithdrawal(request: Request, env: Env, withdr
       return errorResponse('DATABASE_ERROR', 'Failed to update investment', 500);
     }
 
-    // 7.5. Якщо investment закрито, оновити deposit status на 'withdrawn'
-    if (newStatus === 'closed' && investment.deposit_id) {
-      console.log('[APPROVE_WITHDRAWAL] Investment closed, updating deposit status to withdrawn');
-      const { error: depositUpdateError } = await supabase
-        .from('deposits')
-        .update({ status: 'withdrawn', updated_at: new Date().toISOString() })
-        .eq('id', investment.deposit_id);
-      
-      if (depositUpdateError) {
-        console.error('[APPROVE_WITHDRAWAL] Failed to update deposit status:', depositUpdateError);
-        // Не фейлимо весь процес, тільки логуємо
-      } else {
-        console.log('[APPROVE_WITHDRAWAL] Deposit status updated to withdrawn');
-      }
-    }
+    // Deposit залишається 'confirmed' - не змінюємо його статус при закритті investment
 
     // 8. Оновити withdrawal status
     const { error: updateError } = await supabase

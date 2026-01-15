@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import { useAuth } from '@/context/AuthContext'
 import { api } from '@/lib/api'
 import CopyIcon from '@/components/icons/CopyIcon'
 import ArrowLeftIcon from '@/components/icons/ArrowLeftIcon'
@@ -22,6 +23,7 @@ interface DepositFlowProps {
 type Step = 'amount' | 'currency' | 'network' | 'wallet' | 'confirm' | 'success'
 
 export default function DepositFlow({ onSuccess, userRate }: DepositFlowProps) {
+  const { user } = useAuth()
   const [step, setStep] = useState<Step>('amount')
   const [amount, setAmount] = useState('')
   const [paymentMethods, setPaymentMethods] = useState<PaymentMethod[]>([])
@@ -29,21 +31,27 @@ export default function DepositFlow({ onSuccess, userRate }: DepositFlowProps) {
   const [selectedNetwork, setSelectedNetwork] = useState<string | null>(null)
   const [selectedWallet, setSelectedWallet] = useState<PaymentMethod | null>(null)
   const [loading, setLoading] = useState(false)
-
-  const minAmount = 10
-  const maxAmount = 100000
+  
+  // Get deposit limits from user context
+  const minAmount = user?.deposit_limits?.min_deposit || 10
+  const maxAmount = user?.deposit_limits?.max_deposit || 100000
   const quickAmounts = [100, 500, 1000, 5000, 10000]
 
   useEffect(() => {
+    async function fetchPaymentMethods() {
+      try {
+        const result = await api.getActivePaymentMethods()
+        if (result.success && result.data) {
+          const methods = result.data.payment_methods || []
+          setPaymentMethods(methods)
+        }
+      } catch (error) {
+        console.error('Failed to fetch payment methods:', error)
+      }
+    }
+
     fetchPaymentMethods()
   }, [])
-
-  const fetchPaymentMethods = async () => {
-    const result = await api.getActivePaymentMethods()
-    if (result.success && result.data) {
-      setPaymentMethods(result.data.payment_methods || [])
-    }
-  }
 
   const availableCurrencies = [...new Set(paymentMethods.map(m => m.currency))]
   

@@ -17,12 +17,15 @@ interface User {
   phone_verified: boolean
   status: string
   monthly_percentage: number
+  max_deposit: number | null
   referral_code: string
   created_at: string
   total_deposits: number
   total_withdrawals: number
-  total_profit: number
+  unrealized_profit: number
+  realized_profit: number
   current_investments: number
+  frozen_funds: number
 }
 
 export default function AdminUsersPage() {
@@ -38,6 +41,7 @@ export default function AdminUsersPage() {
   const [formData, setFormData] = useState({
     status: 'active',
     monthly_percentage: 5.0,
+    max_deposit: null as number | null,
   })
   
   const usersPerPage = 20
@@ -90,6 +94,7 @@ export default function AdminUsersPage() {
     setFormData({
       status: user.status,
       monthly_percentage: user.monthly_percentage,
+      max_deposit: user.max_deposit,
     })
     setShowModal(true)
   }
@@ -110,160 +115,87 @@ export default function AdminUsersPage() {
         )}
       </div>
 
-      {/* Users Table */}
-      <div className="bg-blur-dark border border-gray-medium rounded-lg overflow-hidden">
-        {/* Mobile/Tablet Cards */}
-        <div className="md:hidden divide-y divide-gray-medium/30">
-          {paginatedUsers.map((user) => (
-            <div key={user.id} className="p-4 hover:bg-gray-dark/30">
-              <div className="flex justify-between items-start gap-2 mb-3">
-                <div className="flex-1 min-w-0">
-                  <div className="font-medium truncate">{user.full_name || 'Без імені'}</div>
-                  <div className="text-sm text-gray-light truncate">{user.email}</div>
-                  {user.phone && (
-                    <div className="text-xs text-gray-light mt-1">{user.phone}</div>
-                  )}
-                </div>
-                <button
-                  onClick={() => openEditModal(user)}
-                  className="flex-shrink-0 text-silver hover:text-foreground text-sm whitespace-nowrap"
-                >
-                  Редагувати
-                </button>
+      {/* User Cards Grid */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        {paginatedUsers.map((user) => (
+          <div key={user.id} className="bg-blur-dark border border-gray-medium rounded-lg p-5 hover:border-silver/30 transition-all">
+            {/* Header */}
+            <div className="flex items-start justify-between mb-4">
+              <div className="flex-1">
+                <div className="font-medium text-silver mb-1">{user.email}</div>
+                <div className="text-sm text-gray-light">{user.full_name || 'Немає імені'}</div>
+                <div className="text-xs text-gray-light mt-1">{user.phone || 'Немає телефону'}</div>
               </div>
-              
-              <div className="grid grid-cols-2 gap-3 text-sm mb-3">
-                <div>
-                  <div className="text-xs text-gray-light mb-1">Депозити</div>
-                  <div className="font-sans font-medium">${user.total_deposits.toFixed(2)}</div>
-                </div>
-                <div>
-                  <div className="text-xs text-gray-light mb-1">Інвестиції</div>
-                  <div className="font-sans font-medium text-silver">${(user.current_investments || 0).toFixed(2)}</div>
-                </div>
-                <div>
-                  <div className="text-xs text-gray-light mb-1">Профіт</div>
-                  <div className="font-sans font-medium text-green-400">+${(user.total_profit || 0).toFixed(2)}</div>
-                </div>
-                <div>
-                  <div className="text-xs text-gray-light mb-1">Виводи</div>
-                  <div className="font-sans font-medium">${user.total_withdrawals.toFixed(2)}</div>
-                </div>
+              <span className={`px-3 py-1 rounded-full text-xs whitespace-nowrap ${
+                user.status === 'active' ? 'bg-green-500/20 text-green-500' : 'bg-red-500/20 text-red-500'
+              }`}>
+                {user.status === 'active' ? 'Активний' : 'Заблокований'}
+              </span>
+            </div>
+            
+            {/* Verification Badges */}
+            <div className="flex flex-wrap items-center gap-2 mb-4">
+              <span className={`flex items-center gap-1 px-2 py-1 rounded text-xs ${
+                user.email_verified ? 'bg-green-500/20 text-green-500' : 'bg-yellow-500/20 text-yellow-500'
+              }`}>
+                {user.email_verified ? <CheckIcon /> : <ClockIcon />} Email
+              </span>
+              <span className={`flex items-center gap-1 px-2 py-1 rounded text-xs ${
+                user.phone_verified ? 'bg-green-500/20 text-green-500' : 'bg-gray-500/20 text-gray-400'
+              }`}>
+                {user.phone_verified ? <CheckIcon /> : <MinusIcon />} Phone
+              </span>
+            </div>
+            
+            {/* Financial Data */}
+            <div className="space-y-3 mb-4">
+              <div className="flex justify-between items-center">
+                <span className="text-xs text-gray-light">Депозити:</span>
+                <span className="font-sans font-medium">${user.total_deposits.toFixed(2)}</span>
               </div>
-              
-              <div className="flex flex-wrap items-center gap-2">
-                <span className={`flex items-center gap-1 px-2 py-1 rounded text-xs ${
-                  user.email_verified ? 'bg-green-500/20 text-green-500' : 'bg-yellow-500/20 text-yellow-500'
-                }`}>
-                  {user.email_verified ? <CheckIcon /> : <ClockIcon />} Email
-                </span>
-                <span className={`flex items-center gap-1 px-2 py-1 rounded text-xs ${
-                  user.phone_verified ? 'bg-green-500/20 text-green-500' : 'bg-gray-500/20 text-gray-400'
-                }`}>
-                  {user.phone_verified ? <CheckIcon /> : <MinusIcon />} Phone
-                </span>
-                <span className={`px-2 py-1 rounded text-xs ${
-                  user.status === 'active' ? 'bg-green-500/20 text-green-500' : 'bg-red-500/20 text-red-500'
-                }`}>
-                  {user.status}
-                </span>
-                <span className="px-2 py-1 rounded text-xs bg-blur border border-gray-medium">
-                  {user.monthly_percentage}%
-                </span>
+              <div className="flex justify-between items-center">
+                <span className="text-xs text-gray-light">Баланс:</span>
+                <span className="font-sans font-medium text-silver">${(user.current_investments || 0).toFixed(2)}</span>
+              </div>
+              <div className="flex justify-between items-center">
+                <span className="text-xs text-gray-light">Нереалізований:</span>
+                <span className="font-sans font-medium text-yellow-400">+${(user.unrealized_profit || 0).toFixed(2)}</span>
+              </div>
+              <div className="flex justify-between items-center">
+                <span className="text-xs text-gray-light">Реалізований:</span>
+                <span className="font-sans font-medium text-green-400">+${(user.realized_profit || 0).toFixed(2)}</span>
+              </div>
+              <div className="flex justify-between items-center">
+                <span className="text-xs text-gray-light">Заморожено:</span>
+                <span className="font-sans font-medium text-orange-400">${(user.frozen_funds || 0).toFixed(2)}</span>
+              </div>
+              <div className="flex justify-between items-center">
+                <span className="text-xs text-gray-light">Виводи:</span>
+                <span className="font-sans font-medium">${user.total_withdrawals.toFixed(2)}</span>
               </div>
             </div>
-          ))}
-        </div>
-        
-        {/* Desktop Table */}
-        <div className="hidden md:block overflow-x-auto">
-          <table className="w-full">
-            <thead className="bg-gray-medium/20">
-              <tr>
-                <th className="text-left py-4 px-6 text-sm font-medium">Email</th>
-                <th className="text-left py-4 px-6 text-sm font-medium">Телефон</th>
-                <th className="text-left py-4 px-6 text-sm font-medium">Верифікація</th>
-                <th className="text-left py-4 px-6 text-sm font-medium">Депозити</th>
-                <th className="text-left py-4 px-6 text-sm font-medium">Інвестиції</th>
-                <th className="text-left py-4 px-6 text-sm font-medium">Профіт</th>
-                <th className="text-left py-4 px-6 text-sm font-medium">Виводи</th>
-                <th className="text-left py-4 px-6 text-sm font-medium">%</th>
-                <th className="text-left py-4 px-6 text-sm font-medium">Статус</th>
-                <th className="text-left py-4 px-6 text-sm font-medium">Дії</th>
-              </tr>
-            </thead>
-            <tbody>
-              {paginatedUsers.map((user) => (
-                <tr key={user.id} className="border-t border-gray-medium/30 hover:bg-gray-dark/30">
-                  <td className="py-4 px-6">
-                    <div>
-                      <div className="font-medium">{user.full_name || 'Без імені'}</div>
-                      <div className="text-sm text-gray-light">{user.email}</div>
-                      <div className="text-xs text-gray-light mt-1">
-                        Реєстр: {new Date(user.created_at).toLocaleDateString('uk-UA')}
-                      </div>
-                    </div>
-                  </td>
-                  <td className="py-4 px-6">
-                    <div className="text-sm font-sans">{user.phone || '—'}</div>
-                  </td>
-                  <td className="py-4 px-6">
-                    <div className="flex gap-2">
-                      <span className={`flex items-center gap-1 px-2 py-1 rounded text-xs ${
-                        user.email_verified ? 'bg-green-500/20 text-green-500' : 'bg-yellow-500/20 text-yellow-500'
-                      }`}>
-                        {user.email_verified ? <CheckIcon /> : <ClockIcon />} Email
-                      </span>
-                      <span className={`flex items-center gap-1 px-2 py-1 rounded text-xs ${
-                        user.phone_verified ? 'bg-green-500/20 text-green-500' : 'bg-gray-500/20 text-gray-400'
-                      }`}>
-                        {user.phone_verified ? <CheckIcon /> : <MinusIcon />} Phone
-                      </span>
-                    </div>
-                  </td>
-                  <td className="py-4 px-6">
-                    <div className="text-sm font-sans font-medium">${user.total_deposits.toFixed(2)}</div>
-                  </td>
-                  <td className="py-4 px-6">
-                    <div className="text-sm font-sans font-medium text-silver">${(user.current_investments || 0).toFixed(2)}</div>
-                  </td>
-                  <td className="py-4 px-6">
-                    <div className="text-sm font-sans font-medium text-green-400">+${(user.total_profit || 0).toFixed(2)}</div>
-                  </td>
-                  <td className="py-4 px-6">
-                    <div className="text-sm font-sans font-medium">${user.total_withdrawals.toFixed(2)}</div>
-                  </td>
-                  <td className="py-4 px-6">
-                    <div className="text-sm font-sans font-medium">{user.monthly_percentage}%</div>
-                  </td>
-                  <td className="py-4 px-6">
-                    <span className={`px-2 py-1 rounded text-xs ${
-                      user.status === 'active' ? 'bg-green-500/20 text-green-500' :
-                      'bg-red-500/20 text-red-500'
-                    }`}>
-                      {user.status}
-                    </span>
-                  </td>
-                  <td className="py-4 px-6">
-                    <button
-                      onClick={() => openEditModal(user)}
-                      className="text-silver hover:text-foreground transition-colors text-sm cursor-pointer"
-                    >
-                      Редагувати
-                    </button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-        
-        
-        <Pagination
-          currentPage={currentPage}
-          totalPages={totalPages}
-          onPageChange={setCurrentPage}
-        />
+            
+            {/* Settings */}
+            <div className="flex justify-between items-center pt-3 border-t border-gray-medium/30 mb-3">
+              <div className="text-xs text-gray-light">Місячний %:</div>
+              <div className="font-sans font-medium">{user.monthly_percentage}%</div>
+            </div>
+            <div className="flex justify-between items-center mb-4">
+              <div className="text-xs text-gray-light">Макс. депозит:</div>
+              <div className="font-sans font-medium">
+                {user.max_deposit ? `$${parseFloat(user.max_deposit.toString()).toFixed(0)}` : '—'}
+              </div>
+            </div>
+            
+            {/* Action Button */}
+            <button
+              onClick={() => openEditModal(user)}
+              className="w-full px-4 py-2 bg-silver/10 hover:bg-silver/20 text-silver rounded transition-colors text-sm font-medium"
+            >
+              Редагувати
+            </button>
+          </div>
+        ))}
       </div>
 
       {/* Edit Modal */}
@@ -307,6 +239,19 @@ export default function AdminUsersPage() {
                 </div>
               </div>
 
+              <div>
+                <label className="block text-sm font-medium mb-2">Максимальний депозит (залиште пустим для глобального ліміту)</label>
+                <input
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  value={formData.max_deposit || ''}
+                  onChange={(e) => setFormData({ ...formData, max_deposit: e.target.value ? parseFloat(e.target.value) : null })}
+                  placeholder="Без обмежень (використати глобальний ліміт)"
+                  className="w-full px-4 py-2 bg-blur border border-gray-medium rounded-lg focus:outline-none focus:border-silver font-sans"
+                />
+                <p className="text-xs text-gray-light mt-1">Індивідуальний ліміт для цього користувача. Якщо не встановлено - використовується глобальний ліміт.</p>
+              </div>
 
               <div className="flex gap-3 pt-4">
                 <button

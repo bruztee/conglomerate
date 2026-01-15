@@ -11,6 +11,12 @@ interface User {
   full_name?: string | null;
   phone_verified?: boolean;
   phone?: string | null;
+  deposit_limits?: {
+    min_deposit: number;
+    max_deposit: number;
+    user_max_deposit: number | null;
+    global_max_deposit: number;
+  };
 }
 
 interface AuthContextType {

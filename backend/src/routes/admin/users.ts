@@ -28,6 +28,7 @@ export async function handleGetUsers(request: Request, env: Env): Promise<Respon
         phone_verified,
         status,
         monthly_percentage,
+        max_deposit,
         referral_code,
         referred_by,
         created_at,
@@ -52,11 +53,11 @@ export async function handleGetUsers(request: Request, env: Env): Promise<Respon
         const [depositsRes, investmentsRes] = await Promise.all([
           supabase
             .from('deposits')
-            .select('amount, status')
+            .select('id, amount, status')
             .eq('user_id', user.id),
           supabase
             .from('investments')
-            .select('id, principal, accrued_interest, status')
+            .select('id, deposit_id, principal, accrued_interest, status')
             .eq('user_id', user.id),
         ]);
 
@@ -74,19 +75,65 @@ export async function handleGetUsers(request: Request, env: Env): Promise<Respon
 
         const totalDeposits = depositsRes.data?.filter(d => d.status === 'confirmed').reduce((sum, d) => sum + Number(d.amount), 0) || 0;
         
-        // Profit and current investments - only from active investments
-        const activeInvestments = investmentsRes.data?.filter(inv => inv.status === 'active') || [];
-        const totalProfit = activeInvestments.reduce((sum, inv) => sum + Number(inv.accrued_interest || 0), 0);
-        const currentInvestments = activeInvestments.reduce((sum, inv) => sum + Number(inv.principal || 0), 0);
+        // Current investments balance - include both active AND frozen
+        const activeAndFrozenInvestments = investmentsRes.data?.filter(inv => inv.status === 'active' || inv.status === 'frozen') || [];
+        const currentInvestments = activeAndFrozenInvestments.reduce((sum, inv) => sum + Number(inv.principal || 0), 0);
+        
+        // Unrealized profit - from active and frozen positions
+        const unrealizedProfit = activeAndFrozenInvestments.reduce((sum, inv) => sum + Number(inv.accrued_interest || 0), 0);
+        
+        // Realized profit - from closed positions: total_withdrawn - initial_deposit
+        const closedInvestments = investmentsRes.data?.filter(inv => inv.status === 'closed') || [];
+        let realizedProfit = 0;
+        
+        if (closedInvestments.length > 0) {
+          // Отримати всі виводи для закритих інвестицій одним запитом
+          const closedInvIds = closedInvestments.map(inv => inv.id);
+          const { data: allWithdrawals } = await supabase
+            .from('withdrawals')
+            .select('investment_id, amount')
+            .in('investment_id', closedInvIds)
+            .in('status', ['approved', 'sent']);
+          
+          // Створити мапу investment_id -> total withdrawn
+          const withdrawnMap = new Map<string, number>();
+          (allWithdrawals || []).forEach(w => {
+            const current = withdrawnMap.get(w.investment_id) || 0;
+            withdrawnMap.set(w.investment_id, current + Number(w.amount));
+          });
+          
+          // Підрахувати реалізований профіт для кожної закритої позиції
+          for (const inv of closedInvestments) {
+            const deposit = depositsRes.data?.find(d => d.id === inv.deposit_id);
+            if (deposit) {
+              const initialAmount = Number(deposit.amount);
+              const totalWithdrawn = withdrawnMap.get(inv.id) || 0;
+              realizedProfit += (totalWithdrawn - initialAmount);
+            }
+          }
+        }
+        
+        // Frozen funds (locked_amount)
+        let frozenFunds = 0;
+        if (activeAndFrozenInvestments.length > 0) {
+          const { data: investmentsDetailed } = await supabase
+            .from('investments')
+            .select('locked_amount')
+            .eq('user_id', user.id)
+            .in('status', ['active', 'frozen']);
+          frozenFunds = investmentsDetailed?.reduce((sum, inv) => sum + Number(inv.locked_amount || 0), 0) || 0;
+        }
 
         return {
           ...user,
           email_verified: emailVerifiedMap.get(user.id) || false,
-          phone_verified: user.phone_verified || !!user.phone, // True if phone exists
+          phone_verified: user.phone_verified || !!user.phone,
           total_deposits: totalDeposits,
           total_withdrawals: totalWithdrawals,
-          total_profit: totalProfit,
+          unrealized_profit: unrealizedProfit,
+          realized_profit: realizedProfit,
           current_investments: currentInvestments,
+          frozen_funds: frozenFunds,
         };
       })
     );
@@ -112,9 +159,10 @@ export async function handleUpdateUser(request: Request, env: Env, userId: strin
     const body = await request.json() as {
       status?: string;
       monthly_percentage?: number;
+      max_deposit?: number | null;
     };
 
-    if (!body.status && body.monthly_percentage === undefined) {
+    if (!body.status && body.monthly_percentage === undefined && body.max_deposit === undefined) {
       return errorResponse('VALIDATION_ERROR', 'At least one field must be provided', 400);
     }
 
@@ -127,6 +175,7 @@ export async function handleUpdateUser(request: Request, env: Env, userId: strin
     const updateData: any = {};
     if (body.status) updateData.status = body.status;
     if (body.monthly_percentage !== undefined) updateData.monthly_percentage = body.monthly_percentage;
+    if (body.max_deposit !== undefined) updateData.max_deposit = body.max_deposit;
 
     const supabase = createServiceSupabaseClient(env);
 
