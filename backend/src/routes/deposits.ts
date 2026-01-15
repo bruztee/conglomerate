@@ -23,14 +23,26 @@ export async function handleCreateDeposit(request: Request, env: Env): Promise<R
     }
     
     const supabase = createServiceSupabaseClient(env);
-    console.log('[CREATE_DEPOSIT] Inserting deposit into DB...');
     
+    // Отримати monthly_percentage користувача
+    console.log('[CREATE_DEPOSIT] Fetching user monthly_percentage...');
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('monthly_percentage')
+      .eq('id', user.id)
+      .single();
+    
+    const monthlyPercentage = profile?.monthly_percentage || 5;
+    console.log('[CREATE_DEPOSIT] User monthly_percentage:', monthlyPercentage);
+    
+    console.log('[CREATE_DEPOSIT] Inserting deposit into DB...');
     const { data: deposit, error } = await supabase
       .from('deposits')
       .insert({
         user_id: user.id,
         amount: body.amount,
         payment_details: body.payment_details || {},
+        monthly_percentage: monthlyPercentage,
         status: 'pending',
       })
       .select()

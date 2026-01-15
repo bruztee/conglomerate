@@ -2,7 +2,7 @@
 
 import type React from "react"
 import { useState, useEffect } from "react"
-import { useRouter } from "next/navigation"
+import { useRouter, useSearchParams } from "next/navigation"
 import { useAuth } from "@/context/AuthContext"
 import { api } from "@/lib/api"
 import Header from "@/components/Header"
@@ -38,6 +38,7 @@ interface Deposit {
 
 export default function WithdrawPage() {
   const router = useRouter()
+  const searchParams = useSearchParams()
   const { user, loading: authLoading } = useAuth()
   
   // ВСІ useState МАЮТЬ БУТИ НА ПОЧАТКУ
@@ -157,6 +158,17 @@ export default function WithdrawPage() {
 
     fetchData()
   }, [user, router])
+
+  // Автоматичний вибір депозиту з URL параметра
+  useEffect(() => {
+    const depositIdFromUrl = searchParams.get('deposit_id')
+    if (depositIdFromUrl && activeDeposits.length > 0) {
+      const depositExists = activeDeposits.find(d => d.id === depositIdFromUrl)
+      if (depositExists) {
+        setSelectedDepositId(depositIdFromUrl)
+      }
+    }
+  }, [searchParams, activeDeposits])
 
   const selectedDeposit = activeDeposits.find(d => d.id === selectedDepositId)
   const selectedNetwork = selectedDeposit?.network || ''

@@ -57,13 +57,15 @@ export default function DashboardPage() {
   }
 
   const handleWithdraw = (depositId: string) => {
-    // Withdraw logic
+    router.push(`/withdraw?deposit_id=${depositId}`)
   }
 
   const getStatusLabel = (status: string) => {
     switch (status) {
       case "active":
         return "Активний"
+      case "frozen":
+        return "Заморожено"
       case "closed":
         return "Виведено"
       case "pending":
@@ -87,6 +89,8 @@ export default function DashboardPage() {
     switch (status) {
       case "active":
         return "bg-green-500/20 text-green-400"
+      case "frozen":
+        return "bg-orange-500/20 text-orange-400"
       case "closed":
         return "bg-gray-500/20 text-gray-400"
       case "pending":
@@ -174,7 +178,7 @@ export default function DashboardPage() {
             amount: currentAmount,
             frozen: lockedAmount,
             profit: investment ? parseFloat(investment.accrued_interest || 0) : 0,
-            percentage: d.monthly_percentage || profitPercentage,
+            percentage: investment ? parseFloat(investment.rate_monthly) : parseFloat(d.monthly_percentage || 5),
             date: d.created_at,
             status: d.status,
             isFrozen: isFrozen,
@@ -192,7 +196,15 @@ export default function DashboardPage() {
           const withdrawnAmount = investment?.total_withdrawn ? parseFloat(investment.total_withdrawn) : 0
           
           // СТАТУС: показувати investment.status (active/closed), а не deposit.status
-          const displayStatus = investment?.status || 'pending'
+          let displayStatus = investment?.status || 'pending'
+          // Якщо заморожено - показувати frozen замість active
+          if (investment?.is_frozen && displayStatus === 'active') {
+            displayStatus = 'frozen'
+          }
+          // Якщо заморожено - показувати frozen замість active
+          if (investment?.is_frozen && displayStatus === 'active') {
+            displayStatus = 'frozen'
+          }
           
           // ДАТА ВИВОДУ: якщо позиція закрита - показувати investment.closed_at
           const withdrawDate = investment?.closed_at || null
@@ -273,7 +285,7 @@ export default function DashboardPage() {
           amount: parseFloat(d.amount),
           frozen: investment ? parseFloat(investment.locked_amount || 0) : 0,
           profit: investment ? parseFloat(investment.accrued_interest || 0) : 0,
-          percentage: d.monthly_percentage || profitPercentage,
+          percentage: investment ? parseFloat(investment.rate_monthly) : parseFloat(d.monthly_percentage || 5),
           date: d.created_at,
           status: d.status,
           isFrozen: investment?.is_frozen || false,
@@ -306,7 +318,7 @@ export default function DashboardPage() {
           withdrawn: withdrawnAmount,
           profit: generatedProfit,
           locked: lockedAmount,
-          percentage: investment ? parseFloat(investment.rate_monthly || profitPercentage) : profitPercentage,
+          percentage: investment ? parseFloat(investment.rate_monthly) : parseFloat(d.monthly_percentage || 5),
           date: d.created_at,
           withdrawDate: withdrawDate,
           status: displayStatus,
@@ -374,7 +386,7 @@ export default function DashboardPage() {
 
           {/* Deposit Creation and Active Deposits */}
           <div className="grid lg:grid-cols-2 gap-6 mb-8">
-            <DepositFlow onSuccess={handleDepositSuccess} />
+            <DepositFlow onSuccess={handleDepositSuccess} userRate={profitPercentage} />
 
             <div className="bg-gray-dark/20 border border-gray-medium/30 rounded-lg p-6">
               <h2 className="text-xl font-bold mb-4">Активні депозити</h2>
@@ -526,7 +538,7 @@ export default function DashboardPage() {
                           <th className="text-left py-3 px-4 text-sm font-medium text-gray-light">Профіт</th>
                           <th className="text-left py-3 px-4 text-sm font-medium text-gray-light">Дата створення</th>
                           <th className="text-left py-3 px-4 text-sm font-medium text-gray-light">Дата виводу</th>
-                          <th className="text-left py-3 px-4 text-sm font-medium text-gray-light">Статус</th>
+                          <th className="text-center py-3 px-4 text-sm font-medium text-gray-light">Статус</th>
                         </tr>
                       </thead>
                       <tbody>
@@ -553,7 +565,7 @@ export default function DashboardPage() {
                             <td className="py-3 px-4 text-sm text-gray-light">
                               {deposit.withdrawDate ? new Date(deposit.withdrawDate).toLocaleDateString("uk-UA") : '—'}
                             </td>
-                            <td className="py-3 px-4">
+                            <td className="py-3 px-4 text-center">
                               <span
                                 className={`px-3 py-1 ${getStatusColor(deposit.status)} rounded-full text-xs font-sans whitespace-nowrap`}
                               >

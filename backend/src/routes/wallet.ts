@@ -17,7 +17,7 @@ export async function handleGetWallet(request: Request, env: Env): Promise<Respo
     console.log('[GET_WALLET] Fetching active investments...');
     const { data: investments } = await supabase
       .from('investments')
-      .select('principal, accrued_interest, locked_amount')
+      .select('principal, accrued_interest, locked_amount, referral_earnings')
       .eq('user_id', user.id)
       .eq('status', 'active');
 
@@ -26,21 +26,24 @@ export async function handleGetWallet(request: Request, env: Env): Promise<Respo
     let totalPrincipal = 0;
     let totalAccrued = 0;
     let totalLocked = 0;
+    let totalReferralEarnings = 0;
 
     (investments || []).forEach((inv, idx) => {
       const principal = Number(inv.principal);
       const accrued = Number(inv.accrued_interest);
       const locked = Number(inv.locked_amount || 0);
+      const referralEarnings = Number(inv.referral_earnings || 0);
       
-      console.log(`[GET_WALLET] Investment ${idx}: principal=${principal}, accrued=${accrued}, locked_amount=${inv.locked_amount}, locked=${locked}`);
+      console.log(`[GET_WALLET] Investment ${idx}: principal=${principal}, accrued=${accrued}, locked_amount=${inv.locked_amount}, locked=${locked}, referral_earnings=${referralEarnings}`);
       
       totalPrincipal += principal;
       totalAccrued += accrued;
       totalLocked += locked;
+      totalReferralEarnings += referralEarnings;
     });
 
-    const balance = totalPrincipal + totalAccrued - totalLocked;
-    console.log('[GET_WALLET] Calculated - principal:', totalPrincipal, 'accrued:', totalAccrued, 'locked:', totalLocked, 'balance:', balance);
+    const balance = totalPrincipal + totalAccrued + totalReferralEarnings - totalLocked;
+    console.log('[GET_WALLET] Calculated - principal:', totalPrincipal, 'accrued:', totalAccrued, 'referral:', totalReferralEarnings, 'locked:', totalLocked, 'balance:', balance);
 
     console.log('[GET_WALLET] Fetching confirmed deposits...');
     const { data: deposits } = await supabase
@@ -67,7 +70,8 @@ export async function handleGetWallet(request: Request, env: Env): Promise<Respo
       balance: balance,
       locked_amount: totalLocked,
       total_invested: totalPrincipal,
-      total_profit: totalAccrued,
+      total_profit: totalAccrued + totalReferralEarnings,
+      referral_earnings: totalReferralEarnings,
       total_deposits: totalDeposits,
       total_withdrawals: totalWithdrawals,
       currency: 'USD',

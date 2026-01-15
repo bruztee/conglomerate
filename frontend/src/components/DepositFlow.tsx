@@ -16,11 +16,12 @@ interface PaymentMethod {
 
 interface DepositFlowProps {
   onSuccess: () => void
+  userRate: number
 }
 
 type Step = 'amount' | 'currency' | 'network' | 'wallet' | 'confirm' | 'success'
 
-export default function DepositFlow({ onSuccess }: DepositFlowProps) {
+export default function DepositFlow({ onSuccess, userRate }: DepositFlowProps) {
   const [step, setStep] = useState<Step>('amount')
   const [amount, setAmount] = useState('')
   const [paymentMethods, setPaymentMethods] = useState<PaymentMethod[]>([])
@@ -107,7 +108,7 @@ export default function DepositFlow({ onSuccess }: DepositFlowProps) {
   }
 
   return (
-    <div className="bg-gray-dark/20 border border-gray-medium/30 rounded-lg p-6">
+    <div className="bg-gray-dark/20 border border-gray-medium/30 rounded-lg p-6 h-fit">
       <div className="flex items-center justify-between mb-6">
         <h2 className="text-xl font-bold">Створити депозит</h2>
         {step !== 'amount' && (
@@ -122,11 +123,9 @@ export default function DepositFlow({ onSuccess }: DepositFlowProps) {
       </div>
 
       {step === 'amount' && (
-        <div className="space-y-4">
-          <div>
-            <label htmlFor="amount" className="block text-sm font-medium mb-2">
-              Сума депозиту
-            </label>
+        <div className="max-w-md mx-auto">
+          <div className="mb-4">
+            <label className="block text-sm font-medium mb-2">Сума депозиту</label>
             <div className="relative">
               <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-light font-sans">$</span>
               <input
@@ -164,6 +163,11 @@ export default function DepositFlow({ onSuccess }: DepositFlowProps) {
           >
             Продовжити
           </button>
+          
+          <div className="text-center mt-4 pt-4 border-t border-gray-medium/30">
+            <p className="text-sm text-gray-light mb-1">Ваша місячна ставка</p>
+            <p className="text-2xl font-bold bg-gradient-to-r from-[#C0A062] to-[#E8D4A0] bg-clip-text text-transparent">{userRate}%</p>
+          </div>
         </div>
       )}
 
