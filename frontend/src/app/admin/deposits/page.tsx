@@ -151,8 +151,14 @@ export default function AdminDepositsPage() {
             <div className="grid md:grid-cols-4 gap-6">
               <div>
                 <div className="text-xs text-gray-light mb-1">Користувач</div>
-                <div className="font-medium">{deposit.user.full_name || 'Без імені'}</div>
-                <div className="text-xs text-gray-light">{deposit.user.email}</div>
+                {deposit.user ? (
+                  <>
+                    <div className="font-medium">{deposit.user.full_name || 'Без імені'}</div>
+                    <div className="text-xs text-gray-light">{deposit.user.email}</div>
+                  </>
+                ) : (
+                  <div className="text-xs text-red-400">User profile not found</div>
+                )}
               </div>
 
               <div>

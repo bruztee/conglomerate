@@ -140,4 +140,10 @@ export default {
     
     return errorResponse('NOT_FOUND', 'Route not found', 404, headers);
   },
+
+  async scheduled(event: ScheduledEvent, env: Env, ctx: ExecutionContext): Promise<void> {
+    // Cron job для нарахування процентів
+    const { handleAccrueInterest } = await import('./routes/cron');
+    ctx.waitUntil(handleAccrueInterest(env));
+  },
 };

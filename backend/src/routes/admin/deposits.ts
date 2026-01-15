@@ -97,13 +97,14 @@ export async function handleApproveDeposit(request: Request, env: Env, depositId
     }
 
     // Отримати monthly_percentage користувача для створення investment
-    const { data: profile } = await supabase
+    const { data: profile, error: profileError } = await supabase
       .from('profiles')
-      .select('balance, monthly_percentage')
+      .select('monthly_percentage')
       .eq('id', deposit.user_id)
       .single();
 
-    if (!profile) {
+    if (profileError || !profile) {
+      console.error('Failed to fetch profile:', profileError);
       return errorResponse('USER_NOT_FOUND', 'User profile not found', 404);
     }
 

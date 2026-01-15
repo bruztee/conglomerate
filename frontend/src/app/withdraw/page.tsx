@@ -18,15 +18,21 @@ interface WithdrawalRequest {
   status: "pending" | "completed" | "rejected"
   createdDate: string
   withdrawDate: string | null
+  balanceBefore?: number
+  balanceAfter?: number
+  depositBefore?: number
+  depositAfter?: number
 }
 
 interface Deposit {
   id: string
   amount: number
+  frozen?: number
   percentage: number
   profit: number
   createdDate: string
-  selected: boolean
+  network?: string
+  coin?: string
 }
 
 export default function WithdrawPage() {
@@ -35,7 +41,8 @@ export default function WithdrawPage() {
   
   // ВСІ useState МАЮТЬ БУТИ НА ПОЧАТКУ
   const [walletAddress, setWalletAddress] = useState("")
-  const [selectedMethod, setSelectedMethod] = useState<string | null>(null)
+  const [withdrawAmount, setWithdrawAmount] = useState("")
+  const [selectedDepositId, setSelectedDepositId] = useState<string>("")
   const [userBalance, setUserBalance] = useState(0)
   const [userProfit, setUserProfit] = useState(0)
   const [loading, setLoading] = useState(true)
@@ -66,23 +73,52 @@ export default function WithdrawPage() {
 
       setLoading(true)
       try {
-        // Отримати wallet balance
+        // Отримати wallet balance (total invested + profit)
         const walletResult = await api.getWallet()
         if (walletResult.success && walletResult.data) {
-          setUserBalance(walletResult.data.balance || 0)
+          const data = walletResult.data as any
+          setUserBalance(data.balance || 0)
+          setUserProfit(data.total_profit || 0)
         }
 
-        // Отримати deposits (активні)
+        // Отримати investments для profit
+        const investmentsResult = await api.getInvestments()
+        const investmentsMap = new Map()
+        
+        if (investmentsResult.success && investmentsResult.data) {
+          const invData = investmentsResult.data as any
+          const investments = invData.investments || []
+          investments.forEach((inv: any) => {
+            if (inv.deposit_id && inv.status === 'active') {
+              investmentsMap.set(inv.deposit_id, inv)
+            }
+          })
+        }
+
+        // Отримати deposits (активні confirmed)
         const depositsResult = await api.getDeposits()
         if (depositsResult.success && depositsResult.data) {
-          const activeDepositsData = depositsResult.data.filter((d: any) => d.status === 'confirmed').map((d: any) => ({
-            id: d.id,
-            amount: d.amount,
-            percentage: 5, // або з плану
-            profit: 0, // TODO: розрахувати на основі часу
-            createdDate: d.created_at,
-            selected: false,
-          }))
+          const data = depositsResult.data as any
+          const deposits = data.deposits || []
+          
+          const activeDepositsData = deposits
+            .filter((d: any) => d.status === 'confirmed')
+            .map((d: any) => {
+              const investment = investmentsMap.get(d.id)
+              const paymentDetails = d.payment_details || {}
+              const lockedAmount = investment ? parseFloat(investment.locked_amount || 0) : 0
+              const totalAmount = investment ? parseFloat(investment.principal || d.amount) : parseFloat(d.amount)
+              return {
+                id: d.id,
+                amount: totalAmount,
+                frozen: lockedAmount,
+                percentage: d.monthly_percentage || 5,
+                profit: investment ? parseFloat(investment.accrued_interest || 0) : 0,
+                createdDate: d.created_at,
+                network: paymentDetails.network || 'TRC20',
+                coin: paymentDetails.coin || 'USDT',
+              }
+            })
           setActiveDeposits(activeDepositsData)
         }
 
@@ -111,19 +147,9 @@ export default function WithdrawPage() {
     fetchData()
   }, [user, router])
 
-  const methods = [
-    { id: "usdt-trc20", name: "USDT (TRC20)", fee: "1%", minAmount: 50 },
-    { id: "usdt-erc20", name: "USDT (ERC20)", fee: "2%", minAmount: 100 },
-    { id: "btc", name: "Bitcoin (BTC)", fee: "1.5%", minAmount: 100 },
-  ]
-
-  const toggleDepositSelection = (id: string) => {
-    setActiveDeposits((prev) =>
-      prev.map((deposit) => (deposit.id === id ? { ...deposit, selected: !deposit.selected } : deposit)),
-    )
-  }
-
-  const selectedTotal = activeDeposits.filter((d) => d.selected).reduce((sum, d) => sum + d.amount + d.profit, 0)
+  const selectedDeposit = activeDeposits.find(d => d.id === selectedDepositId)
+  const selectedNetwork = selectedDeposit?.network || ''
+  const maxWithdrawAmount = selectedDeposit ? selectedDeposit.amount + selectedDeposit.profit - (selectedDeposit.frozen || 0) : 0
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -132,8 +158,16 @@ export default function WithdrawPage() {
     setMessage('')
 
     try {
-      if (selectedTotal === 0) {
-        setError('Оберіть депозити для виводу')
+      if (!selectedDepositId) {
+        setError('Оберіть депозит для виводу')
+        setSubmitting(false)
+        return
+      }
+
+      const amount = parseFloat(withdrawAmount)
+      
+      if (!amount || amount <= 0) {
+        setError('Введіть суму для виводу')
         setSubmitting(false)
         return
       }
@@ -144,22 +178,68 @@ export default function WithdrawPage() {
         return
       }
 
-      if (!selectedMethod) {
-        setError('Оберіть метод виводу')
-        setSubmitting(false)
-        return
-      }
-
-      // Створити withdrawal request
-      const result = await api.createWithdrawal(selectedTotal, selectedMethod, {
+      // Створити withdrawal request - backend валідує доступну суму
+      const result = await api.createWithdrawal(amount, {
         wallet_address: walletAddress,
-      })
+        network: selectedNetwork,
+        coin: selectedDeposit?.coin,
+      }, selectedDepositId)
 
       if (result.success) {
         setMessage('Заявка на вивід успішно створена! Очікуйте обробки протягом 24-48 годин.')
         setWalletAddress('')
-        setSelectedMethod(null)
-        setActiveDeposits(prev => prev.map(d => ({ ...d, selected: false })))
+        setWithdrawAmount('')
+        setSelectedDepositId('')
+        
+        // ВАЖЛИВО: Перезавантажити ВСІ дані - баланс, deposits, withdrawals
+        setLoading(true)
+        
+        // Оновити баланс
+        const walletResult = await api.getWallet()
+        if (walletResult.success && walletResult.data) {
+          const data = walletResult.data as any
+          setUserBalance(data.balance || 0)
+        }
+        
+        // Оновити investments
+        const investmentsResult = await api.getInvestments()
+        const investmentsMap = new Map()
+        if (investmentsResult.success && investmentsResult.data) {
+          const invData = investmentsResult.data as any
+          const investments = invData.investments || []
+          investments.forEach((inv: any) => {
+            if (inv.deposit_id) {
+              investmentsMap.set(inv.deposit_id, inv)
+            }
+          })
+        }
+        
+        // Оновити deposits
+        const depositsResult = await api.getDeposits()
+        if (depositsResult.success && depositsResult.data) {
+          const data = depositsResult.data as any
+          const deposits = data.deposits || []
+          
+          const activeDepositsData = deposits
+            .filter((d: any) => d.status === 'confirmed')
+            .map((d: any) => {
+              const investment = investmentsMap.get(d.id)
+              const paymentDetails = d.payment_details || {}
+              const lockedAmount = investment ? parseFloat(investment.locked_amount || 0) : 0
+              const totalAmount = investment ? parseFloat(investment.principal || d.amount) : parseFloat(d.amount)
+              return {
+                id: d.id,
+                amount: totalAmount,
+                frozen: lockedAmount,
+                percentage: d.monthly_percentage || 5,
+                profit: investment ? parseFloat(investment.accrued_interest || 0) : 0,
+                createdDate: d.created_at,
+                network: paymentDetails.network || 'TRC20',
+                coin: paymentDetails.coin || 'USDT',
+              }
+            })
+          setActiveDeposits(activeDepositsData)
+        }
         
         // Перезавантажити withdrawal history
         const withdrawalsResult = await api.getWithdrawals()
@@ -173,14 +253,22 @@ export default function WithdrawPage() {
             status: w.status === 'approved' ? 'completed' : w.status === 'requested' ? 'pending' : 'rejected',
             createdDate: w.created_at,
             withdrawDate: w.processed_at,
+            balanceBefore: w.balance_before_withdrawal,
+            balanceAfter: w.balance_after_withdrawal,
+            depositBefore: w.deposit_amount_before,
+            depositAfter: w.deposit_amount_after,
           })) || []
           setWithdrawalHistory(historyData)
         }
+        
+        setLoading(false)
       } else {
-        setError(result.error?.message || 'Помилка створення заявки на вивід')
+        const errorMsg = result.error?.message || 'Помилка при створенні заявки на вивід'
+        setError(errorMsg)
+        setLoading(false)
       }
-    } catch (err) {
-      setError('Помилка створення заявки на вивід')
+    } catch (err: any) {
+      setError(err?.message || 'Помилка при створенні заявки на вивід')
     } finally {
       setSubmitting(false)
     }
@@ -196,7 +284,7 @@ export default function WithdrawPage() {
 
   return (
     <>
-      <Header isAuthenticated={true} userBalance={userBalance} userProfit={userProfit} />
+      <Header isAuthenticated={true} />
 
       {/* Success/Error Messages */}
       {message && (
@@ -221,98 +309,100 @@ export default function WithdrawPage() {
             <div className="bg-gray-dark border border-gray-medium rounded-lg p-6">
               <h2 className="text-xl font-bold mb-4">Створити заявку на вивід</h2>
 
-              <div className="mb-6">
-                <label className="block text-sm font-medium mb-3">Виберіть депозити для виводу</label>
-                <div className="space-y-2 max-h-64 overflow-y-auto pr-2">
-                  {activeDeposits.map((deposit) => (
-                    <div
-                      key={deposit.id}
-                      onClick={() => toggleDepositSelection(deposit.id)}
-                      className={`p-4 border-2 rounded-lg cursor-pointer transition-all ${
-                        deposit.selected ? "border-silver bg-silver/5" : "border-gray-medium hover:border-gray-light"
-                      }`}
-                    >
-                      <div className="flex justify-between items-start">
-                        <div>
-                          <div className="font-medium font-sans">
-                            ${deposit.amount.toFixed(2)} + ${deposit.profit.toFixed(2)}
-                          </div>
-                          <div className="text-xs text-gray-light">
-                            Процент: <span className="font-sans text-silver">{deposit.percentage}%</span>
-                          </div>
-                          <div className="text-xs text-gray-light mt-1">
-                            Створено: {new Date(deposit.createdDate).toLocaleDateString("uk-UA")}
-                          </div>
-                        </div>
-                        <div className="text-right">
-                          <div className="text-sm font-bold text-silver font-sans">
-                            ${(deposit.amount + deposit.profit).toFixed(2)}
-                          </div>
-                          <div className="text-xs text-gray-light">всього</div>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-                {activeDeposits.length === 0 && (
-                  <div className="text-center py-8 text-gray-light">Немає активних депозитів</div>
-                )}
-              </div>
-
-              <div className="bg-background border border-gray-medium rounded-lg p-4 mb-6">
-                <div className="flex justify-between items-center">
-                  <span className="text-sm text-gray-light">Обрано для виводу</span>
-                  <span className="text-2xl font-bold text-silver font-sans">${selectedTotal.toFixed(2)}</span>
-                </div>
-              </div>
-
               <form onSubmit={handleSubmit} className="space-y-4">
                 <div>
-                  <label className="block text-sm font-medium mb-3">Метод виводу</label>
-                  <div className="space-y-2">
-                    {methods.map((method) => (
-                      <div
-                        key={method.id}
-                        onClick={() => setSelectedMethod(method.id)}
-                        className={`p-4 border-2 rounded-lg cursor-pointer transition-all ${
-                          selectedMethod === method.id
-                            ? "border-silver bg-silver/5"
-                            : "border-gray-medium hover:border-gray-light"
-                        }`}
-                      >
-                        <div className="flex justify-between items-center">
-                          <div>
-                            <div className="font-medium font-sans">{method.name}</div>
-                            <div className="text-xs text-gray-light">
-                              Мінімум: <span className="font-sans">${method.minAmount}</span>
+                  <label className="block text-sm font-medium mb-3">Оберіть депозит для виводу</label>
+                  {activeDeposits.length > 0 ? (
+                    <div className="space-y-2">
+                      {activeDeposits.map((deposit) => (
+                        <div
+                          key={deposit.id}
+                          onClick={() => setSelectedDepositId(deposit.id)}
+                          className={`p-4 border-2 rounded-lg cursor-pointer transition-all ${
+                            selectedDepositId === deposit.id
+                              ? "border-silver bg-silver/5"
+                              : "border-gray-medium hover:border-gray-light"
+                          }`}
+                        >
+                          <div className="flex justify-between items-start mb-3">
+                            <div>
+                              <div className="font-medium font-sans">
+                                ${deposit.amount.toFixed(2)}
+                              </div>
+                              <div className="text-xs text-gray-light">
+                                Профіт: <span className="font-sans text-silver">${deposit.profit.toFixed(2)}</span>
+                              </div>
+                              <div className="text-xs text-gray-light mt-1">
+                                Мережа: <span className="font-sans text-silver">{deposit.coin} ({deposit.network})</span>
+                              </div>
+                            </div>
+                            <div className="text-right">
+                              <div className="text-sm font-bold text-silver font-sans">
+                                ${(deposit.amount + deposit.profit - (deposit.frozen || 0)).toFixed(2)}
+                              </div>
+                              <div className="text-xs text-gray-light">доступно</div>
                             </div>
                           </div>
-                          <div className="text-sm text-gray-light">
-                            Комісія: <span className="font-sans">{method.fee}</span>
-                          </div>
                         </div>
-                      </div>
-                    ))}
-                  </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="text-center py-8 text-gray-light">Немає активних депозитів</div>
+                  )}
+                  <p className="text-xs text-gray-light mt-2">
+                    Вивід можливий тільки в тій же мережі, в якій був зроблений депозит
+                  </p>
                 </div>
 
-                {selectedTotal > 0 && selectedMethod && (
-                  <div className="bg-background border border-gray-medium rounded-lg p-4">
-                    <div className="text-sm space-y-1">
-                      <div className="flex justify-between">
-                        <span className="text-gray-light">Сума:</span>
-                        <span className="font-sans font-medium">${selectedTotal.toFixed(2)}</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="text-gray-light">Комісія (1%):</span>
-                        <span className="font-sans font-medium text-silver">-${(selectedTotal * 0.01).toFixed(2)}</span>
-                      </div>
-                      <div className="flex justify-between pt-2 border-t border-gray-medium">
-                        <span className="font-medium">До отримання:</span>
-                        <span className="font-sans font-bold text-silver">${(selectedTotal * 0.99).toFixed(2)}</span>
+                {selectedDeposit && (
+                  <>
+                    <div className="bg-background border border-gray-medium rounded-lg p-4">
+                      <div className="text-sm space-y-2">
+                        <div className="flex justify-between">
+                          <span className="text-gray-light">Обраний депозит:</span>
+                          <span className="font-sans font-medium">${selectedDeposit.amount.toFixed(2)}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-gray-light">Профіт:</span>
+                          <span className="font-sans font-medium text-silver">${selectedDeposit.profit.toFixed(2)}</span>
+                        </div>
+                        <div className="flex justify-between pt-2 border-t border-gray-medium">
+                          <span className="font-medium">Доступно:</span>
+                          <span className="font-sans font-bold text-silver">${maxWithdrawAmount.toFixed(2)}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-gray-light">Мережа виводу:</span>
+                          <span className="font-sans font-medium text-silver">{selectedDeposit.coin} ({selectedDeposit.network})</span>
+                        </div>
                       </div>
                     </div>
-                  </div>
+
+                    <div>
+                      <label htmlFor="amount" className="block text-sm font-medium mb-2">
+                        Сума виводу
+                      </label>
+                      <div className="relative">
+                        <input
+                          type="number"
+                          id="amount"
+                          value={withdrawAmount}
+                          onChange={(e) => setWithdrawAmount(e.target.value)}
+                          className="w-full px-4 py-3 pr-16 bg-background border border-gray-medium rounded-lg focus:outline-none focus:border-silver transition-colors font-sans"
+                          placeholder="Введіть суму"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => setWithdrawAmount(maxWithdrawAmount.toFixed(2))}
+                          className="absolute right-2 top-1/2 -translate-y-1/2 px-3 py-1.5 bg-silver/10 hover:bg-silver/20 text-silver text-xs font-medium rounded transition-colors"
+                        >
+                          MAX
+                        </button>
+                      </div>
+                      <p className="text-xs text-gray-light mt-1">
+                        Можна вивести будь-яку суму до ${maxWithdrawAmount.toFixed(2)}
+                      </p>
+                    </div>
+                  </>
                 )}
 
                 <div>
@@ -341,7 +431,7 @@ export default function WithdrawPage() {
 
                 <button
                   type="submit"
-                  disabled={selectedTotal === 0 || !walletAddress || !selectedMethod || submitting}
+                  disabled={!selectedDepositId || !withdrawAmount || !walletAddress || submitting}
                   className="btn-gradient-primary w-full px-4 py-3 disabled:bg-gray-medium disabled:cursor-not-allowed disabled:border-gray-medium disabled:shadow-none text-foreground font-bold rounded-lg transition-all font-sans"
                 >
                   {submitting ? 'Створення заявки...' : 'Подати заявку на вивід'}
@@ -357,10 +447,9 @@ export default function WithdrawPage() {
                   <div className="flex gap-3">
                     <span className="text-silver">✓</span>
                     <div>
-                      <div className="font-medium mb-1">Мінімальна сума виводу</div>
+                      <div className="font-medium mb-1">Без комісій</div>
                       <div className="text-gray-light">
-                        <span className="font-sans">$50</span> для <span className="font-sans">USDT (TRC20)</span>,{" "}
-                        <span className="font-sans">$100</span> для інших методів
+                        Ми не стягуємо комісію за вивід коштів
                       </div>
                     </div>
                   </div>
@@ -368,9 +457,9 @@ export default function WithdrawPage() {
                   <div className="flex gap-3">
                     <span className="text-silver">✓</span>
                     <div>
-                      <div className="font-medium mb-1">Комісія</div>
+                      <div className="font-medium mb-1">Без мінімальної суми</div>
                       <div className="text-gray-light">
-                        <span className="font-sans">1-2%</span> в залежності від методу виводу
+                        Виводьте будь-яку суму до вашого балансу
                       </div>
                     </div>
                   </div>
@@ -406,32 +495,42 @@ export default function WithdrawPage() {
                       <div key={request.id} className="bg-background border border-gray-medium rounded-lg p-4">
                         <div className="flex justify-between items-start mb-2">
                           <div>
-                            <div className="font-medium font-sans">${request.amount.toFixed(2)}</div>
-                            <div className="text-xs text-gray-light">
-                              Процент: <span className="font-sans text-silver">{request.percentage}%</span>
-                            </div>
-                            <div className="text-xs text-gray-light font-sans mt-1">{request.method}</div>
+                            <div className="text-sm font-bold font-sans">${request.amount.toFixed(2)}</div>
+                            <div className="text-xs text-gray-light">{request.method}</div>
                           </div>
-                          <span
-                            className={`px-2 py-1 rounded text-xs font-sans ${
-                              request.status === "completed"
-                                ? "bg-green-500/20 text-green-500"
-                                : request.status === "pending"
-                                  ? "bg-yellow-500/20 text-yellow-500"
-                                  : "bg-red-500/20 text-red-500"
-                            }`}
-                          >
-                            {request.status === "completed"
-                              ? "Виконано"
-                              : request.status === "pending"
-                                ? "В обробці"
-                                : "Відхилено"}
-                          </span>
+                          <div className={`px-2 py-1 rounded text-xs ${
+                            request.status === 'completed' ? 'bg-green-500/20 text-green-400' :
+                            request.status === 'pending' ? 'bg-yellow-500/20 text-yellow-400' :
+                            'bg-red-500/20 text-red-400'
+                          }`}>
+                            {request.status === 'completed' ? 'Виконано' :
+                             request.status === 'pending' ? 'В обробці' :
+                             'Відхилено'}
+                          </div>
                         </div>
-                        <div className="text-xs text-gray-light space-y-1">
-                          <div>Створено: {new Date(request.createdDate).toLocaleDateString("uk-UA")}</div>
+                        
+                        {(request.balanceBefore || request.depositBefore) && (
+                          <div className="text-xs mb-2 border-t border-gray-medium/30 pt-2 mt-2">
+                            {request.balanceBefore && request.balanceAfter && (
+                              <div className="mb-1 text-gray-light">
+                                Баланс: <span className="font-sans">${request.balanceBefore.toFixed(2)} → ${request.balanceAfter.toFixed(2)}</span>
+                              </div>
+                            )}
+                            {request.depositBefore && (
+                              <div className="text-gray-light">
+                                Депозит: <span className="font-sans">${request.depositBefore.toFixed(2)}</span>
+                                {request.depositAfter !== null && (
+                                  <> → <span className="font-sans">${request.depositAfter.toFixed(2)}</span></>
+                                )}
+                              </div>
+                            )}
+                          </div>
+                        )}
+                        
+                        <div className="text-xs text-gray-light">
+                          <div className="mb-1">Створено: {new Date(request.createdDate).toLocaleDateString('uk-UA')}</div>
                           {request.withdrawDate && (
-                            <div>Виведено: {new Date(request.withdrawDate).toLocaleDateString("uk-UA")}</div>
+                            <div>Виведено: {new Date(request.withdrawDate).toLocaleDateString('uk-UA')}</div>
                           )}
                         </div>
                       </div>

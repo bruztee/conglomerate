@@ -5,18 +5,21 @@ import { logAudit } from '../utils/audit';
 import { getUserFromRequest } from '../utils/auth';
 
 export async function handleRegister(request: Request, env: Env): Promise<Response> {
+  console.log('[REGISTER] Starting registration...');
   try {
     const body = await request.json() as { email: string; password: string; referral_code?: string };
+    console.log('[REGISTER] Request:', { email: body.email, has_password: !!body.password, referral_code: body.referral_code });
     
     if (!body.email || !body.password) {
+      console.log('[REGISTER] Validation error: Missing email or password');
       return errorResponse('VALIDATION_ERROR', 'Email and password are required', 400);
     }
     
     if (body.password.length < 8) {
+      console.log('[REGISTER] Validation error: Password too short');
       return errorResponse('VALIDATION_ERROR', 'Password must be at least 8 characters', 400);
     }
     
-    // КРИТИЧНО: Читаємо referral_code з httpOnly cookie (пріоритет над body)
     let finalReferralCode = body.referral_code;
     const cookieHeader = request.headers.get('Cookie');
     if (cookieHeader) {
@@ -26,7 +29,7 @@ export async function handleRegister(request: Request, env: Env): Promise<Respon
         const cookieRefCode = refCookie.split('=')[1];
         if (cookieRefCode) {
           finalReferralCode = cookieRefCode;
-          console.log('✅ Using referral code from cookie:', finalReferralCode);
+          console.log('[REGISTER] Using referral code from cookie:', finalReferralCode);
         }
       }
     }
@@ -35,6 +38,7 @@ export async function handleRegister(request: Request, env: Env): Promise<Respon
     
     let referrerId: string | null = null;
     if (finalReferralCode) {
+      console.log('[REGISTER] Verifying referral code:', finalReferralCode);
       const { data: referrer } = await supabase
         .from('profiles')
         .select('id')
@@ -43,9 +47,9 @@ export async function handleRegister(request: Request, env: Env): Promise<Respon
       
       if (referrer) {
         referrerId = referrer.id;
-        console.log('✅ Referral verified:', finalReferralCode);
+        console.log('[REGISTER] Referral verified, referrer_id:', referrerId);
       } else {
-        console.warn('⚠️ Invalid referral code:', finalReferralCode);
+        console.log('[REGISTER] Invalid referral code:', finalReferralCode);
       }
     }
     

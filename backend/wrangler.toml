@@ -6,6 +6,10 @@ compatibility_date = "2024-01-01"
 SUPABASE_URL = "https://shqeobfnetdhlnmrosqv.supabase.co"
 SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNocWVvYmZuZXRkaGxubXJvc3F2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjgwMzA1NTcsImV4cCI6MjA4MzYwNjU1N30.udsvQpPIn6bBH4j7x_xiMPPtROTYevVlJQd4KwXHHPc"
 
+# Cron trigger для нарахування процентів кожної хвилини
+[triggers]
+crons = ["* * * * *"]
+
 # Custom domain configuration
 # After deploy, add custom domain in Cloudflare Dashboard:
 # Workers & Pages → conglomerate-api → Settings → Triggers → Custom Domains

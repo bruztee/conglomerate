@@ -19,11 +19,12 @@ import Loading from "@/components/Loading"
 interface Deposit {
   id: string
   amount: number
+  frozen: number
   profit: number
   percentage: number
   date: string
   withdrawDate?: string
-  status: "active" | "accruing" | "pending_withdrawal" | "completed"
+  status: string
 }
 
 export default function DashboardPage() {
@@ -33,6 +34,7 @@ export default function DashboardPage() {
   // ВСІ useState МАЮТЬ БУТИ НА ПОЧАТКУ
   const [amount, setAmount] = useState("")
   const [userBalance, setUserBalance] = useState(0)
+  const [frozenAmount, setFrozenAmount] = useState(0)
   const [userProfit, setUserProfit] = useState(0)
   const [totalInvestments, setTotalInvestments] = useState(0)
   const [loading, setLoading] = useState(true)
@@ -74,6 +76,10 @@ export default function DashboardPage() {
         return "Активний"
       case "rejected":
         return "Відхилено"
+      case "withdrawal_pending":
+        return "Очікує виводу"
+      case "withdrawn":
+        return "Виведено"
       case "cancelled":
         return "Скасовано"
       default:
@@ -89,8 +95,12 @@ export default function DashboardPage() {
         return "bg-green-500/20 text-green-400"
       case "rejected":
         return "bg-red-500/20 text-red-400"
+      case "withdrawal_pending":
+        return "bg-orange-500/20 text-orange-400"
+      case "withdrawn":
+        return "bg-gray-500/20 text-gray-400"
       case "cancelled":
-        return "bg-gray-medium/30 text-gray-light"
+        return "bg-red-500/20 text-red-400"
       default:
         return "bg-gray-medium/30 text-gray-light"
     }
@@ -111,6 +121,7 @@ export default function DashboardPage() {
       if (walletResult.success && walletResult.data) {
         const data = walletResult.data as any
         setUserBalance(data.balance || 0)
+        setFrozenAmount(data.locked_amount || 0)
         setUserProfit(data.total_profit || 0)
         setTotalInvestments(data.total_invested || 0)
       }
@@ -155,13 +166,17 @@ export default function DashboardPage() {
         const data = depositsResult.data as any
         const deposits = data.deposits || []
         
-        // Активні: confirmed + pending
-        const active = deposits.filter((d: any) => d.status === 'confirmed' || d.status === 'pending')
+        // Активні: confirmed + pending + withdrawal_pending
+        const active = deposits.filter((d: any) => d.status === 'confirmed' || d.status === 'pending' || d.status === 'withdrawal_pending')
         setActiveDeposits(active.map((d: any) => {
           const investment = investmentsMap.get(d.id)
+          const lockedAmount = investment ? parseFloat(investment.locked_amount || 0) : 0
+          // Показуємо investment.principal (поточна сума після виводів), а не deposit.amount (початкова)
+          const currentAmount = investment ? parseFloat(investment.principal || 0) : parseFloat(d.amount)
           return {
             id: d.id,
-            amount: parseFloat(d.amount),
+            amount: currentAmount,
+            frozen: lockedAmount,
             profit: investment ? parseFloat(investment.accrued_interest || 0) : 0,
             percentage: d.monthly_percentage || profitPercentage,
             date: d.created_at,
@@ -172,9 +187,14 @@ export default function DashboardPage() {
         // Історія - ВСІ deposits для повного перегляду
         setDepositHistory(deposits.map((d: any) => {
           const investment = investmentsMap.get(d.id)
+          const originalAmount = parseFloat(d.amount) // Початкова сума депозиту
+          const currentAmount = investment ? parseFloat(investment.principal || 0) : originalAmount
+          const withdrawnAmount = originalAmount - currentAmount // Виведено = початкова - поточна
           return {
             id: d.id,
-            amount: parseFloat(d.amount),
+            amount: originalAmount, // Показуємо початкову суму
+            currentAmount: currentAmount, // Поточна сума (якщо потрібно)
+            withdrawn: withdrawnAmount, // Виведено
             profit: investment ? parseFloat(investment.accrued_interest || 0) : 0,
             percentage: d.monthly_percentage || profitPercentage,
             date: d.created_at,
@@ -200,7 +220,7 @@ export default function DashboardPage() {
       if (depositsResult.success && depositsResult.data) {
         const data = depositsResult.data as any
         const deposits = data.deposits || []
-        const active = deposits.filter((d: any) => d.status === 'confirmed' || d.status === 'pending')
+        const active = deposits.filter((d: any) => d.status === 'confirmed' || d.status === 'pending' || d.status === 'withdrawal_pending')
         
         setActiveDeposits(active.map((d: any) => ({
           id: d.id,
@@ -253,7 +273,12 @@ export default function DashboardPage() {
                 <UserIcon className="w-10 h-10" />
               </div>
               <div className="text-gray-light text-sm mb-2">Загальний баланс</div>
-              <div className="text-3xl font-bold text-foreground font-sans">${userBalance.toFixed(2)}</div>
+              <div className="text-3xl font-bold text-silver font-sans">${userBalance.toFixed(2)}</div>
+              {frozenAmount > 0 && (
+                <div className="text-xs text-orange-400 mt-1">
+                  Заморожено: ${frozenAmount.toFixed(2)}
+                </div>
+              )}
             </div>
 
             <div className="bg-gray-dark/20 border border-gray-medium/30 rounded-lg p-6 flex flex-col items-center text-center">
@@ -402,37 +427,42 @@ export default function DashboardPage() {
                       className="bg-background/50 border border-gray-medium/50 rounded-lg p-4 hover:border-silver/50 transition-colors"
                     >
                       <div className="flex justify-between items-start mb-3">
-                        <div>
-                          <div className="text-xs text-gray-light mb-1">
-                            Депозит <span className="font-sans">#{deposit.id}</span>
-                          </div>
-                          <div className="text-xl font-bold font-sans">${deposit.amount.toFixed(2)}</div>
-                          <div className="text-xs text-silver font-sans mt-1">
-                            Процент: {deposit.percentage}% місячних
-                          </div>
+                        <div className="flex-1">
+                          <div className="text-xs text-gray-light mb-1">Депозит</div>
+                          <div className="text-2xl font-bold text-silver font-sans">${deposit.amount.toFixed(2)}</div>
+                          {deposit.frozen > 0 && (
+                            <div className="text-xs text-orange-400 mt-1">
+                              Заморожено: ${deposit.frozen.toFixed(2)}
+                            </div>
+                          )}
+                          {deposit.frozen > 0 && (
+                            <div className="text-xs text-green-400 mt-1">
+                              Доступно: ${Math.max(0, deposit.amount - deposit.frozen).toFixed(2)}
+                            </div>
+                          )}
                         </div>
                         <div className="text-right">
-                          <div className="text-xs text-gray-light mb-1">Нарахований профіт</div>
-                          <div className="text-xl font-bold text-silver font-sans">+${deposit.profit.toFixed(2)}</div>
+                          <div className="text-xs text-gray-light mb-1">Прибуток</div>
+                          <div className="text-lg font-bold text-foreground font-sans">+${deposit.profit.toFixed(2)}</div>
                         </div>
                       </div>
                       <div className="flex justify-between items-center pt-3 border-t border-gray-medium/30">
-                        <div className="flex flex-col gap-1">
+                        <div className="flex items-center gap-3">
                           <span className="text-sm text-gray-light">
                             {new Date(deposit.date).toLocaleDateString("uk-UA")}
                           </span>
-                          <span
-                            className={`px-3 py-1 ${getStatusColor(deposit.status)} rounded-full text-xs font-medium font-sans w-fit`}
-                          >
+                          <span className={`inline-block px-2 py-1 rounded text-xs ${getStatusColor(deposit.status)}`}>
                             {getStatusLabel(deposit.status)}
                           </span>
                         </div>
-                        <button
-                          onClick={() => handleWithdraw(deposit.id)}
-                          className="btn-gradient-primary px-4 py-2 text-foreground font-bold text-sm rounded-lg transition-colors font-sans"
-                        >
-                          Вивести
-                        </button>
+                        {deposit.status !== 'withdrawal_pending' && (
+                          <button
+                            onClick={() => handleWithdraw(deposit.id)}
+                            className="btn-gradient-primary px-4 py-2 text-foreground font-bold text-sm rounded-lg transition-colors font-sans"
+                          >
+                            Вивести
+                          </button>
+                        )}
                       </div>
                     </div>
                   ))}
@@ -459,11 +489,11 @@ export default function DashboardPage() {
                     <thead>
                       <tr className="border-b border-gray-medium/30">
                         <th className="text-left py-3 px-4 text-sm font-medium text-gray-light font-sans">ID</th>
-                        <th className="text-left py-3 px-4 text-sm font-medium text-gray-light">Сума</th>
+                        <th className="text-left py-3 px-4 text-sm font-medium text-gray-light">Початкова сума</th>
+                        <th className="text-left py-3 px-4 text-sm font-medium text-gray-light">Виведено</th>
                         <th className="text-left py-3 px-4 text-sm font-medium text-gray-light">Процент</th>
                         <th className="text-left py-3 px-4 text-sm font-medium text-gray-light">Профіт</th>
                         <th className="text-left py-3 px-4 text-sm font-medium text-gray-light">Дата створення</th>
-                        <th className="text-left py-3 px-4 text-sm font-medium text-gray-light">Дата виводу</th>
                         <th className="text-left py-3 px-4 text-sm font-medium text-gray-light">Статус</th>
                       </tr>
                     </thead>
@@ -475,15 +505,15 @@ export default function DashboardPage() {
                         >
                           <td className="py-3 px-4 text-sm font-sans">#{deposit.id}</td>
                           <td className="py-3 px-4 text-sm font-medium font-sans">${deposit.amount.toFixed(2)}</td>
+                          <td className="py-3 px-4 text-sm font-medium font-sans text-orange-400">
+                            {deposit.withdrawn > 0 ? `-$${deposit.withdrawn.toFixed(2)}` : '—'}
+                          </td>
                           <td className="py-3 px-4 text-sm font-sans text-silver">{deposit.percentage}%</td>
                           <td className="py-3 px-4 text-sm font-medium text-silver font-sans">
                             +${deposit.profit.toFixed(2)}
                           </td>
                           <td className="py-3 px-4 text-sm text-gray-light">
                             {new Date(deposit.date).toLocaleDateString("uk-UA")}
-                          </td>
-                          <td className="py-3 px-4 text-sm text-gray-light">
-                            {deposit.withdrawDate ? new Date(deposit.withdrawDate).toLocaleDateString("uk-UA") : "—"}
                           </td>
                           <td className="py-3 px-4">
                             <span

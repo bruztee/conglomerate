@@ -11,17 +11,27 @@ import WarningIcon from "@/components/icons/WarningIcon"
 interface Withdrawal {
   id: string
   amount: number
-  method: string | null
   destination: any
   status: string
-  network_fee: number
   admin_note: string | null
-  created_at: string
+  network_fee: number
   processed_at: string | null
-  user: {
-    id: string
-    email: string
-    full_name: string | null
+  created_at: string
+  method: string | null
+  balance_before_withdrawal: number | null
+  balance_after_withdrawal: number | null
+  deposit_amount_before: number | null
+  deposit_amount_after: number | null
+  investment_id: string
+  investments: {
+    user_id: string
+    deposit_id: string
+    profiles: {
+      id: string
+      email: string
+      full_name: string | null
+      phone: string | null
+    }
   }
 }
 
@@ -35,7 +45,7 @@ export default function AdminWithdrawalsPage() {
   const [withdrawals, setWithdrawals] = useState<Withdrawal[]>([])
   const [selectedWithdrawal, setSelectedWithdrawal] = useState<Withdrawal | null>(null)
   const [showModal, setShowModal] = useState(false)
-  const [action, setAction] = useState<'approve' | 'reject' | 'mark-sent'>('approve')
+  const [action, setAction] = useState<'approve' | 'reject'>('approve')
   const [formData, setFormData] = useState({
     admin_note: '',
     network_fee: 0,
@@ -60,7 +70,25 @@ export default function AdminWithdrawalsPage() {
         if (tab === 'history') {
           withdrawalsData = withdrawalsData.filter((w: Withdrawal) => w.status !== 'requested')
         }
-        setWithdrawals(withdrawalsData)
+        
+        // Для кожного withdrawal отримати баланс користувача
+        const withdrawalsWithBalance = await Promise.all(
+          withdrawalsData.map(async (w: Withdrawal) => {
+            try {
+              // Отримати user_id через investments
+              const userId = w.investments?.user_id
+              if (userId) {
+                // Можна використати окремий API для admin, але поки покажемо просто user info
+                return { ...w, userBalance: null } // Баланс отримаємо пізніше якщо треба
+              }
+            } catch (e) {
+              // Ignore
+            }
+            return w
+          })
+        )
+        
+        setWithdrawals(withdrawalsWithBalance)
       }
     } catch (error) {
       // Silent fail
@@ -86,19 +114,10 @@ export default function AdminWithdrawalsPage() {
           return
         }
         result = await api.adminRejectWithdrawal(selectedWithdrawal.id, formData.admin_note)
-      } else {
-        result = await api.adminMarkWithdrawalSent(selectedWithdrawal.id, {
-          tx_hash: formData.tx_hash,
-          admin_note: formData.admin_note,
-        })
       }
 
-      if (result.success) {
-        alert(
-          action === 'approve' ? 'Вивід підтверджено' :
-          action === 'reject' ? 'Вивід відхилено' :
-          'Вивід позначено як відправлений'
-        )
+      if (result && result.success) {
+        alert(action === 'approve' ? 'Вивід підтверджено' : 'Вивід відхилено')
         setShowModal(false)
         setSelectedWithdrawal(null)
         resetForm()
@@ -119,7 +138,7 @@ export default function AdminWithdrawalsPage() {
     })
   }
 
-  function openModal(withdrawal: Withdrawal, actionType: 'approve' | 'reject' | 'mark-sent') {
+  function openModal(withdrawal: Withdrawal, actionType: 'approve' | 'reject') {
     setSelectedWithdrawal(withdrawal)
     setAction(actionType)
     resetForm()
@@ -170,15 +189,13 @@ export default function AdminWithdrawalsPage() {
               withdrawal.status === 'requested' ? 'border-yellow-500/30' : 'border-gray-medium'
             }`}
           >
-            <div className="grid md:grid-cols-4 gap-6">
+            <div className="grid grid-cols-7 gap-6 text-sm">
               <div>
-                <div className="text-xs text-gray-light mb-1">Користувач</div>
-                <div className="font-medium">{withdrawal.user.full_name || 'Без імені'}</div>
-                <div className="text-xs text-gray-light">{withdrawal.user.email}</div>
+                <div className="font-medium">{withdrawal.investments?.profiles?.full_name || 'Без імені'}</div>
+                <div className="text-xs text-gray-light">{withdrawal.investments?.profiles?.email}</div>
               </div>
 
               <div>
-                <div className="text-xs text-gray-light mb-1">Сума виводу</div>
                 <div className="text-2xl font-bold text-silver font-sans">${withdrawal.amount.toFixed(2)}</div>
                 {withdrawal.network_fee > 0 && (
                   <div className="text-xs text-gray-light mt-1">
@@ -188,7 +205,29 @@ export default function AdminWithdrawalsPage() {
               </div>
 
               <div>
-                <div className="text-xs text-gray-light mb-1">Метод / Адреса</div>
+                <div className="text-xs text-gray-light mb-1">Баланс</div>
+                {withdrawal.balance_before_withdrawal && withdrawal.balance_after_withdrawal ? (
+                  <div className="font-medium font-sans">
+                    ${withdrawal.balance_before_withdrawal.toFixed(2)} → ${withdrawal.balance_after_withdrawal.toFixed(2)}
+                  </div>
+                ) : (
+                  <div className="text-xs text-gray-light">Не вказано</div>
+                )}
+                
+                {withdrawal.deposit_amount_before && (
+                  <>
+                    <div className="text-xs text-gray-light mt-2 mb-1">Депозит</div>
+                    <div className="font-medium font-sans">
+                      ${withdrawal.deposit_amount_before.toFixed(2)}
+                      {withdrawal.deposit_amount_after !== null && (
+                        <> → ${withdrawal.deposit_amount_after.toFixed(2)}</>
+                      )}
+                    </div>
+                  </>
+                )}
+              </div>
+
+              <div>
                 <div className="font-medium font-sans">{withdrawal.method || 'USDT'}</div>
                 {withdrawal.destination?.wallet_address && (
                   <div className="text-xs text-gray-light font-mono mt-1 truncate">
@@ -221,7 +260,11 @@ export default function AdminWithdrawalsPage() {
                   withdrawal.status === 'requested' ? 'bg-yellow-500/20 text-yellow-500' :
                   'bg-red-500/20 text-red-500'
                 }`}>
-                  {withdrawal.status}
+                  {withdrawal.status === 'requested' ? 'Очікує підтвердження' :
+                   withdrawal.status === 'approved' ? 'Підтверджено' :
+                   withdrawal.status === 'sent' ? 'Відправлено' :
+                   withdrawal.status === 'rejected' ? 'Відхилено' :
+                   withdrawal.status}
                 </span>
 
                 {withdrawal.admin_note && (
@@ -248,16 +291,6 @@ export default function AdminWithdrawalsPage() {
                 </div>
               )}
 
-              {withdrawal.status === 'approved' && (
-                <div>
-                  <button
-                    onClick={() => openModal(withdrawal, 'mark-sent')}
-                    className="flex items-center gap-2 px-4 py-2 bg-silver/20 border border-silver/30 text-silver rounded hover:bg-silver/30 transition-all cursor-pointer"
-                  >
-                    <CheckIcon /> Позначити відправленим
-                  </button>
-                </div>
-              )}
             </div>
           </div>
         ))}
@@ -276,16 +309,14 @@ export default function AdminWithdrawalsPage() {
         <div className="fixed inset-0 bg-background/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
           <div className="bg-gray-dark border border-gray-medium rounded-lg max-w-2xl w-full p-6">
             <h2 className="text-2xl font-bold mb-6">
-              {action === 'approve' ? 'Схвалити вивід' :
-               action === 'reject' ? 'Відхилити вивід' :
-               'Позначити як відправлений'}
+              {action === 'approve' ? 'Схвалити вивід' : 'Відхилити вивід'}
             </h2>
 
             <div className="bg-background border border-gray-medium rounded-lg p-4 mb-6">
               <div className="grid grid-cols-2 gap-4 text-sm">
                 <div>
                   <div className="text-gray-light">Користувач:</div>
-                  <div className="font-medium">{selectedWithdrawal.user.email}</div>
+                  <div className="font-medium">{selectedWithdrawal.investments?.profiles?.email}</div>
                 </div>
                 <div>
                   <div className="text-gray-light">Сума:</div>
@@ -322,21 +353,6 @@ export default function AdminWithdrawalsPage() {
                 </div>
               )}
 
-              {action === 'mark-sent' && (
-                <div>
-                  <label className="block text-sm font-medium mb-2">
-                    Transaction Hash (опціонально)
-                  </label>
-                  <input
-                    type="text"
-                    value={formData.tx_hash}
-                    onChange={(e) => setFormData({ ...formData, tx_hash: e.target.value })}
-                    className="w-full px-4 py-3 bg-background border border-gray-medium rounded-lg focus:outline-none focus:border-silver font-mono text-sm"
-                    placeholder="0x..."
-                  />
-                </div>
-              )}
-
               <div>
                 <label className="block text-sm font-medium mb-2">
                   Примітка адміністратора {action === 'reject' && <span className="text-red-500">*</span>}
@@ -355,7 +371,7 @@ export default function AdminWithdrawalsPage() {
                 <div className="bg-green-500/10 border border-green-500/30 rounded-lg p-4">
                   <div className="text-xs text-green-500">✓ Схвалення</div>
                   <div className="text-sm text-gray-light mt-1">
-                    Після схвалення кошти будуть списані з балансу користувача. Далі потрібно відправити кошти вручну та позначити вивід як "Відправлений".
+                    Після схвалення кошти будуть списані з балансу користувача. Далі потрібно відправити кошти вручну.
                   </div>
                 </div>
               )}
@@ -369,9 +385,7 @@ export default function AdminWithdrawalsPage() {
                     'bg-silver/20 border border-silver/30 text-silver hover:bg-silver/30'
                   } transition-all`}
                 >
-                  {action === 'approve' ? 'Схвалити' :
-                   action === 'reject' ? 'Відхилити' :
-                   'Позначити відправленим'}
+                  {action === 'approve' ? 'Схвалити' : 'Відхилити'}
                 </button>
                 <button
                   type="button"
