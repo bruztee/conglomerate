@@ -186,10 +186,16 @@ class ApiClient {
   }
 
   // Deposits
-  async createDeposit(amount: number, provider = 'manual', paymentDetails = {}) {
+  async createDeposit(amount: number, currency?: string, network?: string, paymentMethodId?: string, walletAddress?: string) {
     return this.request('/deposits', {
       method: 'POST',
-      body: JSON.stringify({ amount, provider, payment_details: paymentDetails }),
+      body: JSON.stringify({ 
+        amount, 
+        deposit_currency: currency,
+        deposit_network: network,
+        payment_method_id: paymentMethodId,
+        payment_details: walletAddress ? { wallet_address: walletAddress } : {}
+      }),
     });
   }
 

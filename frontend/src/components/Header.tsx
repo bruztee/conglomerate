@@ -43,7 +43,7 @@ export default function Header({ isAuthenticated = false }: HeaderProps) {
     <header className="sticky top-0 z-50 w-full border-b border-gray-dark/30 backdrop-blur-md">
       <div className="absolute inset-0 bg-gradient-to-b from-background/60 via-background/40 to-transparent pointer-events-none"></div>
       <div className="container mx-auto px-4 sm:px-6 lg:px-8 relative">
-        <div className="flex h-16 items-center justify-between">
+        <div className="flex h-14 md:h-16 items-center justify-between">
           <div className="flex items-center gap-8">
             <Link href="/" className="flex items-center gap-3 hover:opacity-80 transition-opacity">
               <Image src="/image.png" alt="Conglomerate Group" width={180} height={60} className="object-contain" />
@@ -52,49 +52,49 @@ export default function Header({ isAuthenticated = false }: HeaderProps) {
 
           {isLoggedIn && (
             <>
-              <div className="hidden md:flex items-center gap-6">
-                <div className="flex items-center gap-4 px-4 py-2 bg-blur-dark rounded-lg">
-                  <div className="text-sm font-sans">
+              <div className="hidden md:flex items-center gap-3 lg:gap-6">
+                <div className="flex items-center gap-2 lg:gap-4 px-3 lg:px-4 py-1.5 lg:py-2 bg-blur-dark rounded-lg">
+                  <div className="text-xs lg:text-sm font-sans">
                     <div className="text-gray-light text-xs">Інвестиції</div>
                     <div className="font-bold text-foreground">${userBalance.toFixed(2)}</div>
                   </div>
-                  <div className="w-px h-8 bg-gray-medium"></div>
-                  <div className="text-sm font-sans">
+                  <div className="w-px h-6 lg:h-8 bg-gray-medium"></div>
+                  <div className="text-xs lg:text-sm font-sans">
                     <div className="text-gray-light text-xs">Профіт</div>
                     <div className="font-bold text-silver">${userProfit.toFixed(2)}</div>
                   </div>
                 </div>
 
-                <nav className="flex items-center gap-2">
+                <nav className="flex items-center gap-1 lg:gap-2">
                   <Link
                     href="/dashboard"
-                    className="btn-gradient-primary px-4 py-2 text-foreground font-medium rounded transition-colors font-sans"
+                    className="btn-gradient-primary px-2 lg:px-4 py-1.5 lg:py-2 text-sm lg:text-base text-foreground font-medium rounded transition-colors font-sans"
                   >
                     Депозити
                   </Link>
                   <Link
                     href="/withdraw"
-                    className="btn-gradient-secondary px-4 py-2 text-foreground font-medium rounded transition-colors font-sans"
+                    className="btn-gradient-secondary px-2 lg:px-4 py-1.5 lg:py-2 text-sm lg:text-base text-foreground font-medium rounded transition-colors font-sans"
                   >
                     Вивід
                   </Link>
                   <Link
                     href="/referral"
-                    className="btn-gradient-secondary px-4 py-2 text-foreground font-medium rounded transition-colors font-sans"
+                    className="btn-gradient-secondary px-2 lg:px-4 py-1.5 lg:py-2 text-sm lg:text-base text-foreground font-medium rounded transition-colors font-sans"
                   >
                     Рефералка
                   </Link>
                   {user?.role === 'admin' && (
                     <Link
                       href="/admin"
-                      className="btn-gradient-primary px-4 py-2 text-foreground font-medium rounded transition-colors font-sans"
+                      className="btn-gradient-primary px-2 lg:px-4 py-1.5 lg:py-2 text-sm lg:text-base text-foreground font-medium rounded transition-colors font-sans"
                     >
                       CRM
                     </Link>
                   )}
                   <Link
                     href="/dashboard/settings"
-                    className="btn-gradient-secondary px-4 py-2 text-foreground font-medium rounded transition-colors font-sans"
+                    className="btn-gradient-secondary px-2 lg:px-4 py-1.5 lg:py-2 text-sm lg:text-base text-foreground font-medium rounded transition-colors font-sans"
                   >
                     Налаштування
                   </Link>

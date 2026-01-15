@@ -12,7 +12,9 @@ export async function handleCreateDeposit(request: Request, env: Env): Promise<R
     
     const body = await request.json() as { 
       amount: number; 
-      provider?: string;
+      deposit_currency?: string;
+      deposit_network?: string;
+      payment_method_id?: string;
       payment_details?: any;
     };
     console.log('[CREATE_DEPOSIT] Request body:', JSON.stringify(body));
@@ -41,6 +43,9 @@ export async function handleCreateDeposit(request: Request, env: Env): Promise<R
       .insert({
         user_id: user.id,
         amount: body.amount,
+        deposit_currency: body.deposit_currency || null,
+        deposit_network: body.deposit_network || null,
+        payment_method_id: body.payment_method_id || null,
         payment_details: body.payment_details || {},
         monthly_percentage: monthlyPercentage,
         status: 'pending',

@@ -79,10 +79,16 @@ export default function DepositFlow({ onSuccess, userRate }: DepositFlowProps) {
   }
 
   const handleConfirm = async () => {
-    if (!selectedWallet || !amount) return
+    if (!selectedWallet || !amount || !selectedCurrency || !selectedNetwork) return
     
     setLoading(true)
-    const result = await api.createDeposit(parseFloat(amount))
+    const result = await api.createDeposit(
+      parseFloat(amount),
+      selectedCurrency,
+      selectedNetwork,
+      selectedWallet.id,
+      selectedWallet.wallet_address
+    )
     setLoading(false)
     
     if (result.success) {

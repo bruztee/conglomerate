@@ -351,47 +351,45 @@ export default function DashboardPage() {
           </div>
 
           {/* Stats Grid */}
-          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4 mb-8">
-            <div className="bg-gray-dark/20 border border-gray-medium/30 rounded-lg p-6 flex flex-col items-center text-center">
-              <div className="mb-4 text-silver">
-                <BoltIcon className="w-10 h-10" />
+          <div className="grid gap-4 md:gap-6 grid-cols-2 lg:grid-cols-4 mb-8">
+            <div className="bg-gray-dark/20 border border-gray-medium/30 rounded-lg p-4 md:p-6 flex flex-col items-center text-center">
+              <div className="mb-2 md:mb-4 text-silver">
+                <BoltIcon className="w-8 md:w-10 h-8 md:h-10" />
               </div>
-              <div className="text-gray-light text-sm mb-2">Інвестиції</div>
-              <div className="text-3xl font-bold text-foreground font-sans">${totalInvestments.toFixed(2)}</div>
+              <div className="text-gray-light text-xs md:text-sm mb-1 md:mb-2">Інвестиції</div>
+              <div className="text-xl md:text-3xl font-bold text-foreground font-sans">${totalInvestments.toFixed(2)}</div>
             </div>
 
-            <div className="bg-gray-dark/20 border border-gray-medium/30 rounded-lg p-6 flex flex-col items-center text-center">
-              <div className="mb-4 text-silver">
-                <ChartIcon className="w-10 h-10" />
+            <div className="bg-gray-dark/20 border border-gray-medium/30 rounded-lg p-4 md:p-6 flex flex-col items-center text-center">
+              <div className="mb-2 md:mb-4 text-silver">
+                <ChartIcon className="w-8 md:w-10 h-8 md:h-10" />
               </div>
-              <div className="text-gray-light text-sm mb-2">Профіт</div>
-              <div className="text-3xl font-bold text-silver font-sans">${userProfit.toFixed(2)}</div>
+              <div className="text-gray-light text-xs md:text-sm mb-1 md:mb-2">Профіт</div>
+              <div className="text-xl md:text-3xl font-bold text-silver font-sans">${userProfit.toFixed(2)}</div>
             </div>
 
-            <div className="bg-gray-dark/20 border border-gray-medium/30 rounded-lg p-6 flex flex-col items-center text-center">
-              <div className="mb-4 text-silver">
-                <UserIcon className="w-10 h-10" />
+            <div className="bg-gray-dark/20 border border-gray-medium/30 rounded-lg p-4 md:p-6 flex flex-col items-center text-center">
+              <div className="mb-2 md:mb-4 text-silver">
+                <UserIcon className="w-8 md:w-10 h-8 md:h-10" />
               </div>
-              <div className="text-gray-light text-sm mb-2">Загальний баланс</div>
-              <div className="text-3xl font-bold text-silver font-sans">${userBalance.toFixed(2)}</div>
+              <div className="text-gray-light text-xs md:text-sm mb-1 md:mb-2">Загальний баланс</div>
+              <div className="text-xl md:text-3xl font-bold text-foreground font-sans">${userBalance.toFixed(2)}</div>
               {frozenAmount > 0 && (
-                <div className="text-xs text-orange-400 mt-1">
-                  Заморожено: ${frozenAmount.toFixed(2)}
-                </div>
+                <div className="text-xs text-orange-400 mt-1 md:mt-2">Заморожено: ${frozenAmount.toFixed(2)}</div>
               )}
             </div>
 
-            <div className="bg-gray-dark/20 border border-gray-medium/30 rounded-lg p-6 flex flex-col items-center text-center">
-              <div className="mb-4 text-silver">
-                <NetworkIcon className="w-10 h-10" />
+            <div className="bg-gray-dark/20 border border-gray-medium/30 rounded-lg p-4 md:p-6 flex flex-col items-center text-center">
+              <div className="mb-2 md:mb-4 text-silver">
+                <NetworkIcon className="w-8 md:w-10 h-8 md:h-10" />
               </div>
-              <div className="text-gray-light text-sm mb-2">Активні депозити</div>
-              <div className="text-3xl font-bold text-silver font-sans">{activeDeposits.length}</div>
+              <div className="text-gray-light text-xs md:text-sm mb-1 md:mb-2">Активні депозити</div>
+              <div className="text-xl md:text-3xl font-bold text-silver font-sans">{activeDeposits.length}</div>
             </div>
           </div>
 
           {/* Deposit Creation and Active Deposits */}
-          <div className="grid lg:grid-cols-2 gap-6 mb-8">
+          <div className="grid lg:grid-cols-2 gap-4 md:gap-6 mb-8">
             <DepositFlow onSuccess={handleDepositSuccess} userRate={profitPercentage} />
 
             <div className="bg-gray-dark/20 border border-gray-medium/30 rounded-lg p-6">
@@ -479,8 +477,8 @@ export default function DashboardPage() {
 
               {depositHistory.length > 0 ? (
                 <>
-                  {/* Mobile Cards */}
-                  <div className="md:hidden space-y-4">
+                  {/* Mobile & Tablet Cards */}
+                  <div className="lg:hidden space-y-4">
                     {depositHistory
                       .slice((historyPage - 1) * itemsPerPage, historyPage * itemsPerPage)
                       .map((deposit) => (
@@ -544,7 +542,7 @@ export default function DashboardPage() {
                   </div>
 
                   {/* Desktop Table */}
-                  <div className="hidden md:block overflow-x-auto">
+                  <div className="hidden lg:block overflow-x-auto">
                     <table className="w-full">
                       <thead>
                         <tr className="border-b border-gray-medium/30">
