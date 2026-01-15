@@ -40,6 +40,7 @@ export default function DashboardPage() {
   const [selectedMethod, setSelectedMethod] = useState<any>(null)
   const [activeDeposits, setActiveDeposits] = useState<Deposit[]>([])
   const [depositHistory, setDepositHistory] = useState<Deposit[]>([])
+  const [profitPercentage, setProfitPercentage] = useState(5) // Актуальний % користувача з БД
 
   // Show loading while checking auth
   if (authLoading) {
@@ -54,8 +55,6 @@ export default function DashboardPage() {
 
   const quickAmounts = [100, 500, 1000, 5000, 10000]
 
-  const profitPercentage = 5
-
   const plan = {
     profit: `${profitPercentage}%`,
     minAmount: 100,
@@ -67,30 +66,30 @@ export default function DashboardPage() {
     // Withdraw logic
   }
 
-  const getStatusLabel = (status: Deposit["status"]) => {
+  const getStatusLabel = (status: string) => {
     switch (status) {
-      case "active":
+      case "pending":
+        return "Очікує підтвердження"
+      case "confirmed":
         return "Активний"
-      case "accruing":
-        return "В процесі нарахування"
-      case "pending_withdrawal":
-        return "На виводі"
-      case "completed":
-        return "Завершено"
+      case "rejected":
+        return "Відхилено"
+      case "cancelled":
+        return "Скасовано"
       default:
         return status
     }
   }
 
-  const getStatusColor = (status: Deposit["status"]) => {
+  const getStatusColor = (status: string) => {
     switch (status) {
-      case "active":
-        return "bg-silver/20 text-silver"
-      case "accruing":
-        return "bg-blue-500/20 text-blue-400"
-      case "pending_withdrawal":
+      case "pending":
         return "bg-yellow-500/20 text-yellow-400"
-      case "completed":
+      case "confirmed":
+        return "bg-green-500/20 text-green-400"
+      case "rejected":
+        return "bg-red-500/20 text-red-400"
+      case "cancelled":
         return "bg-gray-medium/30 text-gray-light"
       default:
         return "bg-gray-medium/30 text-gray-light"
@@ -106,13 +105,21 @@ export default function DashboardPage() {
     const fetchData = async () => {
       setLoading(true)
       
-      // Fetch wallet data
+      // Fetch wallet data - тепер включає balance та profit з investments
       const walletResult = await api.getWallet()
+      
       if (walletResult.success && walletResult.data) {
         const data = walletResult.data as any
         setUserBalance(data.balance || 0)
-        setUserProfit(data.stats?.total_earned || 0)
-        setTotalInvestments(data.stats?.total_principal || 0)
+        setUserProfit(data.total_profit || 0)
+        setTotalInvestments(data.total_invested || 0)
+      }
+
+      // Отримати актуальний monthly_percentage користувача
+      const meResult = await api.me()
+      if (meResult.success && meResult.data) {
+        const userData = (meResult.data as any).user
+        setProfitPercentage(userData?.monthly_percentage || 5)
       }
 
       // Fetch active payment methods (PUBLIC endpoint)
@@ -127,35 +134,54 @@ export default function DashboardPage() {
         }
       }
 
+      // Fetch investments для отримання accrued_interest
+      const investmentsResult = await api.getInvestments()
+      const investmentsMap = new Map()
+      
+      if (investmentsResult.success && investmentsResult.data) {
+        const invData = investmentsResult.data as any
+        const investments = invData.investments || []
+        // Створюємо мапу deposit_id -> investment для швидкого пошуку
+        investments.forEach((inv: any) => {
+          if (inv.deposit_id) {
+            investmentsMap.set(inv.deposit_id, inv)
+          }
+        })
+      }
+
       // Fetch deposits
       const depositsResult = await api.getDeposits()
       if (depositsResult.success && depositsResult.data) {
         const data = depositsResult.data as any
         const deposits = data.deposits || []
         
-        // Separate active and history
+        // Активні: confirmed + pending
         const active = deposits.filter((d: any) => d.status === 'confirmed' || d.status === 'pending')
-        const history = deposits.filter((d: any) => d.status !== 'confirmed' && d.status !== 'pending')
+        setActiveDeposits(active.map((d: any) => {
+          const investment = investmentsMap.get(d.id)
+          return {
+            id: d.id,
+            amount: parseFloat(d.amount),
+            profit: investment ? parseFloat(investment.accrued_interest || 0) : 0,
+            percentage: d.monthly_percentage || profitPercentage,
+            date: d.created_at,
+            status: d.status,
+          }
+        }))
         
-        // Map to our format
-        setActiveDeposits(active.map((d: any) => ({
-          id: d.id,
-          amount: parseFloat(d.amount),
-          profit: 0, // TODO: calculate from ledger
-          percentage: 5, // TODO: get from plan
-          date: d.created_at,
-          status: d.status === 'confirmed' ? 'active' : 'accruing' as any,
-        })))
-        
-        setDepositHistory(history.map((d: any) => ({
-          id: d.id,
-          amount: parseFloat(d.amount),
-          profit: 0,
-          percentage: 5,
-          date: d.created_at,
-          withdrawDate: d.confirmed_at,
-          status: 'completed' as any,
-        })))
+        // Історія - ВСІ deposits для повного перегляду
+        setDepositHistory(deposits.map((d: any) => {
+          const investment = investmentsMap.get(d.id)
+          return {
+            id: d.id,
+            amount: parseFloat(d.amount),
+            profit: investment ? parseFloat(investment.accrued_interest || 0) : 0,
+            percentage: d.monthly_percentage || profitPercentage,
+            date: d.created_at,
+            withdrawDate: d.confirmed_at || d.updated_at,
+            status: d.status,
+          }
+        }))
       }
 
       setLoading(false)
@@ -169,19 +195,20 @@ export default function DashboardPage() {
     
     const result = await api.createDeposit(parseFloat(amount))
     if (result.success) {
-      // Refresh deposits
+      // Refresh deposits list
       const depositsResult = await api.getDeposits()
       if (depositsResult.success && depositsResult.data) {
         const data = depositsResult.data as any
         const deposits = data.deposits || []
         const active = deposits.filter((d: any) => d.status === 'confirmed' || d.status === 'pending')
+        
         setActiveDeposits(active.map((d: any) => ({
           id: d.id,
           amount: parseFloat(d.amount),
           profit: 0,
-          percentage: 5,
+          percentage: d.monthly_percentage || profitPercentage,
           date: d.created_at,
-          status: d.status === 'confirmed' ? 'active' : 'accruing' as any,
+          status: d.status,
         })))
       }
       setAmount('')
@@ -207,26 +234,26 @@ export default function DashboardPage() {
           <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4 mb-8">
             <div className="bg-gray-dark/20 border border-gray-medium/30 rounded-lg p-6 flex flex-col items-center text-center">
               <div className="mb-4 text-silver">
-                <UserIcon className="w-10 h-10" />
+                <BoltIcon className="w-10 h-10" />
               </div>
-              <div className="text-gray-light text-sm mb-2">Загальний баланс</div>
-              <div className="text-3xl font-bold text-foreground font-sans">${userBalance.toFixed(2)}</div>
+              <div className="text-gray-light text-sm mb-2">Інвестиції</div>
+              <div className="text-3xl font-bold text-foreground font-sans">${totalInvestments.toFixed(2)}</div>
             </div>
 
             <div className="bg-gray-dark/20 border border-gray-medium/30 rounded-lg p-6 flex flex-col items-center text-center">
               <div className="mb-4 text-silver">
                 <ChartIcon className="w-10 h-10" />
               </div>
-              <div className="text-gray-light text-sm mb-2">Загальний профіт</div>
+              <div className="text-gray-light text-sm mb-2">Профіт</div>
               <div className="text-3xl font-bold text-silver font-sans">${userProfit.toFixed(2)}</div>
             </div>
 
             <div className="bg-gray-dark/20 border border-gray-medium/30 rounded-lg p-6 flex flex-col items-center text-center">
               <div className="mb-4 text-silver">
-                <BoltIcon className="w-10 h-10" />
+                <UserIcon className="w-10 h-10" />
               </div>
-              <div className="text-gray-light text-sm mb-2">Інвестовано</div>
-              <div className="text-3xl font-bold text-foreground font-sans">${totalInvestments.toFixed(2)}</div>
+              <div className="text-gray-light text-sm mb-2">Загальний баланс</div>
+              <div className="text-3xl font-bold text-foreground font-sans">${userBalance.toFixed(2)}</div>
             </div>
 
             <div className="bg-gray-dark/20 border border-gray-medium/30 rounded-lg p-6 flex flex-col items-center text-center">

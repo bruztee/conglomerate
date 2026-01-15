@@ -24,8 +24,8 @@ export default function Header({ isAuthenticated = false }: HeaderProps) {
         const result = await api.getWallet()
         if (result.success && result.data) {
           const data = result.data as any
-          setUserBalance(data.balance || 0)
-          setUserProfit(data.stats?.total_earned || 0)
+          setUserBalance(data.total_invested || 0)  // Тільки principal
+          setUserProfit(data.total_profit || 0)      // Тільки accrued_interest
         }
       }
       fetchWallet()

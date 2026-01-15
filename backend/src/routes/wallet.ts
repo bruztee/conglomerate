@@ -12,53 +12,53 @@ export async function handleGetWallet(request: Request, env: Env): Promise<Respo
     const user = await requireAuth(request, env);
     const supabase = createServiceSupabaseClient(env);
     
-    const { data: accounts } = await supabase
-      .from('accounts')
-      .select('id')
-      .eq('user_id', user.id);
-    
-    if (!accounts || accounts.length === 0) {
-      return errorResponse('NOT_FOUND', 'No account found', 404);
-    }
-    
-    const accountId = accounts[0].id;
-    
-    const { data: balanceResult, error: balanceError } = await supabase
-      .rpc('get_account_balance', { account_uuid: accountId });
-    
-    if (balanceError) {
-      console.error('Balance RPC error:', balanceError);
-      return errorResponse('SERVER_ERROR', 'Failed to fetch balance', 500);
-    }
-    
-    const { data: stats } = await supabase
-      .rpc('get_investment_stats', { user_uuid: user.id });
-    
+    // Отримати всі активні investments
     const { data: investments } = await supabase
-      .from('user_investments')
-      .select(`
-        id,
-        principal,
-        started_at,
-        last_accrual_at,
-        status,
-        investment_plans (
-          name,
-          daily_rate
-        )
-      `)
+      .from('investments')
+      .select('principal, accrued_interest')
       .eq('user_id', user.id)
       .eq('status', 'active');
-    
+
+    // Розрахувати поточний баланс (principal + accrued_interest)
+    const balance = (investments || []).reduce((sum, inv) => {
+      return sum + Number(inv.principal) + Number(inv.accrued_interest);
+    }, 0);
+
+    // Розрахувати тільки principal (без процентів)
+    const totalInvested = (investments || []).reduce((sum, inv) => {
+      return sum + Number(inv.principal);
+    }, 0);
+
+    // Розрахувати загальний прибуток
+    const totalProfit = (investments || []).reduce((sum, inv) => {
+      return sum + Number(inv.accrued_interest);
+    }, 0);
+
+    // Отримати загальні депозити
+    const { data: deposits } = await supabase
+      .from('deposits')
+      .select('amount')
+      .eq('user_id', user.id)
+      .eq('status', 'confirmed');
+
+    const totalDeposits = (deposits || []).reduce((sum, d) => sum + Number(d.amount), 0);
+
+    // Отримати загальні виводи
+    const { data: withdrawals } = await supabase
+      .from('withdrawals')
+      .select('amount')
+      .eq('user_id', user.id)
+      .in('status', ['approved', 'sent']);
+
+    const totalWithdrawals = (withdrawals || []).reduce((sum, w) => sum + Number(w.amount), 0);
+
     return jsonResponse({
-      balance: balanceResult || 0,
+      balance: balance,
+      total_invested: totalInvested,
+      total_profit: totalProfit,
+      total_deposits: totalDeposits,
+      total_withdrawals: totalWithdrawals,
       currency: 'USD',
-      stats: stats?.[0] || {
-        total_principal: 0,
-        total_earned: 0,
-        active_investments: 0,
-      },
-      active_investments: investments || [],
     });
   } catch (error: any) {
     console.error('Get wallet error:', error);

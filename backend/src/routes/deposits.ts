@@ -19,25 +19,23 @@ export async function handleCreateDeposit(request: Request, env: Env): Promise<R
     
     const supabase = createServiceSupabaseClient(env);
     
-    const { data: accounts } = await supabase
-      .from('accounts')
-      .select('id')
-      .eq('user_id', user.id)
-      .limit(1);
+    // Отримати monthly_percentage з профілю користувача
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('monthly_percentage')
+      .eq('id', user.id)
+      .single();
     
-    if (!accounts || accounts.length === 0) {
-      return errorResponse('NOT_FOUND', 'No account found', 404);
-    }
+    const monthlyPercentage = profile?.monthly_percentage || 5.0;
     
     const { data: deposit, error } = await supabase
       .from('deposits')
       .insert({
         user_id: user.id,
-        account_id: accounts[0].id,
         amount: body.amount,
-        provider: body.provider || 'manual',
         payment_details: body.payment_details || {},
         status: 'pending',
+        monthly_percentage: monthlyPercentage,
       })
       .select()
       .single();
@@ -52,7 +50,7 @@ export async function handleCreateDeposit(request: Request, env: Env): Promise<R
       'deposit.create',
       'deposits',
       deposit.id,
-      { amount: body.amount, provider: body.provider },
+      { amount: body.amount },
       request
     );
     
@@ -108,17 +106,43 @@ export async function handleConfirmDeposit(request: Request, env: Env, depositId
     return errorResponse('INVALID_STATUS', 'Deposit already processed', 400);
   }
   
+  // Оновити статус депозиту
   const { error: updateError } = await supabase
     .from('deposits')
     .update({ 
       status: 'confirmed',
       confirmed_at: new Date().toISOString(),
+      admin_id: user.id,
     })
     .eq('id', depositId);
   
   if (updateError) {
     return errorResponse('UPDATE_FAILED', 'Failed to confirm deposit', 500);
   }
+  
+  // Оновити баланс користувача в profiles
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('balance')
+    .eq('id', deposit.user_id)
+    .single();
+  
+  if (profile) {
+    await supabase
+      .from('profiles')
+      .update({ balance: Number(profile.balance || 0) + Number(deposit.amount) })
+      .eq('id', deposit.user_id);
+  }
+  
+  await logAudit(
+    env,
+    user.id,
+    'deposit.confirm',
+    'deposits',
+    depositId,
+    { amount: deposit.amount, user_id: deposit.user_id },
+    request
+  );
   
   return jsonResponse({ deposit });
   } catch (error) {

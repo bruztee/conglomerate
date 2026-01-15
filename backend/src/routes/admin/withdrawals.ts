@@ -81,7 +81,56 @@ export async function handleApproveWithdrawal(request: Request, env: Env, withdr
       return errorResponse('VALIDATION_ERROR', 'Withdrawal is not pending approval', 400);
     }
 
-    // Оновити статус
+    // Закрити investments користувача (зі старих до нових)
+    const { data: investments } = await supabase
+      .from('investments')
+      .select('id, principal, accrued_interest')
+      .eq('user_id', withdrawal.user_id)
+      .eq('status', 'active')
+      .order('opened_at', { ascending: true }); // FIFO
+
+    let remainingAmount = Number(withdrawal.amount);
+    const closedInvestments: string[] = [];
+
+    if (investments) {
+      for (const inv of investments) {
+        if (remainingAmount <= 0) break;
+        
+        const invTotal = Number(inv.principal) + Number(inv.accrued_interest);
+        
+        if (invTotal <= remainingAmount) {
+          // Закрити повністю
+          await supabase
+            .from('investments')
+            .update({
+              status: 'closed',
+              closed_at: new Date().toISOString(),
+            })
+            .eq('id', inv.id);
+          
+          closedInvestments.push(inv.id);
+          remainingAmount -= invTotal;
+        } else {
+          // Частково закрити (зменшити principal пропорційно)
+          const proportion = remainingAmount / invTotal;
+          const newPrincipal = Number(inv.principal) * (1 - proportion);
+          const newAccruedInterest = Number(inv.accrued_interest) * (1 - proportion);
+          
+          await supabase
+            .from('investments')
+            .update({
+              principal: newPrincipal,
+              accrued_interest: newAccruedInterest,
+            })
+            .eq('id', inv.id);
+          
+          remainingAmount = 0;
+          break;
+        }
+      }
+    }
+
+    // Оновити статус withdrawal
     const { error: updateError } = await supabase
       .from('withdrawals')
       .update({
@@ -98,7 +147,10 @@ export async function handleApproveWithdrawal(request: Request, env: Env, withdr
       return errorResponse('DATABASE_ERROR', 'Failed to approve withdrawal', 500);
     }
 
-    await logAudit(env, adminCheck.userId!, 'admin.withdrawal.approve', 'withdrawals', withdrawalId, body, request);
+    await logAudit(env, adminCheck.userId!, 'admin.withdrawal.approve', 'withdrawals', withdrawalId, { 
+      ...body, 
+      closed_investments: closedInvestments 
+    }, request);
 
     return jsonResponse({ success: true, message: 'Withdrawal approved' });
   } catch (error: any) {

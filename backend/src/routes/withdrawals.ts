@@ -22,32 +22,30 @@ export async function handleCreateWithdrawal(request: Request, env: Env): Promis
     
     const supabase = createServiceSupabaseClient(env);
     
-    const { data: accounts } = await supabase
-      .from('accounts')
-      .select('id')
+    // Перевірити доступну суму в investments (principal + accrued_interest)
+    const { data: investments, error: investmentsError } = await supabase
+      .from('investments')
+      .select('id, principal, accrued_interest')
       .eq('user_id', user.id)
-      .limit(1);
+      .eq('status', 'active');
     
-    if (!accounts || accounts.length === 0) {
-      return errorResponse('NOT_FOUND', 'No account found', 404);
+    if (investmentsError) {
+      return errorResponse('DATABASE_ERROR', 'Failed to check investments', 500);
     }
     
-    const accountId = accounts[0].id;
+    // Розрахувати загальну доступну суму
+    const availableAmount = (investments || []).reduce((sum, inv) => {
+      return sum + Number(inv.principal) + Number(inv.accrued_interest);
+    }, 0);
     
-    const { data: balanceResult } = await supabase
-      .rpc('get_account_balance', { account_uuid: accountId });
-    
-    const balance = balanceResult || 0;
-    
-    if (balance < body.amount) {
-      return errorResponse('INSUFFICIENT_FUNDS', 'Insufficient balance', 400);
+    if (availableAmount < body.amount) {
+      return errorResponse('INSUFFICIENT_FUNDS', `Insufficient balance. Available: ${availableAmount.toFixed(2)}`, 400);
     }
     
     const { data: withdrawal, error } = await supabase
       .from('withdrawals')
       .insert({
         user_id: user.id,
-        account_id: accountId,
         amount: body.amount,
         destination: body.destination,
         status: 'requested',
@@ -117,6 +115,7 @@ export async function handleApproveWithdrawal(request: Request, env: Env, withdr
     return errorResponse('INVALID_STATUS', 'Withdrawal already processed', 400);
   }
   
+  // Оновити статус withdrawal
   const { error: updateError } = await supabase
     .from('withdrawals')
     .update({ 
@@ -130,13 +129,28 @@ export async function handleApproveWithdrawal(request: Request, env: Env, withdr
     return errorResponse('UPDATE_FAILED', 'Failed to approve withdrawal', 500);
   }
   
+  // Зменшити баланс користувача в profiles
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('balance')
+    .eq('id', withdrawal.user_id)
+    .single();
+  
+  if (profile) {
+    const newBalance = Number(profile.balance || 0) - Number(withdrawal.amount);
+    await supabase
+      .from('profiles')
+      .update({ balance: newBalance })
+      .eq('id', withdrawal.user_id);
+  }
+  
   await logAudit(
     env,
     user.id,
     'withdrawal.approve',
     'withdrawals',
     withdrawalId,
-    { amount: withdrawal.amount },
+    { amount: withdrawal.amount, user_id: withdrawal.user_id },
     request
   );
   

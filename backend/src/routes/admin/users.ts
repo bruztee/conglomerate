@@ -49,7 +49,7 @@ export async function handleGetUsers(request: Request, env: Env): Promise<Respon
     // Для кожного користувача отримати суми депозитів та виводів
     const usersWithStats = await Promise.all(
       (profiles || []).map(async (user) => {
-        const [depositsRes, withdrawalsRes, accountRes] = await Promise.all([
+        const [depositsRes, withdrawalsRes] = await Promise.all([
           supabase
             .from('deposits')
             .select('amount, status')
@@ -58,17 +58,10 @@ export async function handleGetUsers(request: Request, env: Env): Promise<Respon
             .from('withdrawals')
             .select('amount, status')
             .eq('user_id', user.id),
-          supabase
-            .from('accounts')
-            .select('id')
-            .eq('user_id', user.id)
-            .single(),
         ]);
 
         const totalDeposits = depositsRes.data?.filter(d => d.status === 'confirmed').reduce((sum, d) => sum + Number(d.amount), 0) || 0;
         const totalWithdrawals = withdrawalsRes.data?.filter(w => w.status === 'approved' || w.status === 'sent').reduce((sum, w) => sum + Number(w.amount), 0) || 0;
-        const pendingDeposits = depositsRes.data?.filter(d => d.status === 'pending').length || 0;
-        const pendingWithdrawals = withdrawalsRes.data?.filter(w => w.status === 'requested').length || 0;
 
         return {
           ...user,

@@ -96,6 +96,37 @@ export async function handleApproveDeposit(request: Request, env: Env, depositId
       return errorResponse('DATABASE_ERROR', 'Failed to approve deposit', 500);
     }
 
+    // Отримати monthly_percentage користувача для створення investment
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('balance, monthly_percentage')
+      .eq('id', deposit.user_id)
+      .single();
+
+    if (!profile) {
+      return errorResponse('USER_NOT_FOUND', 'User profile not found', 404);
+    }
+
+    const monthlyPercentage = profile.monthly_percentage || 5.0;
+
+    // Створити investment замість прямого додавання до balance
+    const { error: investmentError } = await supabase
+      .from('investments')
+      .insert({
+        user_id: deposit.user_id,
+        principal: deposit.amount,
+        rate_monthly: monthlyPercentage,
+        deposit_id: depositId,
+        opened_at: new Date().toISOString(),
+        last_accrued_at: new Date().toISOString(),
+        status: 'active',
+      });
+
+    if (investmentError) {
+      console.error('Failed to create investment:', investmentError);
+      return errorResponse('DATABASE_ERROR', 'Deposit approved but failed to create investment', 500);
+    }
+
     await logAudit(env, adminCheck.userId!, 'admin.deposit.approve', 'deposits', depositId, body, request);
 
     return jsonResponse({ success: true, message: 'Deposit approved and funds credited' });

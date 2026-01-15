@@ -4,7 +4,6 @@ import { handleRegister, handleLogin, handleLogout, handleMe, handleRefreshToken
 import { handleGetWallet } from './routes/wallet';
 import { handleCreateDeposit, handleGetDeposits, handleConfirmDeposit } from './routes/deposits';
 import { handleCreateWithdrawal, handleGetWithdrawals, handleApproveWithdrawal } from './routes/withdrawals';
-import { handleGetPlans, handleCreateInvestment, handleGetInvestments } from './routes/investments';
 import { handleGetReferralStats, handleSetReferralCookie } from './routes/referrals';
 import { handleGetActivePaymentMethods } from './routes/paymentMethods';
 import { handleGetPaymentMethods, handleCreatePaymentMethod, handleUpdatePaymentMethod, handleDeletePaymentMethod } from './routes/admin/paymentMethods';
@@ -12,6 +11,7 @@ import { handleGetUsers, handleUpdateUser, handleSendResetLink } from './routes/
 import { handleGetDeposits as handleAdminGetDeposits, handleApproveDeposit, handleRejectDeposit } from './routes/admin/deposits';
 import { handleGetWithdrawals as handleAdminGetWithdrawals, handleApproveWithdrawal as handleAdminApproveWithdrawal, handleRejectWithdrawal, handleMarkWithdrawalSent } from './routes/admin/withdrawals';
 import { handleGetAuditLogs } from './routes/admin/security';
+import { handleGetInvestments } from './routes/investments';
 
 interface RouteHandler {
   (request: Request, env: Env, ...args: string[]): Promise<Response>;
@@ -41,6 +41,7 @@ const routes: Route[] = [
   { method: 'GET', pattern: /^\/auth\/me$/, handler: handleMe },
   
   { method: 'GET', pattern: /^\/wallet$/, handler: handleGetWallet },
+  { method: 'GET', pattern: /^\/investments$/, handler: handleGetInvestments },
   
   { method: 'POST', pattern: /^\/deposits$/, handler: handleCreateDeposit },
   { method: 'GET', pattern: /^\/deposits$/, handler: handleGetDeposits },
@@ -49,10 +50,6 @@ const routes: Route[] = [
   { method: 'POST', pattern: /^\/withdrawals$/, handler: handleCreateWithdrawal },
   { method: 'GET', pattern: /^\/withdrawals$/, handler: handleGetWithdrawals },
   { method: 'POST', pattern: /^\/withdrawals\/([a-f0-9-]+)\/approve$/, handler: handleApproveWithdrawal },
-  
-  { method: 'GET', pattern: /^\/plans$/, handler: handleGetPlans },
-  { method: 'POST', pattern: /^\/investments$/, handler: handleCreateInvestment },
-  { method: 'GET', pattern: /^\/investments$/, handler: handleGetInvestments },
   
   { method: 'GET', pattern: /^\/referrals\/stats$/, handler: handleGetReferralStats },
   { method: 'POST', pattern: /^\/referrals\/set-cookie$/, handler: handleSetReferralCookie },
