@@ -5,14 +5,21 @@ export function middleware(request: NextRequest) {
   const authFlow = request.cookies.get('auth_flow')?.value
   const pathname = request.nextUrl.pathname
   
+  console.log('[Middleware] pathname:', pathname);
+  console.log('[Middleware] accessToken:', accessToken ? 'exists (length: ' + accessToken.length + ')' : 'MISSING');
+  console.log('[Middleware] authFlow:', authFlow || 'none');
+  
   const isAuthPage = pathname.startsWith('/auth')
   const isDashboard = pathname.startsWith('/dashboard')
   const isAdmin = pathname.startsWith('/admin')
 
   // Protected routes require access_token
   if ((isDashboard || isAdmin) && !accessToken) {
+    console.log('[Middleware] BLOCKING:', pathname, '- no access_token, redirecting to /auth/login');
     return NextResponse.redirect(new URL('/auth/login', request.url))
   }
+  
+  console.log('[Middleware] ALLOWING:', pathname);
 
   // Auth pages redirect to dashboard if already authenticated
   if (isAuthPage && accessToken) {
