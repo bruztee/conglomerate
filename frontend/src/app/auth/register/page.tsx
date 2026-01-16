@@ -25,9 +25,7 @@ function RegisterForm() {
 
   // Redirect to dashboard if already logged in (useEffect, not render)
   useEffect(() => {
-    console.log('[RegisterPage] useEffect - initialized:', initialized, 'user:', user?.email || 'null');
     if (initialized && user) {
-      console.log('[RegisterPage] User authenticated, redirecting to /dashboard via router.push');
       router.push('/dashboard');
     }
   }, [initialized, user, router])

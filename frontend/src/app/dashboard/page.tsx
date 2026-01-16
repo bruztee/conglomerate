@@ -34,10 +34,8 @@ interface Deposit {
 }
 
 export default function DashboardPage() {
-  console.log('[DashboardPage] RENDER START');
   const router = useRouter()
   const { user } = useAuth()
-  console.log('[DashboardPage] user:', user?.email || 'null');
   
   // SWR hooks - instant loading з кешу
   const { wallet, isLoading: walletLoading, refresh: refreshWallet } = useWallet()

@@ -35,27 +35,20 @@ function LoginForm() {
 
   // Redirect if already logged in (in useEffect to avoid render error)
   useEffect(() => {
-    console.log('[LoginPage] useEffect - initialized:', initialized, 'user:', user?.email || 'null');
     if (initialized && user) {
-      console.log('[LoginPage] User authenticated, redirecting to /dashboard via router.push');
-      // router.push зберігає React state, на відміну від window.location.href
       router.push('/dashboard');
     }
   }, [initialized, user, router])
 
   // Show loading while initializing (suppressHydrationWarning для уникнення hydration errors)
   if (!initialized) {
-    console.log('[LoginPage] RENDER: Not initialized, showing loading');
     return <div suppressHydrationWarning><Loading fullScreen size="lg" /></div>
   }
 
   // Don't show login form if user exists (will redirect via useEffect)
   if (user) {
-    console.log('[LoginPage] RENDER: User exists:', user.email, '- showing loading before redirect');
     return <div suppressHydrationWarning><Loading fullScreen size="lg" /></div>
   }
-  
-  console.log('[LoginPage] RENDER: Showing login form');
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.name === 'email') {
@@ -75,14 +68,10 @@ function LoginForm() {
     setLoading(true)
 
     try {
-      console.log('[LoginPage] Calling login API...');
       const result = await login(email, password);
-      console.log('[LoginPage] Login result:', result);
       
       if (result.success) {
-        console.log('[LoginPage] Login SUCCESS - user state updated, will redirect via useEffect');
-        // НЕ робимо redirect тут - useEffect зробить redirect коли user оновиться
-        // router.push зберігає React state на відміну від window.location.href
+        // useEffect зробить redirect коли user оновиться
         return;
       }
       
