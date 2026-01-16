@@ -1,14 +1,14 @@
 "use client"
 
 import type React from "react"
-import { useState, useEffect } from "react"
+import { useState, useEffect, Suspense } from "react"
 import Link from "next/link"
 import { useRouter, useSearchParams } from "next/navigation"
 import Header from "@/components/Header"
 import Loading from "@/components/Loading"
 import { useAuth } from "@/context/AuthContext"
 
-export default function LoginPage() {
+function LoginForm() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const { login, user, initialized, refreshUser } = useAuth()
@@ -56,7 +56,8 @@ export default function LoginPage() {
     } else if (e.target.name === 'password') {
       setPassword(e.target.value)
     }
-    setError("")
+    // НЕ очищаємо error тут - це з'їдає повідомлення про помилку
+    // Error очиститься в handleSubmit перед наступною спробою
   }
 
   async function handleSubmit(e: React.FormEvent) {
@@ -70,30 +71,26 @@ export default function LoginPage() {
       const result = await login(email, password)
       
       if (result.success) {
-        await refreshUser()
         router.push('/dashboard')
-      } else {
-        // Check for email verification
-        if (result.error?.code === 'EMAIL_NOT_VERIFIED') {
-          router.push(`/auth/verify-email?email=${encodeURIComponent(email)}`)
-          return
-        }
-        
-        // Handle error
-        const errorMessage = result.error?.message || result.error?.error || "Невірний email або пароль"
-        setError(errorMessage)
+        return
       }
+      
+      // Check for email verification
+      if (result.error?.code === 'EMAIL_NOT_VERIFIED') {
+        router.push(`/auth/verify-email?email=${encodeURIComponent(email)}`)
+        return
+      }
+      
+      // Handle error
+      const errorMessage = result.error?.message || result.error?.error || "Невірний email або пароль"
+      setError(errorMessage)
     } catch (err: any) {
-      console.error('Login exception:', err)
-      setError(err?.message || 'Помилка підключення. Спробуйте ще раз.')
+      const errMsg = err?.message || 'Помилка підключення. Спробуйте ще раз.'
+      setError(errMsg)
     } finally {
       setLoading(false)
     }
-    
-    return false
   }
-
-  // НЕ показувати fullscreen loading - залишити форму видимою з disabled кнопкою
 
   return (
     <>
@@ -177,5 +174,13 @@ export default function LoginPage() {
         </div>
       </main>
     </>
+  )
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense fallback={<Loading fullScreen size="lg" />}>
+      <LoginForm />
+    </Suspense>
   )
 }

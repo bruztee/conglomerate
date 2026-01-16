@@ -24,6 +24,10 @@ export function useAdminInvestments() {
       revalidateOnFocus: false,
       revalidateOnReconnect: true,
       dedupingInterval: 5000,
+      shouldRetryOnError: false,
+      onError: (err) => {
+        console.error('useAdminInvestments error:', err)
+      },
     }
   )
 

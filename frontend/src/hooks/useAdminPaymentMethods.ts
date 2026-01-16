@@ -15,6 +15,10 @@ export function useAdminPaymentMethods() {
       revalidateOnFocus: false,
       revalidateOnReconnect: true,
       dedupingInterval: 5000,
+      shouldRetryOnError: false,
+      onError: (err) => {
+        console.error('useAdminPaymentMethods error:', err)
+      },
     }
   )
 

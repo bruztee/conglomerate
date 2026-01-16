@@ -1,7 +1,7 @@
 "use client"
 
 import type React from "react"
-import { useState, useEffect } from "react"
+import { useState, useEffect, Suspense } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
 import { useAuth } from "@/context/AuthContext"
 import { api } from "@/lib/api"
@@ -40,7 +40,7 @@ interface Deposit {
   coin?: string
 }
 
-export default function WithdrawPage() {
+function WithdrawPageContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const { user } = useAuth()
@@ -480,5 +480,13 @@ export default function WithdrawPage() {
         </div>
       </main>
     </>
+  )
+}
+
+export default function WithdrawPage() {
+  return (
+    <Suspense fallback={<Loading fullScreen size="lg" />}>
+      <WithdrawPageContent />
+    </Suspense>
   )
 }

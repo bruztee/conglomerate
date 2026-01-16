@@ -51,7 +51,14 @@ class ApiClient {
         credentials: 'include', // КРИТИЧНО: Відправляти httpOnly cookies автоматично
       });
 
-      const data = await response.json();
+      // Безпечний парс JSON - не падати якщо backend повертає HTML/204/error page
+      const text = await response.text();
+      let data: any = null;
+      try {
+        data = text ? JSON.parse(text) : null;
+      } catch (e) {
+        data = { error: { code: 'INVALID_RESPONSE', message: 'Невірна відповідь сервера' } };
+      }
 
       // AUTO-REFRESH: Якщо 401 і JWT expired - refresh tokens і retry
       if (
@@ -61,11 +68,8 @@ class ApiClient {
         !endpoint.includes('/auth/register') &&
         !isRetry
       ) {
-        console.log('JWT expired (401), attempting token refresh...');
-        
         // Якщо вже йде refresh - чекаємо на нього
         if (this.isRefreshing && this.refreshPromise) {
-          console.log('Waiting for ongoing refresh...');
           await this.refreshPromise;
         } else {
           // Стартуємо новий refresh
@@ -78,18 +82,15 @@ class ApiClient {
           this.refreshPromise = null;
           
           if (!refreshResult.success) {
-            console.log('Token refresh failed - session expired');
             return {
               success: false,
               error: { code: 'SESSION_EXPIRED', message: 'Session expired' },
             };
           }
           
-          console.log('Tokens refreshed successfully');
         }
         
         // Retry original request with new tokens
-        console.log('Retrying original request...');
         return this.request<T>(endpoint, options, true);
       }
 
@@ -104,12 +105,15 @@ class ApiClient {
         success: true,
         data: data.data || data,
       };
-    } catch (error) {
+    } catch (error: any) {
+      // Network error (Failed to fetch)
       return {
         success: false,
-        error: {
-          code: 'NETWORK_ERROR',
-          message: error instanceof Error ? error.message : 'Network error',
+        error: { 
+          code: 'NETWORK_ERROR', 
+          message: error?.message === 'Failed to fetch' 
+            ? 'Помилка підключення до сервера. Перевірте інтернет-з\'єднання.'
+            : 'Помилка мережі. Спробуйте ще раз.'
         },
       };
     }

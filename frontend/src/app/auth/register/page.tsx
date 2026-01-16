@@ -23,15 +23,21 @@ function RegisterForm() {
   const [loading, setLoading] = useState(false)
   const [showVerificationMessage, setShowVerificationMessage] = useState(false)
 
+  // Redirect to dashboard if already logged in (useEffect, not render)
+  useEffect(() => {
+    if (initialized && user) {
+      router.push('/dashboard')
+    }
+  }, [initialized, user, router])
+
   // Show loading while initializing
   if (!initialized) {
     return <Loading fullScreen size="lg" />
   }
 
-  // Redirect to dashboard if already logged in
+  // Don't show register form if user exists (will redirect via useEffect)
   if (user) {
-    router.push('/dashboard')
-    return null
+    return <Loading fullScreen size="lg" />
   }
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -39,7 +45,7 @@ function RegisterForm() {
       ...formData,
       [e.target.name]: e.target.value,
     })
-    setError("")
+    // НЕ очищаємо error тут - це з'їдає повідомлення про помилку
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -58,12 +64,19 @@ function RegisterForm() {
     setLoading(true)
     setError("")
     
-    const result = await register(formData.email, formData.password, formData.referralCode || undefined)
-    
-    if (result.success) {
-      setShowVerificationMessage(true)
-    } else {
-      setError(result.error?.message || "Помилка реєстрації")
+    try {
+      const result = await register(formData.email, formData.password, formData.referralCode || undefined)
+      
+      if (result.success) {
+        router.push(`/auth/verify-email?email=${encodeURIComponent(formData.email)}`)
+      } else {
+        const errMsg = result.error?.message || "Помилка реєстрації"
+        setError(errMsg)
+      }
+    } catch (err: any) {
+      const errMsg = err?.message || 'Помилка підключення. Спробуйте ще раз.'
+      setError(errMsg)
+    } finally {
       setLoading(false)
     }
   }
