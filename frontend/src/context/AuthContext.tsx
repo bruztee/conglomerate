@@ -94,6 +94,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     
     if (response.success && response.data?.user) {
       setUser(response.data.user);
+      setInitialized(true); // Гарантуємо що initialized=true після успішного логіну
       return { success: true };
     }
     
