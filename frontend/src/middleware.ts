@@ -21,5 +21,6 @@ export function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ['/auth/:path*', '/dashboard/:path*', '/admin/:path*']
+  // ТІЛЬКИ dashboard/admin - auth pages НЕ потрібно middleware
+  matcher: ['/dashboard/:path*', '/admin/:path*']
 }
