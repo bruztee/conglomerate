@@ -37,8 +37,8 @@ function LoginForm() {
   useEffect(() => {
     console.log('[LoginPage] useEffect - initialized:', initialized, 'user:', user?.email || 'null');
     if (initialized && user) {
-      console.log('[LoginPage] User authenticated, redirecting to /dashboard');
-      router.push('/dashboard');
+      console.log('[LoginPage] User authenticated, redirecting to /dashboard via window.location.href');
+      window.location.href = '/dashboard';
     }
   }, [initialized, user, router])
 
