@@ -110,19 +110,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const logout = async () => {
-    setLoading(true);
     await api.logout();
     setUser(null);
     
     // Очистити весь SWR кеш
     mutate(() => true, undefined, { revalidate: false });
     
-    setLoading(false);
-    // httpOnly cookie очищується сервером через Set-Cookie
-    // Redirect на login після logout
-    if (typeof window !== 'undefined') {
-      window.location.href = '/auth/login';
-    }
+    // НЕ робимо redirect тут - Header/AdminSidebar роблять router.push
+    // НЕ робимо setLoading - уникаємо зайвих re-renders перед redirect
   };
 
   return (
