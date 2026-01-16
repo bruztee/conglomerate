@@ -14,6 +14,8 @@ interface ApiResponse<T = any> {
 class ApiClient {
   private baseUrl: string;
   private accessToken: string | null = null;
+  private isRefreshing = false;
+  private refreshPromise: Promise<ApiResponse> | null = null;
 
   constructor(baseUrl: string) {
     this.baseUrl = baseUrl;
@@ -26,7 +28,8 @@ class ApiClient {
 
   private async request<T>(
     endpoint: string,
-    options: RequestInit = {}
+    options: RequestInit = {},
+    isRetry = false
   ): Promise<ApiResponse<T>> {
     const headers: Record<string, string> = {
       'Content-Type': 'application/json',
@@ -44,6 +47,46 @@ class ApiClient {
       });
 
       const data = await response.json();
+
+      // AUTO-REFRESH: Якщо 401 і JWT expired - refresh tokens і retry
+      if (
+        response.status === 401 &&
+        !endpoint.includes('/auth/refresh') &&
+        !endpoint.includes('/auth/login') &&
+        !endpoint.includes('/auth/register') &&
+        !isRetry
+      ) {
+        console.log('🔄 JWT expired (401), attempting token refresh...');
+        
+        // Якщо вже йде refresh - чекаємо на нього
+        if (this.isRefreshing && this.refreshPromise) {
+          console.log('⏳ Waiting for ongoing refresh...');
+          await this.refreshPromise;
+        } else {
+          // Стартуємо новий refresh
+          this.isRefreshing = true;
+          this.refreshPromise = this.refreshToken();
+          
+          const refreshResult = await this.refreshPromise;
+          
+          this.isRefreshing = false;
+          this.refreshPromise = null;
+          
+          if (!refreshResult.success) {
+            console.log('❌ Token refresh failed - session expired');
+            return {
+              success: false,
+              error: { code: 'SESSION_EXPIRED', message: 'Session expired' },
+            };
+          }
+          
+          console.log('✅ Tokens refreshed successfully');
+        }
+        
+        // Retry original request with new tokens
+        console.log('🔁 Retrying original request...');
+        return this.request<T>(endpoint, options, true);
+      }
 
       if (!response.ok) {
         return {

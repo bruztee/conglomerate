@@ -71,6 +71,9 @@ export default function WithdrawPage() {
 
   // Завантаження даних при mount
   useEffect(() => {
+    // Не запускати fetchData поки authLoading
+    if (authLoading) return
+    
     async function fetchData() {
       if (!user) {
         router.push('/auth/login')
@@ -160,7 +163,7 @@ export default function WithdrawPage() {
     }
 
     fetchData()
-  }, [user, router])
+  }, [user, router, authLoading])
 
   // Автоматичний вибір депозиту з URL параметра
   useEffect(() => {

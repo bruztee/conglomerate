@@ -101,6 +101,9 @@ export default function DashboardPage() {
   }
 
   useEffect(() => {
+    // Не запускати fetchData поки authLoading
+    if (authLoading) return
+    
     if (!user) {
       router.push('/auth/login')
       return
@@ -153,8 +156,8 @@ export default function DashboardPage() {
         const active = deposits
           .filter((d: any) => {
             const investment = investmentsMap.get(d.id)
-            // Показувати тільки якщо є investment І він active
-            return investment && investment.status === 'active'
+            // Показувати якщо є investment І він active або frozen
+            return investment && (investment.status === 'active' || investment.status === 'frozen')
           })
         
         setActiveDeposits(active.map((d: any) => {
@@ -223,7 +226,7 @@ export default function DashboardPage() {
     }
 
     fetchData()
-  }, [user, router])
+  }, [user, router, authLoading])
 
   const handleDepositSuccess = async () => {
     setLoading(true)
@@ -255,7 +258,7 @@ export default function DashboardPage() {
       
       const active = deposits.filter((d: any) => {
         const investment = investmentsMap.get(d.id)
-        return investment && investment.status === 'active'
+        return investment && (investment.status === 'active' || investment.status === 'frozen')
       })
       
       setActiveDeposits(active.map((d: any) => {
