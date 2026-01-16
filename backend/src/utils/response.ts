@@ -48,6 +48,7 @@ export function corsHeaders(origin: string | null): Record<string, string> {
     'https://conglomerate-eight.vercel.app',
     'https://www.conglomerate-g.com',
     'https://conglomerate-g.com',
+    'https://test.conglomerate-g.com',
   ];
   
   // Allow all Vercel preview and production URLs
