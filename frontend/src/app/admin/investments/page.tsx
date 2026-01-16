@@ -34,7 +34,7 @@ interface Investment {
 
 export default function AdminInvestmentsPage() {
   const router = useRouter()
-  const { user, loading: authLoading } = useAuth()
+  const { user, initialized } = useAuth()
   
   const [loading, setLoading] = useState(true)
   const [investments, setInvestments] = useState<Investment[]>([])
@@ -49,9 +49,8 @@ export default function AdminInvestmentsPage() {
   })
   const investmentsPerPage = 20
 
-  if (authLoading) return <Loading />
-  if (!user) { router.push('/auth/login'); return null }
-  if (user.role !== 'admin') { router.push('/dashboard'); return null }
+  if (!initialized) return <Loading />
+  if (!user) return null
 
   useEffect(() => {
     fetchInvestments()

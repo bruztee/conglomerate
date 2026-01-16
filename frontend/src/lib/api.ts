@@ -16,6 +16,11 @@ class ApiClient {
   private accessToken: string | null = null;
   private isRefreshing = false;
   private refreshPromise: Promise<ApiResponse> | null = null;
+  
+  // Cache & deduplication for me()
+  private meCache: { data: ApiResponse; timestamp: number } | null = null;
+  private mePromise: Promise<ApiResponse> | null = null;
+  private readonly ME_CACHE_TTL = 60 * 1000; // 60 seconds
 
   constructor(baseUrl: string) {
     this.baseUrl = baseUrl;
@@ -126,6 +131,9 @@ class ApiClient {
 
     // ✅ httpOnly cookies (access_token + refresh_token) встановлюються СЕРВЕРОМ
     // НЕ зберігаємо нічого в localStorage - все через httpOnly cookies для безпеки
+    
+    // Clear cache to force fresh me() after login
+    this.meCache = null;
 
     return response;
   }
@@ -133,11 +141,42 @@ class ApiClient {
   async logout() {
     const response = await this.request('/auth/logout', { method: 'POST' });
     // httpOnly cookies очищуються СЕРВЕРОМ через Set-Cookie
+    // Clear cache
+    this.meCache = null;
     return response;
   }
 
   async me() {
-    return this.request('/auth/me', { method: 'GET' });
+    const now = Date.now();
+    
+    // Return cached data if fresh
+    if (this.meCache && (now - this.meCache.timestamp) < this.ME_CACHE_TTL) {
+      return this.meCache.data;
+    }
+    
+    // Deduplicate concurrent requests
+    if (this.mePromise) {
+      return this.mePromise;
+    }
+    
+    // Make fresh request
+    this.mePromise = this.request('/auth/me', { method: 'GET' });
+    
+    try {
+      const response = await this.mePromise;
+      
+      // Cache successful responses
+      if (response.success) {
+        this.meCache = { data: response, timestamp: now };
+      } else {
+        // Clear cache on error
+        this.meCache = null;
+      }
+      
+      return response;
+    } finally {
+      this.mePromise = null;
+    }
   }
 
   async refreshToken() {

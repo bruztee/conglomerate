@@ -14,10 +14,10 @@ import Loading from "@/components/Loading"
 
 export default function Home() {
   const router = useRouter()
-  const { user, loading: authLoading } = useAuth()
+  const { user, initialized } = useAuth()
 
-  // Show loading while checking auth
-  if (authLoading) {
+  // Show loading while initializing auth
+  if (!initialized) {
     return <Loading fullScreen size="lg" />
   }
 

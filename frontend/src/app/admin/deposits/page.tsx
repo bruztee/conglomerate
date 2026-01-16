@@ -29,7 +29,7 @@ interface Deposit {
 
 export default function AdminDepositsPage() {
   const router = useRouter()
-  const { user, loading: authLoading } = useAuth()
+  const { user, initialized } = useAuth()
   
   // ВСІ useState МАЮТЬ БУТИ НА ПОЧАТКУ
   const [loading, setLoading] = useState(true)
@@ -40,9 +40,8 @@ export default function AdminDepositsPage() {
   const [action, setAction] = useState<'approve' | 'reject'>('approve')
   const [note, setNote] = useState('')
 
-  if (authLoading) return <Loading />
-  if (!user) { router.push('/auth/login'); return null }
-  if (user.role !== 'admin') { router.push('/dashboard'); return null }
+  if (!initialized) return <Loading />
+  if (!user) return null
 
   useEffect(() => {
     fetchDeposits()

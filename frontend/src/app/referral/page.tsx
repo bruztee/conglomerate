@@ -25,7 +25,7 @@ interface Referral {
 
 export default function ReferralPage() {
   const router = useRouter()
-  const { user, loading: authLoading } = useAuth()
+  const { user, initialized } = useAuth()
   
   const [userBalance, setUserBalance] = useState(0)
   const [userProfit, setUserProfit] = useState(0)

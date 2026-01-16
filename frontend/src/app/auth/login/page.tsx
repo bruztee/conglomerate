@@ -11,7 +11,7 @@ import { useAuth } from "@/context/AuthContext"
 export default function LoginPage() {
   const router = useRouter()
   const searchParams = useSearchParams()
-  const { login, user, loading: authLoading, refreshUser } = useAuth()
+  const { login, user, initialized, refreshUser } = useAuth()
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
   const [error, setError] = useState("")
@@ -33,8 +33,8 @@ export default function LoginPage() {
     }
   }, [searchParams])
 
-  // Show loading while checking auth
-  if (authLoading) {
+  // Show loading while initializing
+  if (!initialized) {
     return <Loading fullScreen size="lg" />
   }
 

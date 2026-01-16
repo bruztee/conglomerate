@@ -3,10 +3,18 @@ import { NextResponse, type NextRequest } from 'next/server'
 export function middleware(request: NextRequest) {
   const accessToken = request.cookies.get('access_token')?.value
   const authFlow = request.cookies.get('auth_flow')?.value
-  const isAuthPage = request.nextUrl.pathname.startsWith('/auth')
   const pathname = request.nextUrl.pathname
+  
+  const isAuthPage = pathname.startsWith('/auth')
+  const isDashboard = pathname.startsWith('/dashboard')
+  const isAdmin = pathname.startsWith('/admin')
 
-  // Allow access during specific flows
+  // Protected routes require access_token
+  if ((isDashboard || isAdmin) && !accessToken) {
+    return NextResponse.redirect(new URL('/auth/login', request.url))
+  }
+
+  // Auth pages redirect to dashboard if already authenticated
   if (isAuthPage && accessToken) {
     // Allow reset-password during recovery flow
     if (pathname === '/auth/reset-password' && authFlow === 'recovery') {
@@ -31,5 +39,5 @@ export function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ['/auth/:path*']
+  matcher: ['/auth/:path*', '/dashboard/:path*', '/admin/:path*']
 }

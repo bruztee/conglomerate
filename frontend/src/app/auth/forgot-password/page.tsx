@@ -10,14 +10,14 @@ import Loading from "@/components/Loading"
 
 export default function ForgotPasswordPage() {
   const router = useRouter()
-  const { user, loading: authLoading } = useAuth()
+  const { user, initialized } = useAuth()
   const [email, setEmail] = useState("")
   const [loading, setLoading] = useState(false)
   const [message, setMessage] = useState("")
   const [error, setError] = useState("")
 
-  // Show loading while checking auth
-  if (authLoading) {
+  // Show loading while initializing
+  if (!initialized) {
     return <Loading fullScreen size="lg" />
   }
 

@@ -19,10 +19,10 @@ interface PaymentMethod {
 
 export default function AdminPaymentMethodsPage() {
   const router = useRouter()
-  const { user, loading: authLoading } = useAuth()
+  const { user, initialized } = useAuth()
 
-  if (authLoading) return <Loading />
-  if (!user) { router.push('/auth/login'); return <Loading /> }
+  if (!initialized) return <Loading />
+  if (!user) return null
   if (user.role !== 'admin') { router.push('/dashboard'); return <Loading /> }
 
   const [loading, setLoading] = useState(true)

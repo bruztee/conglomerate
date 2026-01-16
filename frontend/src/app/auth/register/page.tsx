@@ -12,7 +12,7 @@ import Loading from "@/components/Loading"
 function RegisterForm() {
   const router = useRouter()
   const searchParams = useSearchParams()
-  const { register, user, loading: authLoading } = useAuth()
+  const { register, user, initialized } = useAuth()
   const [formData, setFormData] = useState({
     email: "",
     password: "",
@@ -23,8 +23,8 @@ function RegisterForm() {
   const [loading, setLoading] = useState(false)
   const [showVerificationMessage, setShowVerificationMessage] = useState(false)
 
-  // Show loading while checking auth  
-  if (authLoading) {
+  // Show loading while initializing
+  if (!initialized) {
     return <Loading fullScreen size="lg" />
   }
 

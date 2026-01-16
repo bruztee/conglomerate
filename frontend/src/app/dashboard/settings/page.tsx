@@ -12,7 +12,7 @@ import PhoneVerificationPopup from "@/components/PhoneVerificationPopup"
 
 export default function SettingsPage() {
   const router = useRouter()
-  const { user, loading: authLoading } = useAuth()
+  const { user, initialized } = useAuth()
   
   // ВСІ useState МАЮТЬ БУТИ НА ПОЧАТКУ
   const [activeTab, setActiveTab] = useState<'email' | 'phone' | 'password'>('email')
@@ -26,14 +26,13 @@ export default function SettingsPage() {
   const [userProfile, setUserProfile] = useState<any>(null)
   const [showPhoneVerification, setShowPhoneVerification] = useState(false)
 
-  // Show loading while checking auth
-  if (authLoading) {
+  // Show loading while initializing
+  if (!initialized) {
     return <Loading fullScreen size="lg" />
   }
 
-  // Redirect if not authenticated
+  // Middleware handles redirect
   if (!user) {
-    router.push('/auth/login')
     return null
   }
 

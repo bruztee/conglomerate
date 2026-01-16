@@ -40,7 +40,7 @@ interface Deposit {
 export default function WithdrawPage() {
   const router = useRouter()
   const searchParams = useSearchParams()
-  const { user, loading: authLoading } = useAuth()
+  const { user, initialized } = useAuth()
   
   // ВСІ useState МАЮТЬ БУТИ НА ПОЧАТКУ
   const [walletAddress, setWalletAddress] = useState("")
@@ -58,27 +58,22 @@ export default function WithdrawPage() {
   const [withdrawalPage, setWithdrawalPage] = useState(1)
   const itemsPerPage = 10
 
-  // Show loading while checking auth
-  if (authLoading) {
+  // Show loading while initializing
+  if (!initialized) {
     return <Loading fullScreen size="lg" />
   }
 
-  // Redirect if not authenticated
+  // Middleware handles redirect
   if (!user) {
-    router.push('/auth/login')
     return null
   }
 
   // Завантаження даних при mount
   useEffect(() => {
-    // Не запускати fetchData поки authLoading
-    if (authLoading) return
+    // Не запускати fetchData поки не initialized
+    if (!initialized || !user) return
     
     async function fetchData() {
-      if (!user) {
-        router.push('/auth/login')
-        return
-      }
 
       setLoading(true)
       try {
@@ -163,7 +158,7 @@ export default function WithdrawPage() {
     }
 
     fetchData()
-  }, [user, router, authLoading])
+  }, [user, router, initialized])
 
   // Автоматичний вибір депозиту з URL параметра
   useEffect(() => {

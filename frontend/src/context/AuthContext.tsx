@@ -22,6 +22,7 @@ interface User {
 interface AuthContextType {
   user: User | null;
   loading: boolean;
+  initialized: boolean;
   login: (email: string, password: string) => Promise<{ success: boolean; error?: any }>;
   register: (email: string, password: string, referralCode?: string) => Promise<{ success: boolean; error?: any }>;
   logout: () => Promise<void>;
@@ -32,7 +33,8 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
+  const [initialized, setInitialized] = useState(false);
 
   const refreshUser = async () => {
     try {
@@ -68,11 +70,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         await refreshUser();
       } catch (error) {
         // Silent fail on init
-      }
-      
-      // Тільки оновлюємо стан якщо компонент ще змонтований
-      if (isMounted) {
-        setLoading(false);
+      } finally {
+        // Mark as initialized regardless of result
+        if (isMounted) {
+          setInitialized(true);
+        }
       }
     };
 
@@ -85,28 +87,38 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const login = async (email: string, password: string) => {
-    const response = await api.login(email, password);
-    
-    if (response.success && response.data?.user) {
-      setUser(response.data.user);
-      // Refresh user to get full data including phone verification status
-      await refreshUser();
-      return { success: true };
+    setLoading(true);
+    try {
+      const response = await api.login(email, password);
+      
+      if (response.success && response.data?.user) {
+        setUser(response.data.user);
+        // Refresh user to get full data including phone verification status
+        await refreshUser();
+        return { success: true };
+      }
+      
+      return { success: false, error: response.error };
+    } finally {
+      setLoading(false);
     }
-    
-    return { success: false, error: response.error };
   };
 
   const register = async (email: string, password: string, referralCode?: string) => {
-    const response = await api.register(email, password, referralCode);
-    
-    if (response.success) {
-      // НЕ встановлюємо user після register - email ще не верифікований
-      // Register page покаже verification message
-      return { success: true };
+    setLoading(true);
+    try {
+      const response = await api.register(email, password, referralCode);
+      
+      if (response.success) {
+        // НЕ встановлюємо user після register - email ще не верифікований
+        // Register page покаже verification message
+        return { success: true };
+      }
+      
+      return { success: false, error: response.error };
+    } finally {
+      setLoading(false);
     }
-    
-    return { success: false, error: response.error };
   };
 
   const logout = async () => {
@@ -122,7 +134,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   return (
-    <AuthContext.Provider value={{ user, loading, login, register, logout, refreshUser }}>
+    <AuthContext.Provider value={{ user, loading, initialized, login, register, logout, refreshUser }}>
       {children}
     </AuthContext.Provider>
   );
