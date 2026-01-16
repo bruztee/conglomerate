@@ -1,9 +1,10 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useState } from "react"
 import { useRouter } from "next/navigation"
 import { useAuth } from "@/context/AuthContext"
 import { api } from "@/lib/api"
+import { useAdminDeposits } from "@/hooks/useAdminDeposits"
 import Loading from "@/components/Loading"
 import { CheckIcon, XIcon } from "@/components/icons/AdminIcons"
 
@@ -29,42 +30,24 @@ interface Deposit {
 
 export default function AdminDepositsPage() {
   const router = useRouter()
-  const { user, initialized } = useAuth()
+  const { user } = useAuth()
+  
+  // SWR hook - instant loading з кешу
+  const { deposits: allDeposits, isLoading: loading, refresh: refreshDeposits } = useAdminDeposits()
   
   // ВСІ useState МАЮТЬ БУТИ НА ПОЧАТКУ
-  const [loading, setLoading] = useState(true)
   const [tab, setTab] = useState<'pending' | 'history'>('pending')
-  const [deposits, setDeposits] = useState<Deposit[]>([])
   const [selectedDeposit, setSelectedDeposit] = useState<Deposit | null>(null)
   const [showModal, setShowModal] = useState(false)
   const [action, setAction] = useState<'approve' | 'reject'>('approve')
   const [note, setNote] = useState('')
 
-  if (!initialized) return <Loading />
-  if (!user) return null
-
-  useEffect(() => {
-    fetchDeposits()
-  }, [tab])
-
-  async function fetchDeposits() {
-    setLoading(true)
-    try {
-      const status = tab === 'pending' ? 'pending' : 'all'
-      const result = await api.adminGetDeposits(status)
-      if (result.success) {
-        let depositsData = result.data.deposits || []
-        if (tab === 'history') {
-          depositsData = depositsData.filter((d: Deposit) => d.status !== 'pending')
-        }
-        setDeposits(depositsData)
-      }
-    } catch (error) {
-      // Silent fail
-    } finally {
-      setLoading(false)
-    }
-  }
+  // AdminLayout already checked auth
+  
+  // Filter deposits based on tab
+  const deposits = tab === 'pending' 
+    ? allDeposits.filter((d: Deposit) => d.status === 'pending')
+    : allDeposits.filter((d: Deposit) => d.status !== 'pending')
 
   async function handleAction(e: React.FormEvent) {
     e.preventDefault()
@@ -87,7 +70,7 @@ export default function AdminDepositsPage() {
         setShowModal(false)
         setSelectedDeposit(null)
         setNote('')
-        fetchDeposits()
+        refreshDeposits()
       } else {
         alert('Помилка: ' + (result.error?.message || 'Unknown error'))
       }
@@ -107,7 +90,7 @@ export default function AdminDepositsPage() {
     return <Loading fullScreen size="lg" />
   }
 
-  const pendingCount = deposits.filter(d => d.status === 'pending').length
+  const pendingCount = deposits.filter((d: Deposit) => d.status === 'pending').length
 
   return (
     <div className="p-4 md:p-8 pt-16 md:pt-8">
@@ -140,7 +123,7 @@ export default function AdminDepositsPage() {
 
       {/* Deposits List */}
       <div className="space-y-4 overflow-x-hidden">
-        {deposits.map((deposit) => (
+        {deposits.map((deposit: Deposit) => (
           <div
             key={deposit.id}
             className={`bg-blur-dark border rounded-lg p-4 md:p-6 ${

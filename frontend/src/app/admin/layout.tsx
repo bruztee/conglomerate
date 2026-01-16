@@ -14,26 +14,18 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   const [checking, setChecking] = useState(true)
 
   useEffect(() => {
-    async function checkAdminAccess() {
-      if (!initialized) return
-
-      if (!user) {
-        router.push('/auth/login')
-        return
-      }
-
-      // Перевірити чи користувач admin через роль
-      if (user.role === 'admin') {
-        setIsAdmin(true)
-      } else {
-        router.push('/dashboard')
-      }
-      
-      setChecking(false)
+    // Middleware already redirected non-authenticated users
+    // Just check admin role
+    if (!user) return
+    
+    if (user.role === 'admin') {
+      setIsAdmin(true)
+    } else {
+      router.push('/dashboard')
     }
-
-    checkAdminAccess()
-  }, [initialized, user, router])
+    
+    setChecking(false)
+  }, [user, router])
 
   if (!initialized || checking) {
     return <Loading fullScreen size="lg" />

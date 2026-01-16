@@ -33,15 +33,21 @@ export default function LoginPage() {
     }
   }, [searchParams])
 
+  // Redirect if already logged in (in useEffect to avoid render error)
+  useEffect(() => {
+    if (initialized && user) {
+      router.push('/dashboard')
+    }
+  }, [initialized, user, router])
+
   // Show loading while initializing
   if (!initialized) {
     return <Loading fullScreen size="lg" />
   }
 
-  // Redirect to dashboard if already logged in
+  // Don't show login form if user exists (will redirect via useEffect)
   if (user) {
-    router.push('/dashboard')
-    return null
+    return <Loading fullScreen size="lg" />
   }
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -55,29 +61,39 @@ export default function LoginPage() {
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
+    e.stopPropagation()
+    
     setError("")
     setLoading(true)
 
-    const result = await login(email, password)
-    
-    if (result.success) {
-      await refreshUser()
-      router.push('/dashboard')
-    } else {
-      if (result.error?.code === 'EMAIL_NOT_VERIFIED') {
-        router.push(`/auth/verify-email?email=${encodeURIComponent(email)}`)
-        return
-      }
+    try {
+      const result = await login(email, password)
       
-      setError(result.error?.message || "Помилка входу")
+      if (result.success) {
+        await refreshUser()
+        router.push('/dashboard')
+      } else {
+        // Check for email verification
+        if (result.error?.code === 'EMAIL_NOT_VERIFIED') {
+          router.push(`/auth/verify-email?email=${encodeURIComponent(email)}`)
+          return
+        }
+        
+        // Handle error
+        const errorMessage = result.error?.message || result.error?.error || "Невірний email або пароль"
+        setError(errorMessage)
+      }
+    } catch (err: any) {
+      console.error('Login exception:', err)
+      setError(err?.message || 'Помилка підключення. Спробуйте ще раз.')
+    } finally {
       setLoading(false)
     }
+    
+    return false
   }
 
-  // Показати fullscreen loading під час логіну
-  if (loading) {
-    return <Loading fullScreen size="lg" />
-  }
+  // НЕ показувати fullscreen loading - залишити форму видимою з disabled кнопкою
 
   return (
     <>
@@ -145,9 +161,10 @@ export default function LoginPage() {
 
             <button
               type="submit"
-              className="btn-gradient-primary w-full px-4 py-3 text-foreground font-bold rounded-lg transition-colors font-sans"
+              disabled={loading}
+              className="btn-gradient-primary w-full px-4 py-3 text-foreground font-bold rounded-lg transition-colors font-sans disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              Увійти
+              {loading ? 'Завантаження...' : 'Увійти'}
             </button>
           </form>
 

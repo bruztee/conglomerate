@@ -1,9 +1,10 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState } from "react"
 import { useRouter } from "next/navigation"
 import { useAuth } from "@/context/AuthContext"
-import { api } from "@/lib/api"
+import { useWallet } from "@/hooks/useWallet"
+import { useReferralStats } from "@/hooks/useReferralStats"
 import EmailIcon from "@/components/icons/EmailIcon"
 import MoneyIcon from "@/components/icons/MoneyIcon"
 import TelegramIcon from "@/components/icons/TelegramIcon"
@@ -25,67 +26,34 @@ interface Referral {
 
 export default function ReferralPage() {
   const router = useRouter()
-  const { user, initialized } = useAuth()
+  const { user } = useAuth()
   
-  const [userBalance, setUserBalance] = useState(0)
-  const [userProfit, setUserProfit] = useState(0)
-  const [loading, setLoading] = useState(true)
-  const [totalReferrals, setTotalReferrals] = useState(0)
-  const [totalEarnings, setTotalEarnings] = useState(0)
-  const [referralLink, setReferralLink] = useState("")
-  const [referralCode, setReferralCode] = useState("")
+  // SWR hooks - instant loading з кешу
+  const { wallet, isLoading: walletLoading } = useWallet()
+  const { stats, isLoading: statsLoading } = useReferralStats()
+  
+  const userBalance = wallet?.balance || 0
+  const userProfit = wallet?.total_profit || 0
+  
+  const loading = walletLoading || statsLoading
   const [copiedMessage, setCopiedMessage] = useState(false)
 
-  const [referrals, setReferrals] = useState<Referral[]>([])
-
-  // Завантаження даних при mount
-  useEffect(() => {
-    async function fetchData() {
-      if (!user) {
-        router.push('/auth/login')
-        return
-      }
-
-      setLoading(true)
-      try {
-        // Отримати wallet balance
-        const walletResult = await api.getWallet()
-        if (walletResult.success && walletResult.data) {
-          setUserBalance(walletResult.data.balance || 0)
-        }
-
-        // Отримати referral stats
-        const refResult = await api.getReferralStats()
-        if (refResult.success && refResult.data) {
-          const data = refResult.data
-          
-          setReferralCode(data.referral_code || '')
-          setReferralLink(data.referral_link || `https://conglomerate-eight.vercel.app/?ref=${data.referral_code}`)
-          setTotalReferrals(data.stats?.total_referrals || 0)
-          setTotalEarnings(data.stats?.total_earned || 0)
-          
-          // Маппінг рефералів
-          const referralsData = data.referrals?.map((r: any) => ({
-            id: r.id,
-            name: r.full_name || 'Анонім',
-            email: r.email ? r.email.replace(/(.{3}).*(@.*)/, '$1***$2') : 'hidden@email.com',
-            deposits: 0, // TODO: додати підрахунок з deposits
-            earnings: 0, // TODO: додати підрахунок з bonuses
-            date: r.created_at,
-            status: 'active' as const, // TODO: визначити статус
-          })) || []
-          
-          setReferrals(referralsData)
-        }
-      } catch (err) {
-        // Silent fail
-      } finally {
-        setLoading(false)
-      }
-    }
-
-    fetchData()
-  }, [user, router])
+  // Дані з SWR
+  const totalReferrals = stats.total_referrals || 0
+  const totalEarnings = stats.total_earnings || 0
+  const referralLink = stats.referral_link || `https://conglomerate-g.com/?ref=${stats.referral_code}`
+  const referralCode = stats.referral_code || ''
+  
+  // Маппінг рефералів
+  const referrals: Referral[] = (stats.referrals || []).map((r: any) => ({
+    id: r.id,
+    name: r.full_name || 'Анонім',
+    email: r.email ? r.email.replace(/(.{3}).*(@.*)/, '$1***$2') : 'hidden@email.com',
+    deposits: 0,
+    earnings: 0,
+    date: r.created_at,
+    status: 'active' as const,
+  }))
 
   const copyToClipboard = () => {
     navigator.clipboard.writeText(referralLink)
@@ -93,12 +61,13 @@ export default function ReferralPage() {
     setTimeout(() => setCopiedMessage(false), 2000)
   }
 
-  if (loading) {
-    return <Loading fullScreen size="lg" />
-  }
-
   if (!user) {
     return null
+  }
+  
+  // Show loading if either wallet or referral stats are loading
+  if (loading || walletLoading) {
+    return <Loading fullScreen size="lg" />
   }
 
   const activeReferrals = referrals.filter(r => r.status === 'active').length

@@ -12,7 +12,7 @@ import PhoneVerificationPopup from "@/components/PhoneVerificationPopup"
 
 export default function SettingsPage() {
   const router = useRouter()
-  const { user, initialized } = useAuth()
+  const { user } = useAuth()
   
   // ВСІ useState МАЮТЬ БУТИ НА ПОЧАТКУ
   const [activeTab, setActiveTab] = useState<'email' | 'phone' | 'password'>('email')
@@ -26,15 +26,7 @@ export default function SettingsPage() {
   const [userProfile, setUserProfile] = useState<any>(null)
   const [showPhoneVerification, setShowPhoneVerification] = useState(false)
 
-  // Show loading while initializing
-  if (!initialized) {
-    return <Loading fullScreen size="lg" />
-  }
-
-  // Middleware handles redirect
-  if (!user) {
-    return null
-  }
+  // Middleware already checked auth
 
   const handleUpdateEmail = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -120,6 +112,12 @@ export default function SettingsPage() {
   }
 
   useEffect(() => {
+    // Redirect if not authenticated
+    if (!user) {
+      router.push('/auth/login')
+      return
+    }
+
     // Перевірити cooldown при завантаженні
     const cooldownEnd = localStorage.getItem('password_reset_cooldown')
     if (cooldownEnd) {
@@ -141,26 +139,12 @@ export default function SettingsPage() {
       }
     }
 
-    // Завантажити дані користувача
-    const fetchUserProfile = async () => {
-      setPageLoading(true)
-      try {
-        const response = await api.me()
-        if (response.success && response.data) {
-          const data = response.data as any
-          setUserProfile(data.user)
-        }
-      } catch (err) {
-        // Silent fail
-      } finally {
-        setPageLoading(false)
-      }
-    }
-    fetchUserProfile()
-  }, [])
+    // Використовуємо user з AuthContext замість зайвого api.me()
+    setUserProfile(user)
+    setPageLoading(false)
+  }, [user, router])
 
   if (!user) {
-    router.push('/auth/login')
     return null
   }
 

@@ -43,7 +43,7 @@ interface DepositHistory {
 
 export default function AdminDashboard() {
   const router = useRouter()
-  const { user, initialized } = useAuth()
+  const { user } = useAuth()
   
   // ВСІ useState МАЮТЬ БУТИ НА ПОЧАТКУ
   const [loading, setLoading] = useState(true)
@@ -60,18 +60,9 @@ export default function AdminDashboard() {
     totalWithdrawn: 0,
   })
 
-  // AdminLayout вже перевірив auth і admin role
-  if (!initialized) {
-    return <Loading />
-  }
-
-  if (!user) {
-    return null
-  }
-
-  // Redirect if not admin (backend also enforces this)
-  if (user.role !== 'admin') {
-    router.push('/dashboard')
+  // AdminLayout already checked auth and admin role
+  // Double check for safety
+  if (!user || user.role !== 'admin') {
     return null
   }
 

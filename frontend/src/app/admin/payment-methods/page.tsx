@@ -1,9 +1,10 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useState } from "react"
 import { useRouter } from "next/navigation"
 import { useAuth } from "@/context/AuthContext"
 import { api } from "@/lib/api"
+import { useAdminPaymentMethods } from "@/hooks/useAdminPaymentMethods"
 import Loading from "@/components/Loading"
 import CardIcon from "@/components/icons/CardIcon"
 
@@ -19,14 +20,14 @@ interface PaymentMethod {
 
 export default function AdminPaymentMethodsPage() {
   const router = useRouter()
-  const { user, initialized } = useAuth()
+  const { user } = useAuth()
 
-  if (!initialized) return <Loading />
-  if (!user) return null
-  if (user.role !== 'admin') { router.push('/dashboard'); return <Loading /> }
+  // AdminLayout already checked auth
+  if (!user || user.role !== 'admin') return null
 
-  const [loading, setLoading] = useState(true)
-  const [methods, setMethods] = useState<PaymentMethod[]>([])
+  // SWR hook - instant loading з кешу
+  const { paymentMethods: methods, isLoading: loading, refresh: refreshMethods } = useAdminPaymentMethods()
+
   const [showModal, setShowModal] = useState(false)
   const [editingMethod, setEditingMethod] = useState<PaymentMethod | null>(null)
   // Підтримувані монети і мережі
@@ -40,24 +41,6 @@ export default function AdminPaymentMethodsPage() {
     is_active: true,
     min_amount: 0,
   })
-
-  useEffect(() => {
-    fetchMethods()
-  }, [])
-
-  async function fetchMethods() {
-    setLoading(true)
-    try {
-      const result = await api.adminGetPaymentMethods()
-      if (result.success) {
-        setMethods(result.data.payment_methods || [])
-      }
-    } catch (error) {
-      // Silent fail
-    } finally {
-      setLoading(false)
-    }
-  }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
@@ -75,7 +58,7 @@ export default function AdminPaymentMethodsPage() {
         setShowModal(false)
         setEditingMethod(null)
         resetForm()
-        fetchMethods()
+        refreshMethods()
       } else {
         alert('Помилка: ' + (result.error?.message || 'Помилка збереження'))
       }
@@ -91,7 +74,7 @@ export default function AdminPaymentMethodsPage() {
       const result = await api.adminDeletePaymentMethod(id)
       if (result.success) {
         alert('Метод видалено')
-        fetchMethods()
+        refreshMethods()
       } else {
         alert('Помилка видалення')
       }
@@ -147,7 +130,7 @@ export default function AdminPaymentMethodsPage() {
 
       {/* Methods Grid */}
       <div className="grid gap-4">
-        {methods.map((method) => (
+        {methods.map((method: PaymentMethod) => (
           <div
             key={method.id}
             className={`bg-blur-dark border rounded-lg p-6 ${method.is_active ? 'border-gray-medium' : 'border-gray-medium/30 opacity-50'}`}

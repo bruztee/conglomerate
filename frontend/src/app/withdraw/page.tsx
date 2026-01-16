@@ -9,6 +9,9 @@ import Header from "@/components/Header"
 import Loading from "@/components/Loading"
 import WarningIcon from "@/components/icons/WarningIcon"
 import Pagination from "@/components/Pagination"
+import { useWallet } from "@/hooks/useWallet"
+import { useDeposits } from "@/hooks/useDeposits"
+import { useWithdrawals } from "@/hooks/useWithdrawals"
 
 interface WithdrawalRequest {
   id: string
@@ -40,125 +43,31 @@ interface Deposit {
 export default function WithdrawPage() {
   const router = useRouter()
   const searchParams = useSearchParams()
-  const { user, initialized } = useAuth()
+  const { user } = useAuth()
   
-  // ВСІ useState МАЮТЬ БУТИ НА ПОЧАТКУ
+  // SWR hooks - instant loading
+  const { wallet, isLoading: walletLoading, refresh: refreshWallet } = useWallet()
+  const { activeDeposits, isLoading: depositsLoading, refresh: refreshDeposits } = useDeposits()
+  const { withdrawals, isLoading: withdrawalsLoading, refresh: refreshWithdrawals } = useWithdrawals()
+  
+  // Form state
   const [walletAddress, setWalletAddress] = useState("")
   const [withdrawAmount, setWithdrawAmount] = useState("")
   const [withdrawalType, setWithdrawalType] = useState<'partial' | 'full' | null>(null)
   const [selectedDepositId, setSelectedDepositId] = useState<string>("")
-  const [userBalance, setUserBalance] = useState(0)
-  const [userProfit, setUserProfit] = useState(0)
-  const [loading, setLoading] = useState(true)
   const [submitting, setSubmitting] = useState(false)
   const [message, setMessage] = useState('')
   const [error, setError] = useState('')
-  const [activeDeposits, setActiveDeposits] = useState<Deposit[]>([])
-  const [withdrawalHistory, setWithdrawalHistory] = useState<WithdrawalRequest[]>([])
   const [withdrawalPage, setWithdrawalPage] = useState(1)
   const itemsPerPage = 10
+  
+  // Get data from SWR
+  const loading = walletLoading || depositsLoading || withdrawalsLoading
+  const userBalance = wallet?.balance || 0
+  const userProfit = wallet?.total_profit || 0
+  const withdrawalHistory = withdrawals
 
-  // Show loading while initializing
-  if (!initialized) {
-    return <Loading fullScreen size="lg" />
-  }
-
-  // Middleware handles redirect
-  if (!user) {
-    return null
-  }
-
-  // Завантаження даних при mount
-  useEffect(() => {
-    // Не запускати fetchData поки не initialized
-    if (!initialized || !user) return
-    
-    async function fetchData() {
-
-      setLoading(true)
-      try {
-        // Отримати wallet balance (total invested + profit)
-        const walletResult = await api.getWallet()
-        if (walletResult.success && walletResult.data) {
-          const data = walletResult.data as any
-          setUserBalance(data.balance || 0)
-          setUserProfit(data.total_profit || 0)
-        }
-
-        // Отримати investments для profit
-        const investmentsResult = await api.getInvestments()
-        const investmentsMap = new Map()
-        
-        if (investmentsResult.success && investmentsResult.data) {
-          const invData = investmentsResult.data as any
-          const investments = invData.investments || []
-          investments.forEach((inv: any) => {
-            if (inv.deposit_id && inv.status === 'active') {
-              investmentsMap.set(inv.deposit_id, inv)
-            }
-          })
-        }
-
-        // Отримати deposits (АКТИВНІ ПОЗИЦІЇ)
-        const depositsResult = await api.getDeposits()
-        if (depositsResult.success && depositsResult.data) {
-          const data = depositsResult.data as any
-          const deposits = data.deposits || []
-          
-          const activeDepositsData = deposits
-            .filter((d: any) => {
-              const investment = investmentsMap.get(d.id)
-              // Показувати ТІЛЬКИ якщо investment.status === 'active'
-              // deposit.status може бути 'confirmed' навіть коли позиція закрита!
-              return investment && investment.status === 'active'
-            })
-            .map((d: any) => {
-              const investment = investmentsMap.get(d.id)
-              const paymentDetails = d.payment_details || {}
-              const lockedAmount = investment ? parseFloat(investment.locked_amount || 0) : 0
-              const totalAmount = investment ? parseFloat(investment.principal || d.amount) : parseFloat(d.amount)
-              const profit = investment ? parseFloat(investment.accrued_interest || 0) : 0
-              const available = totalAmount + profit - lockedAmount
-              return {
-                id: d.id,
-                amount: totalAmount,
-                frozen: lockedAmount,
-                percentage: d.monthly_percentage || 5,
-                profit: profit,
-                available: available,
-                createdDate: d.created_at,
-                network: paymentDetails.network || 'TRC20',
-                coin: paymentDetails.coin || 'USDT',
-              }
-            })
-            .filter((d: any) => d.available > 0.01) // НЕ показувати депозити без доступних коштів
-          setActiveDeposits(activeDepositsData)
-        }
-
-        // Отримати withdrawal history
-        const withdrawalsResult = await api.getWithdrawals()
-        if (withdrawalsResult.success && withdrawalsResult.data) {
-          const historyData = withdrawalsResult.data.withdrawals?.map((w: any) => ({
-            id: w.id,
-            depositId: w.account_id,
-            amount: w.amount,
-            percentage: 0,
-            method: w.method || 'USDT',
-            status: w.status === 'approved' ? 'completed' : w.status === 'requested' ? 'pending' : 'rejected',
-            createdDate: w.created_at,
-            withdrawDate: w.processed_at,
-          })) || []
-          setWithdrawalHistory(historyData)
-        }
-      } catch (err) {
-        // Silent fail
-      } finally {
-        setLoading(false)
-      }
-    }
-
-    fetchData()
-  }, [user, router, initialized])
+  // SWR автоматично завантажує дані
 
   // Автоматичний вибір депозиту з URL параметра
   useEffect(() => {
@@ -226,89 +135,11 @@ export default function WithdrawPage() {
         setWithdrawalType(null)
         setSelectedDepositId('')
         
-        // ВАЖЛИВО: Перезавантажити ВСІ дані - баланс, deposits, withdrawals
-        setLoading(true)
-        
-        // Оновити баланс
-        const walletResult = await api.getWallet()
-        if (walletResult.success && walletResult.data) {
-          const data = walletResult.data as any
-          setUserBalance(data.balance || 0)
-        }
-        
-        // Оновити investments
-        const investmentsResult = await api.getInvestments()
-        const investmentsMap = new Map()
-        if (investmentsResult.success && investmentsResult.data) {
-          const invData = investmentsResult.data as any
-          const investments = invData.investments || []
-          investments.forEach((inv: any) => {
-            if (inv.deposit_id) {
-              investmentsMap.set(inv.deposit_id, inv)
-            }
-          })
-        }
-        
-        // Оновити deposits (АКТИВНІ ПОЗИЦІЇ)
-        const depositsResult = await api.getDeposits()
-        if (depositsResult.success && depositsResult.data) {
-          const data = depositsResult.data as any
-          const deposits = data.deposits || []
-          
-          const activeDepositsData = deposits
-            .filter((d: any) => {
-              const investment = investmentsMap.get(d.id)
-              // Показувати ТІЛЬКИ якщо investment.status === 'active'
-              return investment && investment.status === 'active'
-            })
-            .map((d: any) => {
-              const investment = investmentsMap.get(d.id)
-              const paymentDetails = d.payment_details || {}
-              const lockedAmount = investment ? parseFloat(investment.locked_amount || 0) : 0
-              const totalAmount = investment ? parseFloat(investment.principal || d.amount) : parseFloat(d.amount)
-              const profit = investment ? parseFloat(investment.accrued_interest || 0) : 0
-              const available = totalAmount + profit - lockedAmount
-              return {
-                id: d.id,
-                amount: totalAmount,
-                frozen: lockedAmount,
-                percentage: d.monthly_percentage || 5,
-                profit: profit,
-                available: available,
-                createdDate: d.created_at,
-                network: paymentDetails.network || 'TRC20',
-                coin: paymentDetails.coin || 'USDT',
-              }
-            })
-            .filter((d: any) => d.available > 0.01) // НЕ показувати депозити без доступних коштів
-          setActiveDeposits(activeDepositsData)
-        }
-        
-        // Перезавантажити withdrawal history
-        const withdrawalsResult = await api.getWithdrawals()
-        if (withdrawalsResult.success && withdrawalsResult.data) {
-          const historyData = withdrawalsResult.data.withdrawals?.map((w: any) => ({
-            id: w.id,
-            depositId: w.account_id,
-            amount: w.amount,
-            percentage: 0,
-            method: w.method || 'USDT',
-            status: w.status === 'approved' ? 'completed' : w.status === 'requested' ? 'pending' : 'rejected',
-            createdDate: w.created_at,
-            withdrawDate: w.processed_at,
-            balanceBefore: w.balance_before_withdrawal,
-            balanceAfter: w.balance_after_withdrawal,
-            depositBefore: w.deposit_amount_before,
-            depositAfter: w.deposit_amount_after,
-          })) || []
-          setWithdrawalHistory(historyData)
-        }
-        
-        setLoading(false)
+        // SWR автоматично оновить всі дані
+        await Promise.all([refreshWallet(), refreshDeposits(), refreshWithdrawals()])
       } else {
         const errorMsg = result.error?.message || 'Помилка при створенні заявки на вивід'
         setError(errorMsg)
-        setLoading(false)
       }
     } catch (err: any) {
       setError(err?.message || 'Помилка при створенні заявки на вивід')

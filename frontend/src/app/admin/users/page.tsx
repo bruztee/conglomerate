@@ -1,9 +1,10 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useState } from "react"
 import { useRouter } from "next/navigation"
 import { useAuth } from "@/context/AuthContext"
 import { api } from "@/lib/api"
+import { useAdminUsers } from "@/hooks/useAdminUsers"
 import Loading from "@/components/Loading"
 import { CheckIcon, ClockIcon, MinusIcon } from "@/components/icons/AdminIcons"
 import Pagination from "@/components/Pagination"
@@ -30,11 +31,12 @@ interface User {
 
 export default function AdminUsersPage() {
   const router = useRouter()
-  const { user, initialized } = useAuth()
+  const { user } = useAuth()
+  
+  // SWR hook - instant loading з кешу
+  const { users, isLoading: loading, refresh: refreshUsers } = useAdminUsers()
   
   // ВСІ useState МАЮТЬ БУТИ НА ПОЧАТКУ
-  const [loading, setLoading] = useState(true)
-  const [users, setUsers] = useState<User[]>([])
   const [editingUser, setEditingUser] = useState<User | null>(null)
   const [showModal, setShowModal] = useState(false)
   const [currentPage, setCurrentPage] = useState(1)
@@ -48,26 +50,7 @@ export default function AdminUsersPage() {
   const totalPages = Math.ceil(users.length / usersPerPage)
   const paginatedUsers = users.slice((currentPage - 1) * usersPerPage, currentPage * usersPerPage)
 
-  if (!initialized) return <Loading />
-  if (!user) return null
-
-  useEffect(() => {
-    fetchUsers()
-  }, [])
-
-  async function fetchUsers() {
-    setLoading(true)
-    try {
-      const result = await api.adminGetUsers()
-      if (result.success) {
-        setUsers(result.data.users || [])
-      }
-    } catch (error) {
-      // Silent fail
-    } finally {
-      setLoading(false)
-    }
-  }
+  // AdminLayout already checked auth
 
   async function handleUpdate(e: React.FormEvent) {
     e.preventDefault()
@@ -79,7 +62,7 @@ export default function AdminUsersPage() {
         alert('Користувача оновлено')
         setShowModal(false)
         setEditingUser(null)
-        fetchUsers()
+        refreshUsers()
       } else {
         alert('Помилка оновлення')
       }
@@ -105,7 +88,7 @@ export default function AdminUsersPage() {
         alert('Користувача видалено')
         setShowModal(false)
         setEditingUser(null)
-        fetchUsers()
+        refreshUsers()
       } else {
         alert('Помилка видалення')
       }
@@ -142,7 +125,7 @@ export default function AdminUsersPage() {
 
       {/* User Cards Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        {paginatedUsers.map((user) => (
+        {paginatedUsers.map((user: User) => (
           <div key={user.id} className="bg-blur-dark border border-gray-medium rounded-lg p-5 hover:border-silver/30 transition-all">
             {/* Header */}
             <div className="flex items-start justify-between mb-4">

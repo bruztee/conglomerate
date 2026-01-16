@@ -1,9 +1,10 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useState } from "react"
 import { useRouter } from "next/navigation"
 import { useAuth } from "@/context/AuthContext"
 import { api } from "@/lib/api"
+import { useAdminWithdrawals } from "@/hooks/useAdminWithdrawals"
 import Loading from "@/components/Loading"
 import { CheckIcon, XIcon } from "@/components/icons/AdminIcons"
 import WarningIcon from "@/components/icons/WarningIcon"
@@ -40,12 +41,13 @@ interface Withdrawal {
 
 export default function AdminWithdrawalsPage() {
   const router = useRouter()
-  const { user, initialized } = useAuth()
+  const { user } = useAuth()
+  
+  // SWR hook - instant loading з кешу
+  const { withdrawals: allWithdrawals, isLoading: loading, refresh: refreshWithdrawals } = useAdminWithdrawals()
   
   // ВСІ useState МАЮТЬ БУТИ НА ПОЧАТКУ
-  const [loading, setLoading] = useState(true)
   const [tab, setTab] = useState<'pending' | 'history'>('pending')
-  const [withdrawals, setWithdrawals] = useState<Withdrawal[]>([])
   const [selectedWithdrawal, setSelectedWithdrawal] = useState<Withdrawal | null>(null)
   const [showModal, setShowModal] = useState(false)
   const [action, setAction] = useState<'approve' | 'reject'>('approve')
@@ -53,49 +55,12 @@ export default function AdminWithdrawalsPage() {
     admin_note: '',
   })
 
-  if (!initialized) return <Loading />
-  if (!user) return null
-
-  useEffect(() => {
-    fetchWithdrawals()
-  }, [tab])
-
-  async function fetchWithdrawals() {
-    setLoading(true)
-    try {
-      const status = tab === 'pending' ? 'requested' : 'all'
-      const result = await api.adminGetWithdrawals(status)
-      if (result.success) {
-        let withdrawalsData = result.data.withdrawals || []
-        if (tab === 'history') {
-          withdrawalsData = withdrawalsData.filter((w: Withdrawal) => w.status !== 'requested')
-        }
-        
-        // Для кожного withdrawal отримати баланс користувача
-        const withdrawalsWithBalance = await Promise.all(
-          withdrawalsData.map(async (w: Withdrawal) => {
-            try {
-              // Отримати user_id через investments
-              const userId = w.investments?.user_id
-              if (userId) {
-                // Можна використати окремий API для admin, але поки покажемо просто user info
-                return { ...w, userBalance: null } // Баланс отримаємо пізніше якщо треба
-              }
-            } catch (e) {
-              // Ignore
-            }
-            return w
-          })
-        )
-        
-        setWithdrawals(withdrawalsWithBalance)
-      }
-    } catch (error) {
-      // Silent fail
-    } finally {
-      setLoading(false)
-    }
-  }
+  // AdminLayout already checked auth
+  
+  // Filter withdrawals based on tab
+  const withdrawals = tab === 'pending' 
+    ? allWithdrawals.filter((w: Withdrawal) => w.status === 'requested')
+    : allWithdrawals.filter((w: Withdrawal) => w.status !== 'requested')
 
   async function handleAction(e: React.FormEvent) {
     e.preventDefault()
@@ -120,7 +85,7 @@ export default function AdminWithdrawalsPage() {
         setShowModal(false)
         setSelectedWithdrawal(null)
         resetForm()
-        fetchWithdrawals()
+        refreshWithdrawals()
       } else {
         alert('Помилка: ' + (result?.error?.message || 'Unknown error'))
       }
@@ -146,7 +111,7 @@ export default function AdminWithdrawalsPage() {
     return <Loading fullScreen size="lg" />
   }
 
-  const pendingCount = withdrawals.filter(w => w.status === 'requested').length
+  const pendingCount = withdrawals.filter((w: Withdrawal) => w.status === 'requested').length
 
   return (
     <div className="p-4 md:p-8 pt-16 md:pt-8">

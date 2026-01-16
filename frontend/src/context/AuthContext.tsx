@@ -2,6 +2,7 @@
 
 import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
 import { api } from '@/lib/api';
+import { mutate } from 'swr';
 
 interface User {
   id: string;
@@ -52,7 +53,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         // api.request() вже спробував зробити refresh автоматично
         // Якщо ми тут - значить refresh теж не вдався
         if (response.error?.code === 'UNAUTHORIZED') {
-          console.log('❌ Session expired, clearing user');
+          console.log('Session expired, clearing user');
           setUser(null);
         }
       }
@@ -125,6 +126,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setLoading(true);
     await api.logout();
     setUser(null);
+    
+    // Очистити весь SWR кеш
+    mutate(() => true, undefined, { revalidate: false });
+    
     setLoading(false);
     // httpOnly cookie очищується сервером через Set-Cookie
     // Redirect на login після logout

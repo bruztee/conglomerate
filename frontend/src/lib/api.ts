@@ -61,11 +61,11 @@ class ApiClient {
         !endpoint.includes('/auth/register') &&
         !isRetry
       ) {
-        console.log('🔄 JWT expired (401), attempting token refresh...');
+        console.log('JWT expired (401), attempting token refresh...');
         
         // Якщо вже йде refresh - чекаємо на нього
         if (this.isRefreshing && this.refreshPromise) {
-          console.log('⏳ Waiting for ongoing refresh...');
+          console.log('Waiting for ongoing refresh...');
           await this.refreshPromise;
         } else {
           // Стартуємо новий refresh
@@ -78,25 +78,25 @@ class ApiClient {
           this.refreshPromise = null;
           
           if (!refreshResult.success) {
-            console.log('❌ Token refresh failed - session expired');
+            console.log('Token refresh failed - session expired');
             return {
               success: false,
               error: { code: 'SESSION_EXPIRED', message: 'Session expired' },
             };
           }
           
-          console.log('✅ Tokens refreshed successfully');
+          console.log('Tokens refreshed successfully');
         }
         
         // Retry original request with new tokens
-        console.log('🔁 Retrying original request...');
+        console.log('Retrying original request...');
         return this.request<T>(endpoint, options, true);
       }
 
       if (!response.ok) {
         return {
           success: false,
-          error: data.error || { code: 'UNKNOWN_ERROR', message: 'Unknown error' },
+          error: data.error || data || { code: 'UNKNOWN_ERROR', message: 'Unknown error' },
         };
       }
 
@@ -140,9 +140,19 @@ class ApiClient {
 
   async logout() {
     const response = await this.request('/auth/logout', { method: 'POST' });
-    // httpOnly cookies очищуються СЕРВЕРОМ через Set-Cookie
     // Clear cache
     this.meCache = null;
+    
+    // Manual cookie cleanup (httpOnly cookies should be cleared by server, but ensure all are gone)
+    if (typeof document !== 'undefined') {
+      // Clear all auth-related cookies
+      const cookies = ['access_token', 'refresh_token', 'auth_flow'];
+      cookies.forEach(name => {
+        document.cookie = `${name}=; path=/; expires=Thu, 01 Jan 1970 00:00:01 GMT; SameSite=Lax`;
+        document.cookie = `${name}=; path=/; domain=${window.location.hostname}; expires=Thu, 01 Jan 1970 00:00:01 GMT; SameSite=Lax`;
+      });
+    }
+    
     return response;
   }
 

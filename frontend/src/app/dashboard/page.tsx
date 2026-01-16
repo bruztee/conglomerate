@@ -10,13 +10,14 @@ import CopyIcon from "@/components/icons/CopyIcon"
 import Pagination from "@/components/Pagination"
 import DepositFlow from "@/components/DepositFlow"
 
-import { useState, useEffect } from "react"
+import { useState } from "react"
 import Link from "next/link"
 import Header from "@/components/Header"
 import { useAuth } from "@/context/AuthContext"
-import { api } from "@/lib/api"
 import { useRouter } from "next/navigation"
 import Loading from "@/components/Loading"
+import { useWallet } from "@/hooks/useWallet"
+import { useDeposits } from "@/hooks/useDeposits"
 
 interface Deposit {
   id: string
@@ -34,33 +35,24 @@ interface Deposit {
 
 export default function DashboardPage() {
   const router = useRouter()
-  const { user, loading: authLoading } = useAuth()
+  const { user } = useAuth()
   
-  // ВСІ useState МАЮТЬ БУТИ НА ПОЧАТКУ
-  const [userBalance, setUserBalance] = useState(0)
-  const [frozenAmount, setFrozenAmount] = useState(0)
-  const [userProfit, setUserProfit] = useState(0)
-  const [totalInvestments, setTotalInvestments] = useState(0)
-  const [loading, setLoading] = useState(true)
-  const [activeDeposits, setActiveDeposits] = useState<Deposit[]>([])
-  const [depositHistory, setDepositHistory] = useState<Deposit[]>([])
-  const [profitPercentage, setProfitPercentage] = useState(5) // Актуальний % користувача з БД
+  // SWR hooks - instant loading з кешу
+  const { wallet, isLoading: walletLoading, refresh: refreshWallet } = useWallet()
+  const { activeDeposits, depositHistory, isLoading: depositsLoading, refresh: refreshDeposits } = useDeposits()
   
   // Pagination states
   const [historyPage, setHistoryPage] = useState(1)
   const [activeDepositsPage, setActiveDepositsPage] = useState(1)
   const itemsPerPage = 10
-
-  // Show loading while checking auth
-  if (authLoading) {
-    return <Loading fullScreen size="lg" />
-  }
-
-  // Redirect if not authenticated
-  if (!user) {
-    router.push('/auth/login')
-    return null
-  }
+  
+  // Get data from SWR or defaults
+  const loading = walletLoading || depositsLoading
+  const userBalance = wallet?.balance || 0
+  const frozenAmount = wallet?.locked_amount || 0
+  const userProfit = wallet?.total_profit || 0
+  const totalInvestments = wallet?.total_invested || 0
+  const profitPercentage = (user as any)?.monthly_percentage || 5
 
   const handleWithdraw = (depositId: string) => {
     router.push(`/withdraw?deposit_id=${depositId}`)
@@ -100,215 +92,9 @@ export default function DashboardPage() {
     }
   }
 
-  useEffect(() => {
-    // Не запускати fetchData поки authLoading
-    if (authLoading) return
-    
-    if (!user) {
-      router.push('/auth/login')
-      return
-    }
-
-    const fetchData = async () => {
-      setLoading(true)
-      
-      // Fetch wallet data - тепер включає balance та profit з investments
-      const walletResult = await api.getWallet()
-      
-      if (walletResult.success && walletResult.data) {
-        const data = walletResult.data as any
-        setUserBalance(data.balance || 0)
-        setFrozenAmount(data.locked_amount || 0)
-        setUserProfit(data.total_profit || 0)
-        setTotalInvestments(data.total_invested || 0)
-      }
-
-      // Отримати актуальний monthly_percentage користувача
-      const meResult = await api.me()
-      if (meResult.success && meResult.data) {
-        const userData = (meResult.data as any).user
-        setProfitPercentage(userData?.monthly_percentage || 5)
-      }
-
-      // Fetch investments для отримання accrued_interest
-      const investmentsResult = await api.getInvestments()
-      const investmentsMap = new Map()
-      
-      if (investmentsResult.success && investmentsResult.data) {
-        const invData = investmentsResult.data as any
-        const investments = invData.investments || []
-        // Створюємо мапу deposit_id -> investment для швидкого пошуку
-        investments.forEach((inv: any) => {
-          if (inv.deposit_id) {
-            investmentsMap.set(inv.deposit_id, inv)
-          }
-        })
-      }
-
-      // Fetch deposits
-      const depositsResult = await api.getDeposits()
-      if (depositsResult.success && depositsResult.data) {
-        const data = depositsResult.data as any
-        const deposits = data.deposits || []
-        
-        // АКТИВНІ ПОЗИЦІЇ: фільтруємо по investment.status === 'active'
-        // deposit.status може бути 'confirmed' навіть коли позиція закрита!
-        const active = deposits
-          .filter((d: any) => {
-            const investment = investmentsMap.get(d.id)
-            // Показувати якщо є investment І він active або frozen
-            return investment && (investment.status === 'active' || investment.status === 'frozen')
-          })
-        
-        setActiveDeposits(active.map((d: any) => {
-          const investment = investmentsMap.get(d.id)
-          const lockedAmount = investment ? parseFloat(investment.locked_amount || 0) : 0
-          // Показуємо investment.principal (поточна сума після виводів), а не deposit.amount (початкова)
-          const currentAmount = investment ? parseFloat(investment.principal || 0) : parseFloat(d.amount)
-          const available = investment ? parseFloat(investment.available || 0) : 0
-          return {
-            id: d.id,
-            amount: currentAmount,
-            frozen: lockedAmount,
-            profit: investment ? parseFloat(investment.accrued_interest || 0) : 0,
-            percentage: investment ? parseFloat(investment.rate_monthly) : parseFloat(d.monthly_percentage || 5),
-            date: d.created_at,
-            status: investment?.status || d.status,
-            available: available,
-          }
-        }))
-        
-        // Історія - ВСІ deposits для повного перегляду
-        setDepositHistory(deposits.map((d: any) => {
-          const investment = investmentsMap.get(d.id)
-          const originalAmount = parseFloat(d.amount) // Початкова сума депозиту
-          const currentPrincipal = investment ? parseFloat(investment.principal || 0) : originalAmount
-          const currentAccrued = investment ? parseFloat(investment.accrued_interest || 0) : 0
-          
-          // ВИВЕДЕНО: брати з investment.total_withdrawn (реальна сума з withdrawals)
-          const withdrawnAmount = investment?.total_withdrawn ? parseFloat(investment.total_withdrawn) : 0
-          
-          // СТАТУС: якщо є investment - його статус, інакше deposit.status (pending/rejected)
-          let displayStatus = investment?.status || d.status
-          
-          // ДАТА ВИВОДУ: якщо позиція закрита - показувати investment.closed_at
-          const withdrawDate = investment?.closed_at || null
-          
-          // PROFIT: з API
-          // Для закритих: виведено - початкова сума
-          // Для активних: current accrued_interest з API
-          let generatedProfit = 0
-          if (displayStatus === 'closed') {
-            generatedProfit = withdrawnAmount - originalAmount
-          } else {
-            generatedProfit = currentAccrued
-          }
-          
-          // ЗАМОРОЖЕНО: locked_amount з investment
-          const lockedAmount = investment ? parseFloat(investment.locked_amount || 0) : 0
-          
-          return {
-            id: d.id,
-            amount: originalAmount, // Початкова сума депозиту
-            currentAmount: investment?.total_value || (currentPrincipal + currentAccrued), // Поточна сума з API
-            withdrawn: withdrawnAmount, // Реальна виведена сума з withdrawals
-            profit: generatedProfit, // Згенерований профіт
-            locked: lockedAmount, // Заморожено
-            percentage: investment ? parseFloat(investment.rate_monthly) : parseFloat(d.monthly_percentage || 5),
-            date: d.created_at, // Дата створення депозиту
-            withdrawDate: withdrawDate, // Дата закриття позиції (якщо є)
-            status: displayStatus, // investment.status (active/closed)
-          }
-        }))
-      }
-
-      setLoading(false)
-    }
-
-    fetchData()
-  }, [user, router, authLoading])
-
+  // Refresh data after deposit - SWR автоматично оновить
   const handleDepositSuccess = async () => {
-    setLoading(true)
-    
-    // Refresh data after successful deposit
-    const walletResult = await api.getWallet()
-    if (walletResult.success && walletResult.data) {
-      const data = walletResult.data as any
-      setUserBalance(data.balance || 0)
-      setFrozenAmount(data.locked_amount || 0)
-      setUserProfit(data.total_profit || 0)
-      setTotalInvestments(data.total_invested || 0)
-    }
-    
-    // Refresh deposits and investments
-    const depositsResult = await api.getDeposits()
-    const investmentsResult = await api.getInvestments()
-    
-    if (depositsResult.success && investmentsResult.success) {
-      const deposits = (depositsResult.data as any)?.deposits || []
-      const investments = (investmentsResult.data as any)?.investments || []
-      
-      const investmentsMap = new Map()
-      investments.forEach((inv: any) => {
-        if (inv.deposit_id) {
-          investmentsMap.set(inv.deposit_id, inv)
-        }
-      })
-      
-      const active = deposits.filter((d: any) => {
-        const investment = investmentsMap.get(d.id)
-        return investment && (investment.status === 'active' || investment.status === 'frozen')
-      })
-      
-      setActiveDeposits(active.map((d: any) => {
-        const investment = investmentsMap.get(d.id)
-        return {
-          id: d.id,
-          amount: parseFloat(d.amount),
-          frozen: investment ? parseFloat(investment.locked_amount || 0) : 0,
-          profit: investment ? parseFloat(investment.accrued_interest || 0) : 0,
-          percentage: investment ? parseFloat(investment.rate_monthly) : parseFloat(d.monthly_percentage || 5),
-          date: d.created_at,
-          status: investment?.status || d.status,
-        }
-      }))
-      
-      // Update deposit history
-      setDepositHistory(deposits.map((d: any) => {
-        const investment = investmentsMap.get(d.id)
-        const originalAmount = parseFloat(d.amount)
-        const currentPrincipal = investment ? parseFloat(investment.principal || 0) : originalAmount
-        const currentAccrued = investment ? parseFloat(investment.accrued_interest || 0) : 0
-        const withdrawnAmount = investment?.total_withdrawn ? parseFloat(investment.total_withdrawn) : 0
-        const displayStatus = investment?.status || d.status
-        const withdrawDate = investment?.closed_at || null
-        
-        let generatedProfit = 0
-        if (displayStatus === 'closed') {
-          generatedProfit = withdrawnAmount - originalAmount
-        } else {
-          generatedProfit = currentAccrued
-        }
-        
-        const lockedAmount = investment ? parseFloat(investment.locked_amount || 0) : 0
-        
-        return {
-          id: d.id,
-          amount: originalAmount,
-          currentAmount: currentPrincipal + currentAccrued,
-          withdrawn: withdrawnAmount,
-          profit: generatedProfit,
-          locked: lockedAmount,
-          percentage: investment ? parseFloat(investment.rate_monthly) : parseFloat(d.monthly_percentage || 5),
-          date: d.created_at,
-          withdrawDate: withdrawDate,
-          status: displayStatus,
-        }
-      }))
-    }
-    
-    setLoading(false)
+    await Promise.all([refreshWallet(), refreshDeposits()])
   }
 
   if (loading) {

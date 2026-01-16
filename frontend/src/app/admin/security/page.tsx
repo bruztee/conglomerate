@@ -24,11 +24,10 @@ interface AuditLog {
 
 export default function AdminSecurityPage() {
   const router = useRouter()
-  const { user, initialized } = useAuth()
+  const { user } = useAuth()
 
-  if (!initialized) return <Loading />
-  if (!user) return null
-  if (user.role !== 'admin') { router.push('/dashboard'); return <Loading /> }
+  // AdminLayout already checked auth
+  if (!user || user.role !== 'admin') return null
 
   const [loading, setLoading] = useState(true)
   const [logs, setLogs] = useState<AuditLog[]>([])

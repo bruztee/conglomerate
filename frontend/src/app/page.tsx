@@ -14,16 +14,17 @@ import Loading from "@/components/Loading"
 
 export default function Home() {
   const router = useRouter()
-  const { user, initialized } = useAuth()
+  const { user } = useAuth()
 
-  // Show loading while initializing auth
-  if (!initialized) {
-    return <Loading fullScreen size="lg" />
-  }
+  // Redirect if already logged in (in useEffect to avoid render issues)
+  useEffect(() => {
+    if (user) {
+      router.push('/dashboard')
+    }
+  }, [user, router])
 
-  // Redirect to dashboard if already logged in
+  // Don't show content if redirecting
   if (user) {
-    router.push('/dashboard')
     return <Loading fullScreen size="lg" />
   }
 

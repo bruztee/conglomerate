@@ -1,9 +1,10 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useState } from "react"
 import { useRouter } from "next/navigation"
 import { useAuth } from "@/context/AuthContext"
 import { api } from "@/lib/api"
+import { useAdminInvestments } from "@/hooks/useAdminInvestments"
 import Loading from "@/components/Loading"
 import Pagination from "@/components/Pagination"
 import { EditIcon, CheckIcon } from "@/components/icons/AdminIcons"
@@ -34,10 +35,11 @@ interface Investment {
 
 export default function AdminInvestmentsPage() {
   const router = useRouter()
-  const { user, initialized } = useAuth()
+  const { user } = useAuth()
   
-  const [loading, setLoading] = useState(true)
-  const [investments, setInvestments] = useState<Investment[]>([])
+  // SWR hook - instant loading з кешу
+  const { investments: allInvestments, isLoading: loading, refresh: refreshInvestments } = useAdminInvestments()
+  
   const [filter, setFilter] = useState<'all' | 'active' | 'frozen' | 'closed'>('active')
   const [currentPage, setCurrentPage] = useState(1)
   const [selectedInvestment, setSelectedInvestment] = useState<Investment | null>(null)
@@ -49,73 +51,12 @@ export default function AdminInvestmentsPage() {
   })
   const investmentsPerPage = 20
 
-  if (!initialized) return <Loading />
-  if (!user) return null
-
-  useEffect(() => {
-    fetchInvestments()
-  }, [filter])
-
-  async function fetchInvestments() {
-    setLoading(true)
-    try {
-      // Fetch investments and deposits
-      const [investmentsResult, depositsResult] = await Promise.all([
-        api.getInvestments(),
-        api.adminGetDeposits('all')
-      ])
-      
-      if (investmentsResult.success && investmentsResult.data) {
-        const responseData = investmentsResult.data as any
-        let data = responseData.investments || []
-        
-        // Create deposits map
-        const depositsMap = new Map()
-        if (depositsResult.success && depositsResult.data) {
-          const deposits = depositsResult.data.deposits || []
-          deposits.forEach((d: any) => {
-            depositsMap.set(d.id, parseFloat(d.amount))
-          })
-        }
-        
-        // Enrich investments with initial amount and real profit
-        data = data.map((inv: any) => {
-          const initialAmount = depositsMap.get(inv.deposit_id) || 0
-          let realProfit = 0
-          
-          // Calculate real profit
-          if (inv.status === 'closed') {
-            // For closed: withdrawn - initial
-            realProfit = parseFloat(inv.total_withdrawn || 0) - initialAmount
-          } else {
-            // For active/frozen: accrued interest
-            realProfit = parseFloat(inv.accrued_interest || 0)
-          }
-          
-          return {
-            ...inv,
-            initial_amount: initialAmount,
-            real_profit: realProfit
-          }
-        })
-        
-        // Filter based on status
-        if (filter === 'active') {
-          data = data.filter((inv: Investment) => inv.status === 'active')
-        } else if (filter === 'frozen') {
-          data = data.filter((inv: Investment) => inv.status === 'frozen')
-        } else if (filter === 'closed') {
-          data = data.filter((inv: Investment) => inv.status === 'closed')
-        }
-        
-        setInvestments(data)
-      }
-    } catch (error) {
-      console.error('Failed to fetch investments:', error)
-    } finally {
-      setLoading(false)
-    }
-  }
+  // AdminLayout already checked auth
+  
+  // Filter investments
+  const investments = filter === 'all' 
+    ? allInvestments 
+    : allInvestments.filter((inv: Investment) => inv.status === filter)
 
   if (loading) {
     return <Loading fullScreen size="lg" />
@@ -349,7 +290,7 @@ export default function AdminInvestmentsPage() {
                 if (result.success) {
                   alert('Інвестиція оновлена')
                   setShowModal(false)
-                  fetchInvestments()
+                  refreshInvestments()
                 } else {
                   alert('Помилка: ' + (result.error?.message || 'Unknown error'))
                 }
