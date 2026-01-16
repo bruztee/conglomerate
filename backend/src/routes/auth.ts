@@ -286,9 +286,9 @@ export async function handleLogout(request: Request, env: Env): Promise<Response
     
     const response = jsonResponse({ message: 'Logged out successfully' });
     
-    // Clear BOTH httpOnly cookies
-    response.headers.append('Set-Cookie', 'access_token=; Path=/; HttpOnly; Secure; SameSite=Lax; Max-Age=0');
-    response.headers.append('Set-Cookie', 'refresh_token=; Path=/; HttpOnly; Secure; SameSite=Lax; Max-Age=0');
+    response.headers.append('Set-Cookie', 'access_token=; Domain=.conglomerate-g.com; Path=/; HttpOnly; Secure; SameSite=Lax; Max-Age=0');
+    response.headers.append('Set-Cookie', 'refresh_token=; Domain=.conglomerate-g.com; Path=/; HttpOnly; Secure; SameSite=Lax; Max-Age=0');
+    response.headers.append('Set-Cookie', 'auth_flow=; Domain=.conglomerate-g.com; Path=/; Secure; SameSite=Lax; Max-Age=0');
     
     return response;
   } catch (error) {
@@ -390,6 +390,57 @@ export async function handleResendVerification(request: Request, env: Env): Prom
   }
 }
 
+export async function handleSetSession(request: Request, env: Env): Promise<Response> {
+  try {
+    const body = await request.json() as { access_token: string; refresh_token: string; type?: string };
+    
+    if (!body.access_token || !body.refresh_token) {
+      return errorResponse('VALIDATION_ERROR', 'Tokens are required', 400);
+    }
+    
+    const supabase = createServiceSupabaseClient(env);
+    
+    const { data: sessionData, error: sessionError } = await supabase.auth.setSession({
+      access_token: body.access_token,
+      refresh_token: body.refresh_token,
+    });
+    
+    if (sessionError || !sessionData.session || !sessionData.user) {
+      return errorResponse('SESSION_ERROR', 'Invalid tokens', 400);
+    }
+    
+    const origin = request.headers.get('Origin');
+    const response = jsonResponse({ 
+      message: 'Session established',
+      user: {
+        id: sessionData.user.id,
+        email: sessionData.user.email,
+        full_name: sessionData.user.user_metadata?.full_name,
+      }
+    });
+    
+    if (origin) {
+      response.headers.set('Access-Control-Allow-Origin', origin);
+      response.headers.set('Access-Control-Allow-Credentials', 'true');
+    }
+    
+    if (body.access_token) {
+      response.headers.append('Set-Cookie', `access_token=${body.access_token}; Domain=.conglomerate-g.com; Path=/; HttpOnly; Secure; SameSite=Lax; Max-Age=604800`);
+    }
+    if (body.refresh_token) {
+      response.headers.append('Set-Cookie', `refresh_token=${body.refresh_token}; Domain=.conglomerate-g.com; Path=/; HttpOnly; Secure; SameSite=Lax; Max-Age=2592000`);
+    }
+    
+    if (body.type === 'signup' || body.type === 'recovery') {
+      response.headers.append('Set-Cookie', `auth_flow=${body.type}; Domain=.conglomerate-g.com; Path=/; Secure; SameSite=Lax; Max-Age=300`);
+    }
+    
+    return response;
+  } catch (error) {
+    return errorResponse('SERVER_ERROR', 'Internal server error', 500);
+  }
+}
+
 export async function handleForgotPassword(request: Request, env: Env): Promise<Response> {
   try {
     const body = await request.json() as { email: string };
@@ -417,29 +468,43 @@ export async function handleForgotPassword(request: Request, env: Env): Promise<
 
 export async function handleResetPassword(request: Request, env: Env): Promise<Response> {
   try {
-    const body = await request.json() as { password: string; access_token: string };
+    const user = await getUserFromRequest(request, env);
+    if (!user) {
+      return errorResponse('UNAUTHORIZED', 'Not authenticated', 401);
+    }
+    
+    const body = await request.json() as { password: string };
     
     if (!body.password) {
       return errorResponse('VALIDATION_ERROR', 'Password is required', 400);
     }
     
-    if (!body.access_token) {
-      return errorResponse('VALIDATION_ERROR', 'Access token is required', 400);
-    }
-    
     const supabase = createServiceSupabaseClient(env);
     
-    // Встановити сесію з access_token з reset link
+    const cookieHeader = request.headers.get('Cookie');
+    let accessToken: string | undefined;
+    
+    if (cookieHeader) {
+      const cookies = cookieHeader.split(';').map(c => c.trim());
+      const tokenCookie = cookies.find(c => c.startsWith('access_token='));
+      if (tokenCookie) {
+        accessToken = tokenCookie.split('=')[1];
+      }
+    }
+    
+    if (!accessToken) {
+      return errorResponse('UNAUTHORIZED', 'No session token', 401);
+    }
+    
     const { error: sessionError } = await supabase.auth.setSession({
-      access_token: body.access_token,
-      refresh_token: body.access_token, // Для reset flow використовуємо той самий токен
+      access_token: accessToken,
+      refresh_token: accessToken,
     });
     
     if (sessionError) {
-      return errorResponse('SESSION_ERROR', 'Invalid or expired reset link', 400);
+      return errorResponse('SESSION_ERROR', 'Invalid session', 400);
     }
     
-    // Оновити пароль користувача
     const { error } = await supabase.auth.updateUser({
       password: body.password,
     });
@@ -495,10 +560,10 @@ export async function handleRefreshToken(request: Request, env: Env): Promise<Re
     
     // Оновити httpOnly cookies з новими токенами
     if (data.session?.access_token) {
-      response.headers.append('Set-Cookie', `access_token=${data.session.access_token}; Path=/; HttpOnly; Secure; SameSite=Lax; Max-Age=604800`);
+      response.headers.append('Set-Cookie', `access_token=${data.session.access_token}; Path=/; HttpOnly; Secure; SameSite=None; Max-Age=604800`);
     }
     if (data.session?.refresh_token) {
-      response.headers.append('Set-Cookie', `refresh_token=${data.session.refresh_token}; Path=/; HttpOnly; Secure; SameSite=Lax; Max-Age=2592000`);
+      response.headers.append('Set-Cookie', `refresh_token=${data.session.refresh_token}; Path=/; HttpOnly; Secure; SameSite=None; Max-Age=2592000`);
     }
     
     return response;

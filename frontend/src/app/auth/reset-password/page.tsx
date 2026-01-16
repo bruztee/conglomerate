@@ -1,35 +1,18 @@
 "use client"
 
-import { useState, useEffect, Suspense } from "react"
-import { useRouter, useSearchParams, notFound } from "next/navigation"
+import { useState, Suspense } from "react"
+import { useRouter } from "next/navigation"
 import Header from "@/components/Header"
 import { api } from "@/lib/api"
 
 function ResetPasswordContent() {
   const router = useRouter()
-  const searchParams = useSearchParams()
   const [formData, setFormData] = useState({
     password: "",
     confirmPassword: "",
   })
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState("")
-  const [accessToken, setAccessToken] = useState("")
-
-  useEffect(() => {
-    // Витягнути access_token з hash (Supabase відправляє його в #access_token=...)
-    const hash = window.location.hash
-    const params = new URLSearchParams(hash.substring(1))
-    const token = params.get('access_token')
-    const type = params.get('type')
-    
-    // Якщо немає токену або type !== recovery - показати 404
-    if (!token || type !== 'recovery') {
-      notFound()
-    } else {
-      setAccessToken(token)
-    }
-  }, [])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -54,20 +37,12 @@ function ResetPasswordContent() {
       return
     }
 
-    if (!accessToken) {
-      notFound()
-      return
-    }
-
-    const result = await api.resetPassword(formData.password, accessToken)
+    const result = await api.resetPassword(formData.password)
 
     if (result.success) {
-      router.push("/auth/login?reset=success")
+      document.cookie = 'auth_flow=; Domain=.conglomerate-g.com; Path=/; Max-Age=0'
+      window.location.href = '/dashboard'
     } else {
-      // Якщо токен невалідний або вже використаний - показати 404
-      if (result.error?.code === 'SESSION_ERROR' || result.error?.code === 'UPDATE_FAILED') {
-        notFound()
-      }
       setError(result.error?.message || "Помилка скидання пароля")
       setLoading(false)
     }
@@ -90,6 +65,12 @@ function ResetPasswordContent() {
               Введіть новий пароль для вашого акаунту
             </p>
           </div>
+
+          {error && (
+            <div className="bg-red-900/20 border border-red-500 text-red-400 px-4 py-3 rounded-lg mb-6">
+              {error}
+            </div>
+          )}
 
           <form onSubmit={handleSubmit} className="space-y-6">
             <div>
@@ -126,7 +107,7 @@ function ResetPasswordContent() {
 
             <button
               type="submit"
-              disabled={loading || !accessToken}
+              disabled={loading}
               className="btn-gradient-primary w-full px-6 py-3 text-foreground font-bold rounded-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {loading ? "Збереження..." : "Скинути пароль"}
