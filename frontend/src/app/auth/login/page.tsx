@@ -37,12 +37,9 @@ function LoginForm() {
   useEffect(() => {
     console.log('[LoginPage] useEffect - initialized:', initialized, 'user:', user?.email || 'null');
     if (initialized && user) {
-      console.log('[LoginPage] User authenticated, waiting 500ms for cookies then redirecting...');
-      // Delay to ensure cookies propagate to middleware
-      setTimeout(() => {
-        console.log('[LoginPage] Redirecting to /dashboard now');
-        window.location.href = '/dashboard';
-      }, 500);
+      console.log('[LoginPage] User authenticated, redirecting to /dashboard via router.push');
+      // router.push зберігає React state, на відміну від window.location.href
+      router.push('/dashboard');
     }
   }, [initialized, user, router])
 
@@ -83,12 +80,9 @@ function LoginForm() {
       console.log('[LoginPage] Login result:', result);
       
       if (result.success) {
-        console.log('[LoginPage] Login SUCCESS - waiting 500ms for cookies...');
-        // Delay to ensure cookies propagate before redirect
-        setTimeout(() => {
-          console.log('[LoginPage] Redirecting to /dashboard now');
-          window.location.href = '/dashboard';
-        }, 500);
+        console.log('[LoginPage] Login SUCCESS - user state updated, will redirect via useEffect');
+        // НЕ робимо redirect тут - useEffect зробить redirect коли user оновиться
+        // router.push зберігає React state на відміну від window.location.href
         return;
       }
       

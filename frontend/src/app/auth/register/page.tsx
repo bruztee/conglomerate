@@ -27,8 +27,8 @@ function RegisterForm() {
   useEffect(() => {
     console.log('[RegisterPage] useEffect - initialized:', initialized, 'user:', user?.email || 'null');
     if (initialized && user) {
-      console.log('[RegisterPage] User authenticated, redirecting to /dashboard via window.location.href');
-      window.location.href = '/dashboard';
+      console.log('[RegisterPage] User authenticated, redirecting to /dashboard via router.push');
+      router.push('/dashboard');
     }
   }, [initialized, user, router])
 
@@ -70,7 +70,7 @@ function RegisterForm() {
       const result = await register(formData.email, formData.password, formData.referralCode || undefined)
       
       if (result.success) {
-        window.location.href = `/auth/verify-email?email=${encodeURIComponent(formData.email)}`
+        router.push(`/auth/verify-email?email=${encodeURIComponent(formData.email)}`)
       } else {
         const errMsg = result.error?.message || "Помилка реєстрації"
         setError(errMsg)
