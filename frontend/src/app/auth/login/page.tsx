@@ -37,8 +37,12 @@ function LoginForm() {
   useEffect(() => {
     console.log('[LoginPage] useEffect - initialized:', initialized, 'user:', user?.email || 'null');
     if (initialized && user) {
-      console.log('[LoginPage] User authenticated, redirecting to /dashboard via window.location.href');
-      window.location.href = '/dashboard';
+      console.log('[LoginPage] User authenticated, waiting 500ms for cookies then redirecting...');
+      // Delay to ensure cookies propagate to middleware
+      setTimeout(() => {
+        console.log('[LoginPage] Redirecting to /dashboard now');
+        window.location.href = '/dashboard';
+      }, 500);
     }
   }, [initialized, user, router])
 
@@ -79,10 +83,12 @@ function LoginForm() {
       console.log('[LoginPage] Login result:', result);
       
       if (result.success) {
-        console.log('[LoginPage] Login SUCCESS - redirecting to /dashboard');
-        console.log('[LoginPage] Using window.location.href for redirect');
-        window.location.href = '/dashboard';
-        console.log('[LoginPage] Redirect initiated');
+        console.log('[LoginPage] Login SUCCESS - waiting 500ms for cookies...');
+        // Delay to ensure cookies propagate before redirect
+        setTimeout(() => {
+          console.log('[LoginPage] Redirecting to /dashboard now');
+          window.location.href = '/dashboard';
+        }, 500);
         return;
       }
       
