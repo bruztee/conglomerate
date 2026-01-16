@@ -277,15 +277,26 @@ export async function handleLogout(request: Request, env: Env): Promise<Response
       await logAudit(env, user.id, 'user.logout', 'profiles', user.id, {}, request);
     }
     
-    const authHeader = request.headers.get('Authorization');
-    if (authHeader) {
-      const token = authHeader.substring(7);
+    // Читаємо access_token з httpOnly cookie
+    let accessToken: string | undefined;
+    const cookieHeader = request.headers.get('Cookie');
+    if (cookieHeader) {
+      const cookies = cookieHeader.split(';').map(c => c.trim());
+      const tokenCookie = cookies.find(c => c.startsWith('access_token='));
+      if (tokenCookie) {
+        accessToken = tokenCookie.split('=')[1];
+      }
+    }
+    
+    // Якщо є токен - robimо signOut в Supabase
+    if (accessToken) {
       const supabase = createServiceSupabaseClient(env);
-      await supabase.auth.admin.signOut(token);
+      await supabase.auth.admin.signOut(accessToken);
     }
     
     const response = jsonResponse({ message: 'Logged out successfully' });
     
+    // Очищаємо всі auth cookies
     response.headers.append('Set-Cookie', 'access_token=; Domain=.conglomerate-g.com; Path=/; HttpOnly; Secure; SameSite=Lax; Max-Age=0');
     response.headers.append('Set-Cookie', 'refresh_token=; Domain=.conglomerate-g.com; Path=/; HttpOnly; Secure; SameSite=Lax; Max-Age=0');
     response.headers.append('Set-Cookie', 'auth_flow=; Domain=.conglomerate-g.com; Path=/; Secure; SameSite=Lax; Max-Age=0');

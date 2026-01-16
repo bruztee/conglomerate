@@ -50,7 +50,7 @@ export default function Home() {
             </p>
 
             <p className="text-lg sm:text-xl text-gray-light mb-12 max-w-2xl mx-auto leading-relaxed">
-              Закрита інвестиційна платформа для заробітку на арбітражі трафіку. Інвестуйте в цифрові активи та отримуйте стабільний прибуток від професійної роботи з трафіком.
+              Закрита інвестиційна платформа для заробітку. Інвестуйте кошти та отримуйте стабільний прибуток.
             </p>
 
             <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
@@ -78,8 +78,8 @@ export default function Home() {
               <div className="space-y-6">
                 <h3 className="text-2xl font-bold text-silver">Що це за платформа</h3>
                 <p className="text-gray-light leading-relaxed">
-                  Conglomerate Group — це закрита інвестиційна платформа, що спеціалізується на арбітражі трафіку. 
-                  Ми дозволяємо користувачам інвестувати кошти та заробляти на професійній роботі з рекламним трафіком.
+                  Conglomerate Group — це закрита інвестиційна платформа для роботи з цифровими активами. 
+                  Ми дозволяємо користувачам інвестувати кошти та заробляти.
                 </p>
                 <p className="text-gray-light leading-relaxed">
                   Розрахунки здійснюються виключно в криптовалюті — це забезпечує швидкі транзакції, мінімальні комісії, 
