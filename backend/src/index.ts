@@ -92,7 +92,7 @@ const routes: Route[] = [
 function corsHeaders(origin?: string) {
   const allowedOrigins = [
     'http://localhost:3000',
-    'https://conglomerate-eight.vercel.app',
+    'https://test.conglomerate-g.com',
     'https://conglomerate-g.com',
     'https://www.conglomerate-g.com',
   ]
