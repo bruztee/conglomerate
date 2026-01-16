@@ -32,12 +32,12 @@ function RegisterForm() {
 
   // Show loading while initializing
   if (!initialized) {
-    return <Loading fullScreen size="lg" />
+    return <div suppressHydrationWarning><Loading fullScreen size="lg" /></div>
   }
 
   // Don't show register form if user exists (will redirect via useEffect)
   if (user) {
-    return <Loading fullScreen size="lg" />
+    return <div suppressHydrationWarning><Loading fullScreen size="lg" /></div>
   }
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -68,7 +68,7 @@ function RegisterForm() {
       const result = await register(formData.email, formData.password, formData.referralCode || undefined)
       
       if (result.success) {
-        router.push(`/auth/verify-email?email=${encodeURIComponent(formData.email)}`)
+        window.location.href = `/auth/verify-email?email=${encodeURIComponent(formData.email)}`
       } else {
         const errMsg = result.error?.message || "Помилка реєстрації"
         setError(errMsg)

@@ -40,14 +40,14 @@ function LoginForm() {
     }
   }, [initialized, user, router])
 
-  // Show loading while initializing
+  // Show loading while initializing (suppressHydrationWarning для уникнення hydration errors)
   if (!initialized) {
-    return <Loading fullScreen size="lg" />
+    return <div suppressHydrationWarning><Loading fullScreen size="lg" /></div>
   }
 
   // Don't show login form if user exists (will redirect via useEffect)
   if (user) {
-    return <Loading fullScreen size="lg" />
+    return <div suppressHydrationWarning><Loading fullScreen size="lg" /></div>
   }
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -71,7 +71,8 @@ function LoginForm() {
       const result = await login(email, password)
       
       if (result.success) {
-        router.push('/dashboard')
+        // Hard redirect для production - гарантує перехід
+        window.location.href = '/dashboard'
         return
       }
       
