@@ -35,20 +35,26 @@ function LoginForm() {
 
   // Redirect if already logged in (in useEffect to avoid render error)
   useEffect(() => {
+    console.log('[LoginPage] useEffect - initialized:', initialized, 'user:', user?.email || 'null');
     if (initialized && user) {
-      router.push('/dashboard')
+      console.log('[LoginPage] User authenticated, redirecting to /dashboard');
+      router.push('/dashboard');
     }
   }, [initialized, user, router])
 
   // Show loading while initializing (suppressHydrationWarning для уникнення hydration errors)
   if (!initialized) {
+    console.log('[LoginPage] RENDER: Not initialized, showing loading');
     return <div suppressHydrationWarning><Loading fullScreen size="lg" /></div>
   }
 
   // Don't show login form if user exists (will redirect via useEffect)
   if (user) {
+    console.log('[LoginPage] RENDER: User exists:', user.email, '- showing loading before redirect');
     return <div suppressHydrationWarning><Loading fullScreen size="lg" /></div>
   }
+  
+  console.log('[LoginPage] RENDER: Showing login form');
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.name === 'email') {
@@ -68,12 +74,16 @@ function LoginForm() {
     setLoading(true)
 
     try {
-      const result = await login(email, password)
+      console.log('[LoginPage] Calling login API...');
+      const result = await login(email, password);
+      console.log('[LoginPage] Login result:', result);
       
       if (result.success) {
-        // Hard redirect для production - гарантує перехід
-        window.location.href = '/dashboard'
-        return
+        console.log('[LoginPage] Login SUCCESS - redirecting to /dashboard');
+        console.log('[LoginPage] Using window.location.href for redirect');
+        window.location.href = '/dashboard';
+        console.log('[LoginPage] Redirect initiated');
+        return;
       }
       
       // Check for email verification

@@ -64,16 +64,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   useEffect(() => {
+    console.log('[AuthContext] useEffect init START');
     let isMounted = true;
     
     const initAuth = async () => {
+      console.log('[AuthContext] initAuth START');
       try {
         await refreshUser();
+        console.log('[AuthContext] refreshUser completed');
       } catch (error) {
-        // Silent fail on init
+        console.error('[AuthContext] refreshUser error:', error);
       } finally {
-        // Mark as initialized regardless of result
         if (isMounted) {
+          console.log('[AuthContext] Setting initialized=true in useEffect');
           setInitialized(true);
         }
       }
@@ -81,23 +84,29 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     initAuth();
     
-    // Cleanup функція для запобігання race condition при швидких refresh
     return () => {
+      console.log('[AuthContext] useEffect cleanup');
       isMounted = false;
     };
   }, []);
 
   const login = async (email: string, password: string) => {
+    console.log('[AuthContext.login] START');
     // НЕ викликаємо setLoading() - це trigger re-render LoginForm і губить error state
     // LoginForm має свій власний local loading state
     const response = await api.login(email, password);
+    console.log('[AuthContext.login] API response:', response);
     
     if (response.success && response.data?.user) {
+      console.log('[AuthContext.login] Success - setting user:', response.data.user.email);
       setUser(response.data.user);
-      setInitialized(true); // Гарантуємо що initialized=true після успішного логіну
+      console.log('[AuthContext.login] Setting initialized=true');
+      setInitialized(true);
+      console.log('[AuthContext.login] Returning success');
       return { success: true };
     }
     
+    console.log('[AuthContext.login] Login failed:', response.error);
     return { success: false, error: response.error };
   };
 
