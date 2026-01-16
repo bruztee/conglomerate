@@ -177,11 +177,12 @@ export async function handleRegister(request: Request, env: Env): Promise<Respon
     );
     
     // Set httpOnly cookies for BOTH access and refresh tokens
+    // SameSite=None для cross-site між api.conglomerate-g.com та conglomerate-g.com
     if (authData.session?.access_token) {
-      response.headers.append('Set-Cookie', `access_token=${authData.session.access_token}; Path=/; HttpOnly; Secure; SameSite=Lax; Max-Age=604800`);
+      response.headers.append('Set-Cookie', `access_token=${authData.session.access_token}; Path=/; HttpOnly; Secure; SameSite=None; Max-Age=604800`);
     }
     if (authData.session?.refresh_token) {
-      response.headers.append('Set-Cookie', `refresh_token=${authData.session.refresh_token}; Path=/; HttpOnly; Secure; SameSite=Lax; Max-Age=2592000`); // 30 days
+      response.headers.append('Set-Cookie', `refresh_token=${authData.session.refresh_token}; Path=/; HttpOnly; Secure; SameSite=None; Max-Age=2592000`);
     }
     
     return response;
@@ -256,11 +257,12 @@ export async function handleLogin(request: Request, env: Env): Promise<Response>
     });
     
     // Set httpOnly cookies for BOTH access and refresh tokens
+    // SameSite=None для cross-site між api.conglomerate-g.com та conglomerate-g.com
     if (authData.session?.access_token) {
-      response.headers.append('Set-Cookie', `access_token=${authData.session.access_token}; Path=/; HttpOnly; Secure; SameSite=Lax; Max-Age=604800`);
+      response.headers.append('Set-Cookie', `access_token=${authData.session.access_token}; Path=/; HttpOnly; Secure; SameSite=None; Max-Age=604800`);
     }
     if (authData.session?.refresh_token) {
-      response.headers.append('Set-Cookie', `refresh_token=${authData.session.refresh_token}; Path=/; HttpOnly; Secure; SameSite=Lax; Max-Age=2592000`); // 30 days
+      response.headers.append('Set-Cookie', `refresh_token=${authData.session.refresh_token}; Path=/; HttpOnly; Secure; SameSite=None; Max-Age=2592000`);
     }
     
     return response;

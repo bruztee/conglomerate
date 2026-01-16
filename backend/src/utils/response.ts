@@ -45,7 +45,7 @@ export function errorResponse(
 export function corsHeaders(origin: string | null): Record<string, string> {
   const allowedOrigins = [
     'http://localhost:3000',
-    'https://conglomerate-eight.vercel.app/',
+    'https://conglomerate-eight.vercel.app',
     'https://www.conglomerate-g.com',
     'https://conglomerate-g.com',
   ];
