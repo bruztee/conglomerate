@@ -241,3 +241,110 @@ export async function handleSendResetLink(request: Request, env: Env, userId: st
     return errorResponse('SERVER_ERROR', error.message, 500);
   }
 }
+
+/**
+ * DELETE /admin/users/:userId
+ * Видалити користувача з каскадним видаленням всіх його даних (крім audit logs)
+ */
+export async function handleDeleteUser(request: Request, env: Env, userId: string): Promise<Response> {
+  const adminCheck = await requireAdmin(request, env);
+  if (!adminCheck.isAdmin) {
+    return adminCheck.error!;
+  }
+
+  try {
+    const supabase = createServiceSupabaseClient(env);
+
+    // Перевірити, що користувач існує
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('email')
+      .eq('id', userId)
+      .single();
+
+    if (!profile) {
+      return errorResponse('NOT_FOUND', 'User not found', 404);
+    }
+
+    // Логувати видалення ПЕРЕД тим як видалити користувача
+    await logAudit(env, adminCheck.userId!, 'admin.user.delete', 'profiles', userId, { email: profile.email }, request);
+
+    // 1. Отримати всі інвестиції користувача
+    const { data: investments } = await supabase
+      .from('investments')
+      .select('id')
+      .eq('user_id', userId);
+
+    const investmentIds = (investments || []).map(inv => inv.id);
+
+    // 2. Видалити всі withdrawals для цих інвестицій
+    if (investmentIds.length > 0) {
+      const { error: deleteWithdrawalsError } = await supabase
+        .from('withdrawals')
+        .delete()
+        .in('investment_id', investmentIds);
+
+      if (deleteWithdrawalsError) {
+        console.error('Failed to delete withdrawals:', deleteWithdrawalsError);
+        return errorResponse('DATABASE_ERROR', 'Failed to delete user withdrawals', 500);
+      }
+    }
+
+    // 3. Видалити всі інвестиції
+    const { error: deleteInvestmentsError } = await supabase
+      .from('investments')
+      .delete()
+      .eq('user_id', userId);
+
+    if (deleteInvestmentsError) {
+      console.error('Failed to delete investments:', deleteInvestmentsError);
+      return errorResponse('DATABASE_ERROR', 'Failed to delete user investments', 500);
+    }
+
+    // 4. Видалити всі депозити
+    const { error: deleteDepositsError } = await supabase
+      .from('deposits')
+      .delete()
+      .eq('user_id', userId);
+
+    if (deleteDepositsError) {
+      console.error('Failed to delete deposits:', deleteDepositsError);
+      return errorResponse('DATABASE_ERROR', 'Failed to delete user deposits', 500);
+    }
+
+    // 5. Обнулити actor_user_id в audit_log (зберегти логи, але прибрати FK)
+    const { error: nullifyAuditError } = await supabase
+      .from('audit_log')
+      .update({ actor_user_id: null })
+      .eq('actor_user_id', userId);
+
+    if (nullifyAuditError) {
+      console.error('Failed to nullify audit log references:', nullifyAuditError);
+      return errorResponse('DATABASE_ERROR', 'Failed to update audit logs', 500);
+    }
+
+    // 6. Видалити профіль
+    const { error: deleteProfileError } = await supabase
+      .from('profiles')
+      .delete()
+      .eq('id', userId);
+
+    if (deleteProfileError) {
+      console.error('Failed to delete profile:', deleteProfileError);
+      return errorResponse('DATABASE_ERROR', 'Failed to delete user profile', 500);
+    }
+
+    // 7. Видалити auth user через Admin API
+    const { error: deleteAuthError } = await supabase.auth.admin.deleteUser(userId);
+
+    if (deleteAuthError) {
+      console.error('Failed to delete auth user:', deleteAuthError);
+      // Не повертаємо помилку, бо профіль вже видалений
+    }
+
+    return jsonResponse({ success: true, message: 'User deleted successfully' });
+  } catch (error: any) {
+    console.error('Delete user error:', error);
+    return errorResponse('SERVER_ERROR', error.message, 500);
+  }
+}

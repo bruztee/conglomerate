@@ -330,6 +330,12 @@ class ApiClient {
     });
   }
 
+  async adminDeleteUser(userId: string): Promise<ApiResponse> {
+    return this.request(`/admin/users/${userId}`, {
+      method: 'DELETE',
+    });
+  }
+
   async adminSendResetLink(userId: string, type: 'email' | 'phone'): Promise<ApiResponse> {
     return this.request(`/admin/users/${userId}/send-reset-link`, {
       method: 'POST',

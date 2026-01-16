@@ -89,6 +89,32 @@ export default function AdminUsersPage() {
     }
   }
 
+  async function handleDelete() {
+    if (!editingUser) return
+
+    const confirmMessage = `УВАГА! Ви збираєтесь видалити користувача ${editingUser.email}.\n\nЦе видалить:\n- Профіль користувача\n- Всі депозити\n- Всі інвестиції\n- Всі виводи\n\nАудит логи будуть збережені.\n\nВведіть "DELETE" для підтвердження:`
+    
+    const confirmation = prompt(confirmMessage)
+    
+    if (confirmation !== 'DELETE') {
+      return
+    }
+
+    try {
+      const result = await api.adminDeleteUser(editingUser.id)
+      if (result.success) {
+        alert('Користувача видалено')
+        setShowModal(false)
+        setEditingUser(null)
+        fetchUsers()
+      } else {
+        alert('Помилка видалення')
+      }
+    } catch (error) {
+      alert('Помилка видалення користувача')
+    }
+  }
+
   function openEditModal(user: User) {
     setEditingUser(user)
     setFormData({
@@ -272,6 +298,19 @@ export default function AdminUsersPage() {
                 </button>
               </div>
             </form>
+
+            <div className="mt-6 pt-6 border-t border-gray-medium/30">
+              <button
+                type="button"
+                onClick={handleDelete}
+                className="w-full px-4 py-3 bg-red-500/10 border border-red-500/30 text-red-500 rounded-lg hover:bg-red-500/20 hover:border-red-500/50 transition-all font-medium"
+              >
+                Видалити користувача
+              </button>
+              <p className="text-xs text-gray-light mt-2 text-center">
+                Це видалить всі дані користувача назавжди (крім аудит логів)
+              </p>
+            </div>
           </div>
         </div>
       )}

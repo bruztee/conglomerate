@@ -7,7 +7,7 @@ import { handleCreateWithdrawal, handleGetWithdrawals, handleApproveWithdrawal }
 import { handleGetReferralStats, handleSetReferralCookie } from './routes/referrals';
 import { handleGetActivePaymentMethods } from './routes/paymentMethods';
 import { handleGetPaymentMethods, handleCreatePaymentMethod, handleUpdatePaymentMethod, handleDeletePaymentMethod } from './routes/admin/paymentMethods';
-import { handleGetUsers, handleUpdateUser, handleSendResetLink } from './routes/admin/users';
+import { handleGetUsers, handleUpdateUser, handleSendResetLink, handleDeleteUser } from './routes/admin/users';
 import { handleGetDeposits as handleAdminGetDeposits, handleApproveDeposit, handleRejectDeposit } from './routes/admin/deposits';
 import { handleGetWithdrawals as handleAdminGetWithdrawals, handleApproveWithdrawal as handleAdminApproveWithdrawal, handleRejectWithdrawal, handleMarkWithdrawalSent } from './routes/admin/withdrawals';
 import { handleGetAuditLogs } from './routes/admin/security';
@@ -61,6 +61,7 @@ const routes: Route[] = [
   // Admin routes - Users Management
   { method: 'GET', pattern: /^\/admin\/users$/, handler: handleGetUsers },
   { method: 'PUT', pattern: /^\/admin\/users\/([a-f0-9-]+)$/, handler: handleUpdateUser },
+  { method: 'DELETE', pattern: /^\/admin\/users\/([a-f0-9-]+)$/, handler: handleDeleteUser },
   { method: 'POST', pattern: /^\/admin\/users\/([a-f0-9-]+)\/send-reset-link$/, handler: handleSendResetLink },
   
   // Admin routes - Payment Methods
