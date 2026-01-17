@@ -46,7 +46,11 @@ export default function SetNamePage() {
       }
       // Оновити дані користувача
       await refreshUser()
-      router.push('/dashboard')
+      
+      // Невелика затримка щоб React встиг оновити user state
+      setTimeout(() => {
+        router.push('/dashboard')
+      }, 100)
     } else {
       setError(result.error?.message || "Помилка збереження імені")
       setLoading(false)

@@ -35,7 +35,7 @@ export default function Home() {
       <main className="min-h-screen">
         <section className="relative min-h-[90vh] flex items-center justify-center px-4 sm:px-6 lg:px-8">
           <div className="text-center max-w-4xl mx-auto">
-            <div className="mb-6 flex justify-center">
+            <div className="mb-3 flex justify-center">
               <Image
                 src="/image.png"
                 alt="Conglomerate Group"
@@ -46,11 +46,11 @@ export default function Home() {
               />
             </div>
 
-            <p className="text-2xl sm:text-3xl text-silver font-medium mb-12 tracking-wide">
+            <p className="text-2xl sm:text-3xl text-silver font-medium mb-8 tracking-wide">
               Білий трафік — чорні цифри
             </p>
 
-            <p className="text-lg sm:text-xl text-gray-light mb-12 max-w-2xl mx-auto leading-relaxed">
+            <p className="text-lg sm:text-xl text-gray-light mb-10 max-w-2xl mx-auto leading-relaxed">
               Закрита інвестиційна платформа для заробітку. Інвестуйте кошти та отримуйте стабільний прибуток.
             </p>
 
