@@ -21,6 +21,7 @@ export default function SetNamePage() {
     }
     
     // Якщо ім'я вже встановлено, редірект на dashboard
+    // Це спрацює після того як refreshUser оновить user.full_name
     if (user.full_name) {
       router.push('/dashboard')
     }
@@ -44,13 +45,9 @@ export default function SetNamePage() {
       if (typeof window !== 'undefined') {
         sessionStorage.removeItem('name_redirect_pending')
       }
-      // Оновити дані користувача
+      // Оновити дані користувача - useEffect зробить redirect коли user.full_name оновиться
       await refreshUser()
-      
-      // Невелика затримка щоб React встиг оновити user state
-      setTimeout(() => {
-        router.push('/dashboard')
-      }, 100)
+      setLoading(false)
     } else {
       setError(result.error?.message || "Помилка збереження імені")
       setLoading(false)
