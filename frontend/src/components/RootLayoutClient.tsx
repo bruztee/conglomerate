@@ -11,14 +11,14 @@ import PhoneVerificationWrapper from '@/components/PhoneVerificationWrapper'
 const publicPaths = ['/auth/login', '/auth/register', '/auth/verify-email', '/auth/forgot-password', '/auth/reset-password', '/auth/callback']
 
 export default function RootLayoutClient({ children }: { children: React.ReactNode }) {
-  const { user, loading } = useAuth()
+  const { user, initialized } = useAuth()
   const pathname = usePathname()
   const router = useRouter()
 
   const isAdminPage = pathname.startsWith('/admin')
 
   useEffect(() => {
-    if (loading) return
+    if (!initialized) return
 
     const isPublicPath = publicPaths.some(path => pathname.startsWith(path))
     const isSetNamePage = pathname === '/auth/set-name'
@@ -29,7 +29,8 @@ export default function RootLayoutClient({ children }: { children: React.ReactNo
     }
 
     // Якщо користувач залогінений але не встановив ім'я - редірект на set-name
-    if (user && !user.full_name && !isSetNamePage) {
+    // НЕ редіректити адмінів на set-name (вони можуть не мати full_name)
+    if (user && !user.full_name && !isSetNamePage && user.role !== 'admin') {
       router.replace('/auth/set-name')
       return
     }
@@ -46,9 +47,9 @@ export default function RootLayoutClient({ children }: { children: React.ReactNo
       const returnUrl = encodeURIComponent(pathname)
       router.replace(`/auth/login?returnUrl=${returnUrl}`)
     }
-  }, [loading, user, pathname, router])
+  }, [initialized, user, pathname, router])
 
-  if (loading) {
+  if (!initialized) {
     return <Loading fullScreen />
   }
 
