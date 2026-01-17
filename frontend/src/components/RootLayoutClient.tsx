@@ -29,8 +29,7 @@ export default function RootLayoutClient({ children }: { children: React.ReactNo
     }
 
     // Якщо користувач залогінений але не встановив ім'я - редірект на set-name
-    // НЕ редіректити адмінів на set-name (вони можуть не мати full_name)
-    if (user && !user.full_name && !isSetNamePage && user.role !== 'admin') {
+    if (user && !user.full_name && !isSetNamePage) {
       router.replace('/auth/set-name')
       return
     }
