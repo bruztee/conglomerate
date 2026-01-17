@@ -14,9 +14,14 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   const [checking, setChecking] = useState(true)
 
   useEffect(() => {
-    // Middleware already redirected non-authenticated users
-    // Just check admin role
-    if (!user) return
+    // Чекаємо поки AuthContext завантажить user
+    if (!initialized) return
+    
+    // Якщо після initialized немає user - middleware має редіректити на login
+    if (!user) {
+      setChecking(false)
+      return
+    }
     
     if (user.role === 'admin') {
       setIsAdmin(true)
@@ -25,7 +30,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     }
     
     setChecking(false)
-  }, [user, router])
+  }, [initialized, user, router])
 
   if (!initialized || checking) {
     return <Loading fullScreen size="lg" />
