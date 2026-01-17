@@ -45,9 +45,8 @@ export default function SetNamePage() {
       if (typeof window !== 'undefined') {
         sessionStorage.removeItem('name_redirect_pending')
       }
-      // Оновити дані користувача - useEffect зробить redirect коли user.full_name оновиться
-      await refreshUser()
-      setLoading(false)
+      // Reload page - RootLayoutClient побачить що user.full_name є і редірект на dashboard
+      window.location.reload()
     } else {
       setError(result.error?.message || "Помилка збереження імені")
       setLoading(false)
