@@ -268,10 +268,10 @@ export default function DashboardPage() {
                             <div className="text-xs text-gray-light mb-1">{t('initialShort')}</div>
                             <div className="font-medium font-sans">${deposit.amount.toFixed(2)}</div>
                           </div>
-                          {(deposit.principal || 0) > 0 && (
+                          {(deposit.available || 0) > 0 && (
                             <div>
                               <div className="text-xs text-gray-light mb-1">{t('active')}</div>
-                              <div className="font-medium font-sans">${(deposit.principal || 0).toFixed(2)}</div>
+                              <div className="font-medium font-sans">${(deposit.available || 0).toFixed(2)}</div>
                             </div>
                           )}
                           <div>
@@ -343,7 +343,7 @@ export default function DashboardPage() {
                             <td className="py-3 px-4 text-sm font-sans">#{deposit.id.slice(0, 8)}...</td>
                             <td className="py-3 px-4 text-sm font-medium font-sans">${deposit.amount.toFixed(2)}</td>
                             <td className="py-3 px-4 text-sm font-medium font-sans">
-                              {(deposit.principal || 0) > 0 ? `$${(deposit.principal || 0).toFixed(2)}` : '—'}
+                              {(deposit.available || 0) > 0 ? `$${(deposit.available || 0).toFixed(2)}` : '—'}
                             </td>
                             <td className="py-3 px-4 text-sm font-medium font-sans text-orange-400">
                               {(deposit.withdrawn || 0) > 0 ? `-$${(deposit.withdrawn || 0).toFixed(2)}` : '—'}
