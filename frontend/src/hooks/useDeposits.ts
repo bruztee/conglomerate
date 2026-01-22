@@ -61,6 +61,7 @@ export function useDeposits() {
           return {
             id: d.id,
             amount: totalAmount,
+            initialAmount: parseFloat(d.amount),
             frozen: lockedAmount,
             percentage: d.monthly_percentage || 5,
             profit: profit,
@@ -93,6 +94,7 @@ export function useDeposits() {
           }
 
           const initialAmount = parseFloat(d.amount)
+          const principal = parseFloat(investment.principal || 0)
           const withdrawn = parseFloat(investment.total_withdrawn || 0)
           const locked = parseFloat(investment.locked_amount || 0)
           const profit = parseFloat(investment.accrued_interest || 0)
@@ -100,6 +102,7 @@ export function useDeposits() {
           return {
             id: d.id,
             amount: initialAmount,
+            principal: principal,
             percentage: d.monthly_percentage || 5,
             profit: profit,
             withdrawn: withdrawn,

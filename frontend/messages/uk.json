@@ -122,6 +122,8 @@
     "depositHistory": "Історія депозитів",
     "depositHistoryEmpty": "Історія депозитів пуста",
     "initialAmount": "Початкова сума",
+    "initialShort": "Поч. Сума",
+    "active": "Активно",
     "withdrawn": "Виведено",
     "percentage": "Процент",
     "createdDate": "Дата створення",

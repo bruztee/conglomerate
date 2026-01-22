@@ -122,6 +122,8 @@
     "depositHistory": "Deposit History",
     "depositHistoryEmpty": "Deposit history is empty",
     "initialAmount": "Initial Amount",
+    "initialShort": "Init",
+    "active": "Active",
     "withdrawn": "Withdrawn",
     "percentage": "Percentage",
     "createdDate": "Created Date",

@@ -21,7 +21,8 @@ export async function handleGetInvestments(request: Request, env: Env): Promise<
       .from('investments')
       .select(`
         *,
-        profiles!investments_user_id_fkey(id, email, full_name, phone)
+        profiles!investments_user_id_fkey(id, email, full_name, phone),
+        deposits!investments_deposit_id_fkey(amount)
       `)
       .order('opened_at', { ascending: false });
 
@@ -32,6 +33,7 @@ export async function handleGetInvestments(request: Request, env: Env): Promise<
 
     // Обчислюємо додаткові поля для кожної інвестиції
     const enrichedInvestments = (investments || []).map((inv: any) => {
+      const depositAmount = parseFloat(inv.deposits?.amount || inv.principal || 0);
       const principal = parseFloat(inv.principal || 0);
       const accruedInterest = parseFloat(inv.accrued_interest || 0);
       const withdrawnAmount = parseFloat(inv.withdrawn_amount || 0);
@@ -43,7 +45,7 @@ export async function handleGetInvestments(request: Request, env: Env): Promise<
       
       return {
         ...inv,
-        initial_amount: principal,
+        initial_amount: depositAmount,
         total_value: totalValue,
         available: available,
         real_profit: realProfit,

@@ -23,6 +23,8 @@ import { useTranslations } from 'next-intl'
 interface Deposit {
   id: string
   amount: number
+  initialAmount?: number
+  principal?: number
   frozen: number
   profit: number
   percentage: number
@@ -174,6 +176,11 @@ export default function DashboardPage() {
                         <div className="flex-1 min-w-0">
                           <div className="text-xs text-gray-light mb-1">{t('deposit')}</div>
                           <div className="text-xl sm:text-2xl font-bold text-silver font-sans break-words">${deposit.amount.toFixed(2)}</div>
+                          {deposit.initialAmount && (
+                            <div className="text-xs text-gray-light mt-0.5">
+                              {t('initialAmount')}: ${deposit.initialAmount.toFixed(2)}
+                            </div>
+                          )}
                           {deposit.frozen > 0 && (
                             <div className="text-xs text-gray-light mt-1">
                               {t('frozen')}: ${deposit.frozen.toFixed(2)}
@@ -258,9 +265,15 @@ export default function DashboardPage() {
                         
                         <div className="grid grid-cols-2 gap-3 text-sm">
                           <div>
-                            <div className="text-xs text-gray-light mb-1">{t('deposit')}</div>
+                            <div className="text-xs text-gray-light mb-1">{t('initialShort')}</div>
                             <div className="font-medium font-sans">${deposit.amount.toFixed(2)}</div>
                           </div>
+                          {(deposit.principal || 0) > 0 && (
+                            <div>
+                              <div className="text-xs text-gray-light mb-1">{t('active')}</div>
+                              <div className="font-medium font-sans">${(deposit.principal || 0).toFixed(2)}</div>
+                            </div>
+                          )}
                           <div>
                             <div className="text-xs text-gray-light mb-1">{t('profit')}</div>
                             <div className="font-medium text-silver font-sans">+${deposit.profit.toFixed(2)}</div>
@@ -308,7 +321,8 @@ export default function DashboardPage() {
                       <thead>
                         <tr className="border-b border-gray-medium/30">
                           <th className="text-left py-3 px-4 text-sm font-medium text-gray-light font-sans">ID</th>
-                          <th className="text-left py-3 px-4 text-sm font-medium text-gray-light">{t('initialAmount')}</th>
+                          <th className="text-left py-3 px-4 text-sm font-medium text-gray-light">{t('initialShort')}</th>
+                          <th className="text-left py-3 px-4 text-sm font-medium text-gray-light">{t('active')}</th>
                           <th className="text-left py-3 px-4 text-sm font-medium text-gray-light">{t('withdrawn')}</th>
                           <th className="text-left py-3 px-4 text-sm font-medium text-gray-light">{t('frozen')}</th>
                           <th className="text-left py-3 px-4 text-sm font-medium text-gray-light">{t('percentage')}</th>
@@ -328,6 +342,9 @@ export default function DashboardPage() {
                           >
                             <td className="py-3 px-4 text-sm font-sans">#{deposit.id.slice(0, 8)}...</td>
                             <td className="py-3 px-4 text-sm font-medium font-sans">${deposit.amount.toFixed(2)}</td>
+                            <td className="py-3 px-4 text-sm font-medium font-sans">
+                              {(deposit.principal || 0) > 0 ? `$${(deposit.principal || 0).toFixed(2)}` : '—'}
+                            </td>
                             <td className="py-3 px-4 text-sm font-medium font-sans text-orange-400">
                               {(deposit.withdrawn || 0) > 0 ? `-$${(deposit.withdrawn || 0).toFixed(2)}` : '—'}
                             </td>
