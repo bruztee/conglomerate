@@ -163,7 +163,7 @@ export default function DepositFlow({ onSuccess, userRate }: DepositFlowProps) {
                 id="amount"
                 value={amount}
                 onChange={(e) => setAmount(e.target.value)}
-                className="w-full pl-8 pr-4 py-3 bg-blur border border-gray-medium rounded-lg focus:outline-none focus:border-silver transition-colors font-sans"
+                className="w-full pl-8 pr-4 py-3 bg-gray-dark/20 border border-gray-medium/30 rounded-lg focus:outline-none focus:border-silver transition-colors font-sans"
                 placeholder="0.00"
                 min={minAmount}
                 max={maxAmount}

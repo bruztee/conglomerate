@@ -411,6 +411,7 @@
       "rejectConfirmation": "Отклонение",
       "rejectText": "Депозит будет отклонен, средства НЕ будут зачислены",
       "confirm": "Подтвердить",
+      "cancel": "Отменить",
       "depositApproved": "Депозит подтвержден",
       "depositRejected": "Депозит отклонен"
     },

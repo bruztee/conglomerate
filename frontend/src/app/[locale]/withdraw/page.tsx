@@ -266,7 +266,7 @@ function WithdrawPageContent() {
                               : "border-gray-medium hover:border-gray-light text-gray-light hover:text-foreground"
                           }`}
                         >
-                          {t('partialWithdrawal')}
+                          {t('partialWithdraw')}
                         </button>
                         <button
                           type="button"
@@ -280,7 +280,7 @@ function WithdrawPageContent() {
                               : "border-gray-medium hover:border-gray-light text-gray-light hover:text-foreground"
                           }`}
                         >
-                          {t('fullWithdrawal')}
+                          {t('fullWithdraw')}
                         </button>
                       </div>
                     </div>

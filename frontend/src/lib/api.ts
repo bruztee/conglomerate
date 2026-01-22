@@ -444,6 +444,10 @@ class ApiClient {
   }
 
   // Investments Management (Admin)
+  async adminGetInvestments(): Promise<ApiResponse> {
+    return this.request('/admin/investments', { method: 'GET' });
+  }
+
   async adminUpdateInvestment(investmentId: string, data: { rate_monthly?: number; status?: 'active' | 'closed'; locked_amount?: number }): Promise<ApiResponse> {
     return this.request(`/admin/investments/${investmentId}`, {
       method: 'PUT',

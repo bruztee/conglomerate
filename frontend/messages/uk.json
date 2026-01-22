@@ -411,6 +411,7 @@
       "rejectConfirmation": "Відхилення",
       "rejectText": "Депозит буде відхилено, кошти НЕ будуть зараховані",
       "confirm": "Підтвердити",
+      "cancel": "Скасувати",
       "depositApproved": "Депозит підтверджено",
       "depositRejected": "Депозит відхилено"
     },

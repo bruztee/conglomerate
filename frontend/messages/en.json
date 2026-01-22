@@ -409,10 +409,11 @@
       "approveConfirmation": "Confirmation",
       "approveText": "After confirmation, funds will be credited to user balance",
       "rejectConfirmation": "Rejection",
-      "rejectText": "Deposit will be rejected, funds will NOT be credited",
+      "rejectText": "The deposit will be rejected, funds will NOT be credited",
       "confirm": "Confirm",
-      "depositApproved": "Deposit Approved",
-      "depositRejected": "Deposit Rejected"
+      "cancel": "Cancel",
+      "depositApproved": "Deposit approved",
+      "depositRejected": "Deposit rejected"
     },
     "withdrawalsPage": {
       "title": "Withdrawals",
