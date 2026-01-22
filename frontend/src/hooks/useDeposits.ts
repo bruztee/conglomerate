@@ -97,7 +97,14 @@ export function useDeposits() {
           const principal = parseFloat(investment.principal || 0)
           const withdrawn = parseFloat(investment.total_withdrawn || 0)
           const locked = parseFloat(investment.locked_amount || 0)
-          const profit = parseFloat(investment.accrued_interest || 0)
+          const accruedInterest = parseFloat(investment.accrued_interest || 0)
+          
+          // Для закритих позицій: якщо виведено більше ніж початкова сума, профіт = різниця
+          // Для активних: профіт = accrued_interest
+          let profit = accruedInterest
+          if (investment.status === 'closed' && withdrawn > initialAmount) {
+            profit = withdrawn - initialAmount
+          }
 
           return {
             id: d.id,
