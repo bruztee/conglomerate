@@ -8,6 +8,7 @@ import { useAdminUsers } from "@/hooks/useAdminUsers"
 import Loading from "@/components/Loading"
 import { CheckIcon, ClockIcon, MinusIcon } from "@/components/icons/AdminIcons"
 import Pagination from "@/components/Pagination"
+import { useTranslations } from 'next-intl'
 
 interface User {
   id: string
@@ -32,6 +33,7 @@ interface User {
 export default function AdminUsersPage() {
   const router = useRouter()
   const { user } = useAuth()
+  const t = useTranslations('admin.usersPage')
   
   // SWR hook - instant loading з кешу
   const { users, isLoading: loading, refresh: refreshUsers } = useAdminUsers()
@@ -59,15 +61,15 @@ export default function AdminUsersPage() {
     try {
       const result = await api.adminUpdateUser(editingUser.id, formData)
       if (result.success) {
-        alert('Користувача оновлено')
+        alert(t('userUpdated'))
         setShowModal(false)
         setEditingUser(null)
         refreshUsers()
       } else {
-        alert('Помилка оновлення')
+        alert(t('updateError'))
       }
     } catch (error) {
-      alert('Помилка оновлення користувача')
+      alert(t('updateError'))
     }
   }
 
@@ -85,15 +87,15 @@ export default function AdminUsersPage() {
     try {
       const result = await api.adminDeleteUser(editingUser.id)
       if (result.success) {
-        alert('Користувача видалено')
+        alert(t('userDeleted'))
         setShowModal(false)
         setEditingUser(null)
         refreshUsers()
       } else {
-        alert('Помилка видалення')
+        alert(t('deleteError'))
       }
     } catch (error) {
-      alert('Помилка видалення користувача')
+      alert(t('deleteError'))
     }
   }
 
@@ -114,11 +116,11 @@ export default function AdminUsersPage() {
   return (
     <div className="p-4 md:p-8 pt-16 md:pt-8">
       <div className="mb-8">
-        <h1 className="text-3xl font-bold mb-2">Користувачі</h1>
-        <p className="text-gray-light">Всього користувачів: <span className="font-sans">{users.length}</span></p>
+        <h1 className="text-3xl font-bold mb-2">{t('title')}</h1>
+        <p className="text-gray-light">{t('totalCount')}: <span className="font-sans">{users.length}</span></p>
         {totalPages > 1 && (
           <div className="mt-2 text-sm text-gray-light">
-            Сторінка {currentPage} з {totalPages}
+            {t('page')} {currentPage} {t('of')} {totalPages}
           </div>
         )}
       </div>
@@ -131,13 +133,13 @@ export default function AdminUsersPage() {
             <div className="flex items-start justify-between mb-4">
               <div className="flex-1">
                 <div className="font-medium text-silver mb-1">{user.email}</div>
-                <div className="text-sm text-gray-light">{user.full_name || 'Немає імені'}</div>
-                <div className="text-xs text-gray-light mt-1">{user.phone || 'Немає телефону'}</div>
+                <div className="text-sm text-gray-light">{user.full_name || t('noName')}</div>
+                <div className="text-xs text-gray-light mt-1">{user.phone || t('noPhone')}</div>
               </div>
               <span className={`px-3 py-1 rounded-full text-xs whitespace-nowrap ${
                 user.status === 'active' ? 'bg-green-500/20 text-green-500' : 'bg-red-500/20 text-red-500'
               }`}>
-                {user.status === 'active' ? 'Активний' : 'Заблокований'}
+                {user.status === 'active' ? t('active') : t('blocked')}
               </span>
             </div>
             
@@ -158,38 +160,38 @@ export default function AdminUsersPage() {
             {/* Financial Data */}
             <div className="space-y-3 mb-4">
               <div className="flex justify-between items-center">
-                <span className="text-xs text-gray-light">Депозити:</span>
+                <span className="text-xs text-gray-light">{t('deposits')}:</span>
                 <span className="font-sans font-medium">${user.total_deposits.toFixed(2)}</span>
               </div>
               <div className="flex justify-between items-center">
-                <span className="text-xs text-gray-light">Баланс:</span>
+                <span className="text-xs text-gray-light">{t('balance')}:</span>
                 <span className="font-sans font-medium text-silver">${(user.current_investments || 0).toFixed(2)}</span>
               </div>
               <div className="flex justify-between items-center">
-                <span className="text-xs text-gray-light">Нереалізований:</span>
+                <span className="text-xs text-gray-light">{t('unrealized')}:</span>
                 <span className="font-sans font-medium text-yellow-400">+${(user.unrealized_profit || 0).toFixed(2)}</span>
               </div>
               <div className="flex justify-between items-center">
-                <span className="text-xs text-gray-light">Реалізований:</span>
+                <span className="text-xs text-gray-light">{t('realized')}:</span>
                 <span className="font-sans font-medium text-green-400">+${(user.realized_profit || 0).toFixed(2)}</span>
               </div>
               <div className="flex justify-between items-center">
-                <span className="text-xs text-gray-light">Заморожено:</span>
+                <span className="text-xs text-gray-light">{t('frozen')}:</span>
                 <span className="font-sans font-medium text-orange-400">${(user.frozen_funds || 0).toFixed(2)}</span>
               </div>
               <div className="flex justify-between items-center">
-                <span className="text-xs text-gray-light">Виводи:</span>
+                <span className="text-xs text-gray-light">{t('withdrawals')}:</span>
                 <span className="font-sans font-medium">${user.total_withdrawals.toFixed(2)}</span>
               </div>
             </div>
             
             {/* Settings */}
             <div className="flex justify-between items-center pt-3 border-t border-gray-medium/30 mb-3">
-              <div className="text-xs text-gray-light">Місячний %:</div>
+              <div className="text-xs text-gray-light">{t('monthlyPercent')}:</div>
               <div className="font-sans font-medium">{user.monthly_percentage}%</div>
             </div>
             <div className="flex justify-between items-center mb-4">
-              <div className="text-xs text-gray-light">Макс. депозит:</div>
+              <div className="text-xs text-gray-light">{t('maxDeposit')}:</div>
               <div className="font-sans font-medium">
                 {user.max_deposit ? `$${parseFloat(user.max_deposit.toString()).toFixed(0)}` : '—'}
               </div>
@@ -200,7 +202,7 @@ export default function AdminUsersPage() {
               onClick={() => openEditModal(user)}
               className="w-full px-4 py-2 bg-silver/10 hover:bg-silver/20 text-silver rounded transition-colors text-sm font-medium"
             >
-              Редагувати
+              {t('edit')}
             </button>
           </div>
         ))}
@@ -210,19 +212,19 @@ export default function AdminUsersPage() {
       {showModal && editingUser && (
         <div className="fixed inset-0 bg-blur/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
           <div className="bg-blur-dark border border-gray-medium rounded-lg max-w-2xl w-full p-6">
-            <h2 className="text-2xl font-bold mb-6">Редагувати користувача</h2>
+            <h2 className="text-2xl font-bold mb-6">{t('editUser')}</h2>
 
             <div className="mb-6 p-4 bg-blur border border-gray-medium rounded-lg">
-              <div className="text-sm text-gray-light mb-1">Email:</div>
+              <div className="text-sm text-gray-light mb-1">{t('email')}:</div>
               <div className="font-medium">{editingUser.email}</div>
-              <div className="text-sm text-gray-light mt-2 mb-1">ID:</div>
+              <div className="text-sm text-gray-light mt-2 mb-1">{t('id')}:</div>
               <div className="font-mono text-xs">{editingUser.id}</div>
             </div>
 
             <form onSubmit={handleUpdate} className="space-y-4">
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium mb-2">Статус</label>
+                  <label className="block text-sm font-medium mb-2">{t('status')}</label>
                   <select
                     value={formData.status}
                     onChange={(e) => setFormData({ ...formData, status: e.target.value })}
@@ -234,7 +236,7 @@ export default function AdminUsersPage() {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium mb-2">Місячний % (дефолт 5%)</label>
+                  <label className="block text-sm font-medium mb-2">{t('monthlyPercentLabel')}</label>
                   <input
                     type="number"
                     step="0.1"
@@ -248,17 +250,17 @@ export default function AdminUsersPage() {
               </div>
 
               <div>
-                <label className="block text-sm font-medium mb-2">Максимальний депозит (залиште пустим для глобального ліміту)</label>
+                <label className="block text-sm font-medium mb-2">{t('maxDepositLabel')}</label>
                 <input
                   type="number"
                   step="0.01"
                   min="0"
                   value={formData.max_deposit || ''}
                   onChange={(e) => setFormData({ ...formData, max_deposit: e.target.value ? parseFloat(e.target.value) : null })}
-                  placeholder="Без обмежень (використати глобальний ліміт)"
+                  placeholder={t('maxDepositPlaceholder')}
                   className="w-full px-4 py-2 bg-blur border border-gray-medium rounded-lg focus:outline-none focus:border-silver font-sans"
                 />
-                <p className="text-xs text-gray-light mt-1">Індивідуальний ліміт для цього користувача. Якщо не встановлено - використовується глобальний ліміт.</p>
+                <p className="text-xs text-gray-light mt-1">{t('maxDepositHelp')}</p>
               </div>
 
               <div className="flex gap-3 pt-4">
@@ -266,7 +268,7 @@ export default function AdminUsersPage() {
                   type="submit"
                   className="flex-1 btn-gradient-primary px-4 py-3 text-foreground font-bold rounded-lg"
                 >
-                  Зберегти зміни
+                  {t('saveChanges')}
                 </button>
                 <button
                   type="button"
@@ -276,7 +278,7 @@ export default function AdminUsersPage() {
                   }}
                   className="flex-1 px-4 py-3 bg-blur border border-gray-medium rounded-lg hover:border-silver/30 transition-all"
                 >
-                  Скасувати
+                  {t('cancel')}
                 </button>
               </div>
             </form>
@@ -287,10 +289,10 @@ export default function AdminUsersPage() {
                 onClick={handleDelete}
                 className="w-full px-4 py-3 bg-red-500/10 border border-red-500/30 text-red-500 rounded-lg hover:bg-red-500/20 hover:border-red-500/50 transition-all font-medium"
               >
-                Видалити користувача
+                {t('deleteUser')}
               </button>
               <p className="text-xs text-gray-light mt-2 text-center">
-                Це видалить всі дані користувача назавжди (крім аудит логів)
+                {t('deleteWarning')}
               </p>
             </div>
           </div>

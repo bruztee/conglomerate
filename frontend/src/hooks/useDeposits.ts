@@ -44,11 +44,11 @@ export function useDeposits() {
         }
       })
 
-      // Active deposits (investment.status === 'active')
+      // Active deposits (investment.status === 'active' OR 'frozen')
       const active = deposits
         .filter((d: any) => {
           const investment = investmentsMap.get(d.id)
-          return investment && investment.status === 'active'
+          return investment && (investment.status === 'active' || investment.status === 'frozen')
         })
         .map((d: any) => {
           const investment = investmentsMap.get(d.id)
@@ -72,12 +72,9 @@ export function useDeposits() {
           }
         })
 
-      // History (closed investments)
+      // History (all deposits)
       const history = deposits
-        .filter((d: any) => {
-          const investment = investmentsMap.get(d.id)
-          return investment && investment.status === 'closed'
-        })
+        .filter((d: any) => investmentsMap.has(d.id))
         .map((d: any) => {
           const investment = investmentsMap.get(d.id)
           const totalAmount = investment ? parseFloat(investment.principal || d.amount) : parseFloat(d.amount)

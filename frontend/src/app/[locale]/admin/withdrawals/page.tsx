@@ -8,6 +8,7 @@ import { useAdminWithdrawals } from "@/hooks/useAdminWithdrawals"
 import Loading from "@/components/Loading"
 import { CheckIcon, XIcon } from "@/components/icons/AdminIcons"
 import WarningIcon from "@/components/icons/WarningIcon"
+import { useTranslations } from 'next-intl'
 
 interface Withdrawal {
   id: string
@@ -42,6 +43,7 @@ interface Withdrawal {
 export default function AdminWithdrawalsPage() {
   const router = useRouter()
   const { user } = useAuth()
+  const t = useTranslations('admin.withdrawalsPage')
   
   // SWR hook - instant loading з кешу
   const { withdrawals: allWithdrawals, isLoading: loading, refresh: refreshWithdrawals } = useAdminWithdrawals()
@@ -74,14 +76,14 @@ export default function AdminWithdrawalsPage() {
         })
       } else if (action === 'reject') {
         if (!formData.admin_note.trim()) {
-          alert('Для відхилення потрібна примітка')
+          alert(t('rejectNoteRequired'))
           return
         }
         result = await api.adminRejectWithdrawal(selectedWithdrawal.id, formData.admin_note)
       }
 
       if (result?.success) {
-        alert(action === 'approve' ? 'Вивід підтверджено' : 'Вивід відхилено')
+        alert(action === 'approve' ? t('withdrawalApproved') : t('withdrawalRejected'))
         setShowModal(false)
         setSelectedWithdrawal(null)
         resetForm()
@@ -116,9 +118,9 @@ export default function AdminWithdrawalsPage() {
   return (
     <div className="p-4 md:p-8 pt-16 md:pt-8">
       <div className="mb-8">
-        <h1 className="text-3xl font-bold mb-2">Виводи</h1>
+        <h1 className="text-3xl font-bold mb-2">{t('title')}</h1>
         <p className="text-gray-light">
-          Очікують підтвердження: <span className="font-sans text-yellow-500">{pendingCount}</span>
+          {t('awaitingConfirmation')}: <span className="font-sans text-yellow-500">{pendingCount}</span>
         </p>
       </div>
 
@@ -130,7 +132,7 @@ export default function AdminWithdrawalsPage() {
             tab === 'pending' ? 'text-silver border-b-2 border-silver' : 'text-gray-light hover:text-foreground'
           }`}
         >
-          Очікують ({pendingCount})
+          {t('pending')} ({pendingCount})
         </button>
         <button
           onClick={() => setTab('history')}
@@ -138,7 +140,7 @@ export default function AdminWithdrawalsPage() {
             tab === 'history' ? 'text-silver border-b-2 border-silver' : 'text-gray-light hover:text-foreground'
           }`}
         >
-          Історія
+          {t('history')}
         </button>
       </div>
 
@@ -153,40 +155,40 @@ export default function AdminWithdrawalsPage() {
           >
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-7 gap-4 md:gap-6 text-sm">
               <div className="sm:col-span-2 md:col-span-1">
-                <div className="md:hidden text-xs text-gray-light mb-1">Користувач</div>
-                <div className="font-medium">{withdrawal.investments?.profiles?.full_name || 'Без імені'}</div>
+                <div className="md:hidden text-xs text-gray-light mb-1">{t('user')}</div>
+                <div className="font-medium">{withdrawal.investments?.profiles?.full_name || t('noName')}</div>
                 <div className="text-xs text-gray-light">{withdrawal.investments?.profiles?.email}</div>
               </div>
 
               <div>
-                <div className="md:hidden text-xs text-gray-light mb-1">Сума виводу</div>
+                <div className="md:hidden text-xs text-gray-light mb-1">{t('withdrawAmount')}</div>
                 <div className="text-xl md:text-2xl font-bold text-silver font-sans">${withdrawal.amount.toFixed(2)}</div>
                 {withdrawal.network_fee > 0 && (
                   <div className="text-xs text-gray-light mt-1">
-                    Комісія мережі: <span className="font-sans">${withdrawal.network_fee.toFixed(2)}</span>
+                    {t('networkFee')}: <span className="font-sans">${withdrawal.network_fee.toFixed(2)}</span>
                   </div>
                 )}
               </div>
 
               <div>
-                <div className="text-xs text-gray-light mb-1">Інвестиція</div>
+                <div className="text-xs text-gray-light mb-1">{t('investment')}</div>
                 <div className="font-medium font-sans">
                   ${(withdrawal.investments?.principal || 0).toFixed(2)}
                 </div>
                 {withdrawal.investments?.accrued_interest > 0 && (
                   <div className="text-xs text-green-400 mt-1">
-                    +${withdrawal.investments.accrued_interest.toFixed(2)} профіт
+                    +${withdrawal.investments.accrued_interest.toFixed(2)} {t('profit')}
                   </div>
                 )}
                 {withdrawal.investments?.locked_amount > 0 && (
                   <div className="text-xs text-orange-400 mt-1">
-                    ${withdrawal.investments.locked_amount.toFixed(2)} заморожено
+                    ${withdrawal.investments.locked_amount.toFixed(2)} {t('frozen')}
                   </div>
                 )}
               </div>
 
               <div>
-                <div className="md:hidden text-xs text-gray-light mb-1">Валюта та мережа</div>
+                <div className="md:hidden text-xs text-gray-light mb-1">{t('currency')}</div>
                 <div className="font-medium font-sans">
                   {withdrawal.destination?.coin || withdrawal.method || 'USDT'}
                 </div>
@@ -208,11 +210,11 @@ export default function AdminWithdrawalsPage() {
               </div>
 
               <div className="sm:col-span-2 md:col-span-1">
-                <div className="text-xs text-gray-light mb-1">Дата створення</div>
+                <div className="text-xs text-gray-light mb-1">{t('createdDate')}</div>
                 <div className="text-sm">{new Date(withdrawal.created_at).toLocaleString('uk-UA')}</div>
                 {withdrawal.processed_at && (
                   <>
-                    <div className="text-xs text-gray-light mt-2 mb-1">Оброблено</div>
+                    <div className="text-xs text-gray-light mt-2 mb-1">{t('processedDate')}</div>
                     <div className="text-sm">{new Date(withdrawal.processed_at).toLocaleString('uk-UA')}</div>
                   </>
                 )}
@@ -226,16 +228,16 @@ export default function AdminWithdrawalsPage() {
                   withdrawal.status === 'requested' ? 'bg-yellow-500/20 text-yellow-500' :
                   'bg-red-500/20 text-red-500'
                 }`}>
-                  {withdrawal.status === 'requested' ? 'Очікує підтвердження' :
-                   withdrawal.status === 'approved' ? 'Підтверджено' :
-                   withdrawal.status === 'sent' ? 'Відправлено' :
-                   withdrawal.status === 'rejected' ? 'Відхилено' :
+                  {withdrawal.status === 'requested' ? t('awaitingApproval') :
+                   withdrawal.status === 'approved' ? t('approved') :
+                   withdrawal.status === 'sent' ? t('sent') :
+                   withdrawal.status === 'rejected' ? t('rejected') :
                    withdrawal.status}
                 </span>
 
                 {withdrawal.admin_note && (
                   <div className="text-xs text-gray-light">
-                    Примітка: {withdrawal.admin_note}
+                    {t('note')}: {withdrawal.admin_note}
                   </div>
                 )}
               </div>
@@ -246,13 +248,13 @@ export default function AdminWithdrawalsPage() {
                     onClick={() => openModal(withdrawal, 'approve')}
                     className="flex items-center gap-1.5 px-3 py-1.5 bg-green-900/20 border border-green-500/30 text-green-400 rounded hover:bg-green-900/30 transition-all cursor-pointer text-xs sm:text-sm whitespace-nowrap"
                   >
-                    <CheckIcon /> Схвалити
+                    <CheckIcon /> {t('approve')}
                   </button>
                   <button
                     onClick={() => openModal(withdrawal, 'reject')}
                     className="flex items-center gap-1.5 px-3 py-1.5 bg-red-900/20 border border-red-500/30 text-red-400 rounded hover:bg-red-900/30 transition-all cursor-pointer text-xs sm:text-sm whitespace-nowrap"
                   >
-                    <XIcon /> Відхилити
+                    <XIcon /> {t('reject')}
                   </button>
                 </div>
               )}
@@ -264,7 +266,7 @@ export default function AdminWithdrawalsPage() {
         {withdrawals.length === 0 && (
           <div className="bg-blur-dark border border-gray-medium rounded-lg p-12 text-center">
             <p className="text-gray-light">
-              {tab === 'pending' ? 'Немає виводів на підтвердження' : 'Історія виводів порожня'}
+              {tab === 'pending' ? t('noPending') : t('noHistory')}
             </p>
           </div>
         )}
@@ -275,25 +277,25 @@ export default function AdminWithdrawalsPage() {
         <div className="fixed inset-0 bg-blur/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
           <div className="bg-blur-dark border border-gray-medium rounded-lg max-w-2xl w-full p-6">
             <h2 className="text-2xl font-bold mb-6">
-              {action === 'approve' ? 'Схвалити вивід' : 'Відхилити вивід'}
+              {action === 'approve' ? t('approveWithdrawal') : t('rejectWithdrawal')}
             </h2>
 
             <div className="bg-blur border border-gray-medium rounded-lg p-4 mb-6">
               <div className="grid grid-cols-2 gap-4 text-sm">
                 <div>
-                  <div className="text-gray-light">Користувач:</div>
+                  <div className="text-gray-light">{t('user')}:</div>
                   <div className="font-medium">{selectedWithdrawal.investments?.profiles?.email}</div>
                 </div>
                 <div>
-                  <div className="text-gray-light">Сума:</div>
+                  <div className="text-gray-light">{t('amount')}:</div>
                   <div className="font-bold text-silver font-sans">${selectedWithdrawal.amount.toFixed(2)}</div>
                 </div>
                 <div>
-                  <div className="text-gray-light">Мережа:</div>
+                  <div className="text-gray-light">{t('network')}:</div>
                   <div className="font-medium">{selectedWithdrawal.destination?.network || selectedWithdrawal.destination?.coin || 'USDT TRC20'}</div>
                 </div>
                 <div className="col-span-2">
-                  <div className="text-gray-light">Адреса виводу:</div>
+                  <div className="text-gray-light">{t('withdrawAddress')}:</div>
                   <div className="font-mono text-xs break-all">
                     {selectedWithdrawal.destination?.wallet_address || selectedWithdrawal.destination?.address || 'N/A'}
                   </div>
@@ -305,23 +307,23 @@ export default function AdminWithdrawalsPage() {
 
               <div>
                 <label className="block text-sm font-medium mb-2">
-                  Примітка адміністратора {action === 'reject' && <span className="text-red-500">*</span>}
+                  {t('adminNote')} {action === 'reject' && <span className="text-red-500">*</span>}
                 </label>
                 <textarea
                   value={formData.admin_note}
                   onChange={(e) => setFormData({ ...formData, admin_note: e.target.value })}
                   className="w-full px-4 py-3 bg-blur border border-gray-medium rounded-lg focus:outline-none focus:border-silver resize-none"
                   rows={3}
-                  placeholder={action === 'reject' ? 'Причина відхилення (обов\'язково)' : 'Додаткова інформація (опціонально)'}
+                  placeholder={action === 'reject' ? t('rejectReason') : t('additionalInfo')}
                   required={action === 'reject'}
                 />
               </div>
 
               {action === 'approve' && (
                 <div className="bg-green-500/10 border border-green-500/30 rounded-lg p-4">
-                  <div className="text-xs text-green-500">✓ Схвалення</div>
+                  <div className="text-xs text-green-500">{t('approveConfirmation')}</div>
                   <div className="text-sm text-gray-light mt-1">
-                    Після схвалення кошти будуть списані з балансу користувача. Далі потрібно відправити кошти вручну.
+                    {t('approveText')}
                   </div>
                 </div>
               )}
@@ -335,7 +337,7 @@ export default function AdminWithdrawalsPage() {
                     'bg-silver/20 border border-silver/30 text-silver hover:bg-silver/30'
                   } transition-all`}
                 >
-                  {action === 'approve' ? 'Схвалити' : 'Відхилити'}
+                  {action === 'approve' ? t('approve') : t('reject')}
                 </button>
                 <button
                   type="button"
@@ -346,7 +348,7 @@ export default function AdminWithdrawalsPage() {
                   }}
                   className="flex-1 px-4 py-3 bg-blur border border-gray-medium rounded-lg hover:border-silver/30 transition-all"
                 >
-                  Скасувати
+                  {t('cancel')}
                 </button>
               </div>
             </form>

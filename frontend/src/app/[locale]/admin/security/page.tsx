@@ -8,6 +8,7 @@ import Loading from "@/components/Loading"
 import Pagination from "@/components/Pagination"
 import { CheckIcon, XIcon, EditIcon, KeyIcon, DotIcon } from "@/components/icons/AdminIcons"
 import LockIcon from "@/components/icons/LockIcon"
+import { useTranslations } from 'next-intl'
 
 interface AuditLog {
   id: string
@@ -25,6 +26,7 @@ interface AuditLog {
 export default function AdminSecurityPage() {
   const router = useRouter()
   const { user } = useAuth()
+  const t = useTranslations('admin.securityPage')
 
   // AdminLayout already checked auth
   if (!user || user.role !== 'admin') return null
@@ -96,28 +98,28 @@ export default function AdminSecurityPage() {
   return (
     <div className="p-4 md:p-8 pt-16 md:pt-8">
       <div className="mb-8">
-        <h1 className="text-3xl font-bold mb-2">Безпека та Audit Log</h1>
-        <p className="text-gray-light">Auth логи + Admin дії - всього {logs.length} записів</p>
+        <h1 className="text-3xl font-bold mb-2">{t('title')}</h1>
+        <p className="text-gray-light">{t('subtitle', {count: logs.length})}</p>
       </div>
 
       {/* Search */}
       <div className="bg-blur-dark border border-gray-medium rounded-lg p-6 mb-6">
         <div className="flex gap-4 items-end">
           <div className="flex-1">
-            <label className="block text-sm font-medium mb-2">Пошук</label>
+            <label className="block text-sm font-medium mb-2">{t('search')}</label>
             <input
               type="text"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="w-full px-4 py-2 bg-blur border border-gray-medium rounded-lg focus:outline-none focus:border-silver"
-              placeholder="Пошук по action, source, IP..."
+              placeholder={t('searchPlaceholder')}
             />
           </div>
           <button
             onClick={fetchLogs}
             className="px-6 py-2 bg-silver/10 text-silver border border-silver/20 rounded-lg hover:bg-silver/20 transition-colors"
           >
-            Оновити
+            {t('refresh')}
           </button>
         </div>
       </div>
@@ -126,18 +128,18 @@ export default function AdminSecurityPage() {
       <div className="bg-blur-dark border border-gray-medium rounded-lg overflow-hidden">
         {/* Mobile Warning */}
         <div className="md:hidden p-4 bg-yellow-500/10 border-b border-yellow-500/30 text-yellow-500 text-sm">
-          На мобільному горизонтальне прокручування доступне
+          {t('mobileWarning')}
         </div>
         <div className="overflow-x-auto">
           <table className="w-full">
             <thead className="bg-gray-medium/20">
               <tr>
-                <th className="text-left py-4 px-6 text-sm font-medium">Час</th>
-                <th className="text-left py-4 px-6 text-sm font-medium">Джерело</th>
-                <th className="text-left py-4 px-6 text-sm font-medium">Дія</th>
-                <th className="text-left py-4 px-6 text-sm font-medium">User</th>
-                <th className="text-left py-4 px-6 text-sm font-medium">IP</th>
-                <th className="text-left py-4 px-6 text-sm font-medium">Метадані</th>
+                <th className="text-left py-4 px-6 text-sm font-medium">{t('time')}</th>
+                <th className="text-left py-4 px-6 text-sm font-medium">{t('source')}</th>
+                <th className="text-left py-4 px-6 text-sm font-medium">{t('action')}</th>
+                <th className="text-left py-4 px-6 text-sm font-medium">{t('user')}</th>
+                <th className="text-left py-4 px-6 text-sm font-medium">{t('ip')}</th>
+                <th className="text-left py-4 px-6 text-sm font-medium">{t('metadata')}</th>
               </tr>
             </thead>
             <tbody>
@@ -205,7 +207,7 @@ export default function AdminSecurityPage() {
                     {log.meta && Object.keys(log.meta).length > 0 ? (
                       <details className="text-xs">
                         <summary className="cursor-pointer text-silver hover:text-foreground">
-                          Показати
+                          {t('show')}
                         </summary>
                         <pre className="mt-2 p-2 bg-blur border border-gray-medium rounded text-xs overflow-x-auto">
                           {JSON.stringify(log.meta, null, 2)}
@@ -226,7 +228,7 @@ export default function AdminSecurityPage() {
             <div className="flex justify-center mb-4">
               <LockIcon className="w-16 h-16 text-silver" />
             </div>
-            <p>Логи відсутні або не знайдено за заданими фільтрами</p>
+            <p>{t('noLogs')}</p>
           </div>
         )}
         
@@ -240,12 +242,12 @@ export default function AdminSecurityPage() {
       {/* Info */}
       <div className="mt-6 bg-blur border border-gray-medium rounded-lg p-4">
         <div className="text-sm text-gray-light">
-          <div className="font-medium mb-2">Інформація про логування:</div>
+          <div className="font-medium mb-2">{t('infoTitle')}</div>
           <ul className="space-y-1 text-xs">
-            <li>• Всі дії адміністраторів автоматично логуються</li>
-            <li>• Логи зберігаються назавжди для аудиту</li>
-            <li>• IP адреса та User Agent записуються для безпеки</li>
-            <li>• Metadata містить додаткову інформацію про дію</li>
+            <li>• {t('info1')}</li>
+            <li>• {t('info2')}</li>
+            <li>• {t('info3')}</li>
+            <li>• {t('info4')}</li>
           </ul>
         </div>
       </div>

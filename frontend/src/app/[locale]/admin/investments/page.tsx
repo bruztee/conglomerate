@@ -8,6 +8,7 @@ import { useAdminInvestments } from "@/hooks/useAdminInvestments"
 import Loading from "@/components/Loading"
 import Pagination from "@/components/Pagination"
 import { EditIcon, CheckIcon } from "@/components/icons/AdminIcons"
+import { useTranslations } from 'next-intl'
 
 interface Investment {
   id: string
@@ -36,6 +37,7 @@ interface Investment {
 export default function AdminInvestmentsPage() {
   const router = useRouter()
   const { user } = useAuth()
+  const t = useTranslations('admin.investmentsPage')
   
   // SWR hook - instant loading з кешу
   const { investments: allInvestments, isLoading: loading, refresh: refreshInvestments } = useAdminInvestments()
@@ -72,13 +74,13 @@ export default function AdminInvestmentsPage() {
   return (
     <div className="p-4 md:p-8 pt-16 md:pt-8">
       <div className="mb-8">
-        <h1 className="text-3xl font-bold mb-2">Інвестиції користувачів</h1>
+        <h1 className="text-3xl font-bold mb-2">{t('title')}</h1>
         <p className="text-gray-light">
-          Активних позицій: <span className="font-sans text-green-500">{activeCount}</span>
+          {t('activePositions')}: <span className="font-sans text-green-500">{activeCount}</span>
         </p>
         {totalPages > 1 && (
           <div className="mt-2 text-sm text-gray-light">
-            Сторінка {currentPage} з {totalPages}
+            {t('page')} {currentPage} {t('of')} {totalPages}
           </div>
         )}
       </div>
@@ -91,7 +93,7 @@ export default function AdminInvestmentsPage() {
             filter === 'active' ? 'text-silver border-b-2 border-silver' : 'text-gray-light hover:text-foreground'
           }`}
         >
-          Активні
+          {t('active')}
         </button>
         <button
           onClick={() => { setFilter('frozen'); setCurrentPage(1); }}
@@ -99,7 +101,7 @@ export default function AdminInvestmentsPage() {
             filter === 'frozen' ? 'text-silver border-b-2 border-silver' : 'text-gray-light hover:text-foreground'
           }`}
         >
-          Заморожені
+          {t('frozen')}
         </button>
         <button
           onClick={() => { setFilter('all'); setCurrentPage(1); }}
@@ -107,7 +109,7 @@ export default function AdminInvestmentsPage() {
             filter === 'all' ? 'text-silver border-b-2 border-silver' : 'text-gray-light hover:text-foreground'
           }`}
         >
-          Всі
+          {t('all')}
         </button>
         <button
           onClick={() => { setFilter('closed'); setCurrentPage(1); }}
@@ -115,7 +117,7 @@ export default function AdminInvestmentsPage() {
             filter === 'closed' ? 'text-silver border-b-2 border-silver' : 'text-gray-light hover:text-foreground'
           }`}
         >
-          Закриті
+          {t('closed')}
         </button>
       </div>
 
@@ -133,8 +135,8 @@ export default function AdminInvestmentsPage() {
             >
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 md:gap-6 text-sm">
                 <div className="sm:col-span-2 lg:col-span-1">
-                  <div className="text-xs text-gray-light mb-1">Користувач</div>
-                  <div className="font-medium">{investment.profiles?.full_name || 'Без імені'}</div>
+                  <div className="text-xs text-gray-light mb-1">{t('user')}</div>
+                  <div className="font-medium">{investment.profiles?.full_name || t('noName')}</div>
                   <div className="text-xs text-gray-light truncate">{investment.profiles?.email}</div>
                   {investment.profiles?.phone && (
                     <div className="text-xs text-gray-light mt-1">{investment.profiles.phone}</div>
@@ -142,17 +144,17 @@ export default function AdminInvestmentsPage() {
                 </div>
 
                 <div>
-                  <div className="text-xs text-gray-light mb-1">Початкова сума</div>
+                  <div className="text-xs text-gray-light mb-1">{t('initialAmount')}</div>
                   <div className="text-lg md:text-xl font-bold text-foreground font-sans">
                     ${investment.initial_amount.toFixed(2)}
                   </div>
                   <div className="text-xs text-gray-light mt-1">
-                    {investment.rate_monthly}% місячних
+                    {investment.rate_monthly}% {t('monthly')}
                   </div>
                 </div>
 
                 <div>
-                  <div className="text-xs text-gray-light mb-1">{investment.status === 'closed' ? 'Поточна сума' : 'Поточна сума'}</div>
+                  <div className="text-xs text-gray-light mb-1">{t('currentAmount')}</div>
                   <div className="text-lg font-bold text-silver font-sans">
                     ${investment.status === 'closed' ? '0.00' : totalValue.toFixed(2)}
                   </div>
@@ -162,7 +164,7 @@ export default function AdminInvestmentsPage() {
                 </div>
 
                 <div>
-                  <div className="text-xs text-gray-light mb-1">{investment.status === 'closed' ? 'Виведено' : 'Профіт'}</div>
+                  <div className="text-xs text-gray-light mb-1">{investment.status === 'closed' ? t('withdrawn') : t('profit')}</div>
                   <div className="text-lg font-bold text-green-400 font-sans">
                     {investment.status === 'closed' 
                       ? `$${parseFloat(investment.total_withdrawn.toString()).toFixed(2)}`
@@ -171,30 +173,30 @@ export default function AdminInvestmentsPage() {
                   </div>
                   <div className="text-xs text-gray-light mt-1">
                     {investment.status === 'closed' 
-                      ? `Прибуток: +$${investment.real_profit.toFixed(2)}`
-                      : `Accrued: $${parseFloat(investment.accrued_interest.toString()).toFixed(2)}`
+                      ? `${t('profit')}: +$${investment.real_profit.toFixed(2)}`
+                      : `${t('accrued')}: $${parseFloat(investment.accrued_interest.toString()).toFixed(2)}`
                     }
                   </div>
                 </div>
 
                 {investment.status !== 'closed' && (
                   <div>
-                    <div className="text-xs text-gray-light mb-1">Заморожено</div>
+                    <div className="text-xs text-gray-light mb-1">{t('frozenAmount')}</div>
                     <div className="font-medium font-sans text-orange-400">
                       ${parseFloat(investment.locked_amount.toString()).toFixed(2)}
                     </div>
                     <div className="text-xs text-green-400 mt-1">
-                      Доступно: ${available.toFixed(2)}
+                      {t('available')}: ${available.toFixed(2)}
                     </div>
                   </div>
                 )}
 
                 <div>
-                  <div className="text-xs text-gray-light mb-1">Дата відкриття</div>
+                  <div className="text-xs text-gray-light mb-1">{t('openedDate')}</div>
                   <div className="text-sm">{new Date(investment.opened_at).toLocaleDateString('uk-UA')}</div>
                   {investment.closed_at && (
                     <>
-                      <div className="text-xs text-gray-light mt-2 mb-1">Закрито</div>
+                      <div className="text-xs text-gray-light mt-2 mb-1">{t('closedDate')}</div>
                       <div className="text-sm">{new Date(investment.closed_at).toLocaleDateString('uk-UA')}</div>
                     </>
                   )}
@@ -211,7 +213,7 @@ export default function AdminInvestmentsPage() {
                         ? 'bg-orange-500/20 text-orange-400'
                         : 'bg-gray-500/20 text-gray-400'
                     }`}>
-                      {investment.status === 'active' ? 'Активна' : investment.status === 'frozen' ? 'Заморожено' : 'Закрита'}
+                      {investment.status === 'active' ? t('statusActive') : investment.status === 'frozen' ? t('statusFrozen') : t('statusClosed')}
                     </span>
                     
                     <span className="text-xs text-gray-light">
@@ -231,7 +233,7 @@ export default function AdminInvestmentsPage() {
                     }}
                     className="flex items-center gap-2 px-3 py-1.5 bg-blur border border-gray-medium rounded hover:border-silver/30 transition-all text-sm"
                   >
-                    <EditIcon /> Управління
+                    <EditIcon /> {t('manage')}
                   </button>
                 </div>
               </div>
@@ -242,9 +244,9 @@ export default function AdminInvestmentsPage() {
         {paginatedInvestments.length === 0 && (
           <div className="bg-blur-dark border border-gray-medium rounded-lg p-12 text-center">
             <p className="text-gray-light">
-              {filter === 'active' ? 'Немає активних інвестицій' : 
-               filter === 'closed' ? 'Немає закритих інвестицій' : 
-               'Інвестицій не знайдено'}
+              {filter === 'active' ? t('noActive') : 
+               filter === 'closed' ? t('noClosed') : 
+               t('notFound')}
             </p>
           </div>
         )}
@@ -260,24 +262,24 @@ export default function AdminInvestmentsPage() {
       {showModal && selectedInvestment && (
         <div className="fixed inset-0 bg-blur/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
           <div className="bg-blur-dark border border-gray-medium rounded-lg max-w-2xl w-full p-6">
-            <h2 className="text-2xl font-bold mb-6">Управління інвестицією</h2>
+            <h2 className="text-2xl font-bold mb-6">{t('manageInvestment')}</h2>
 
             <div className="mb-6 p-4 bg-blur border border-gray-medium rounded-lg">
               <div className="grid grid-cols-2 gap-4 text-sm">
                 <div>
-                  <div className="text-gray-light">Користувач:</div>
+                  <div className="text-gray-light">{t('email')}:</div>
                   <div className="font-medium">{selectedInvestment.profiles?.email}</div>
                 </div>
                 <div>
-                  <div className="text-gray-light">Початкова сума:</div>
+                  <div className="text-gray-light">{t('initialAmount')}:</div>
                   <div className="font-bold text-silver font-sans">${parseFloat(selectedInvestment.principal.toString()).toFixed(2)}</div>
                 </div>
                 <div>
-                  <div className="text-gray-light">Профіт:</div>
+                  <div className="text-gray-light">{t('profit')}:</div>
                   <div className="text-green-400 font-sans">+${parseFloat(selectedInvestment.accrued_interest.toString()).toFixed(2)}</div>
                 </div>
                 <div>
-                  <div className="text-gray-light">Всього:</div>
+                  <div className="text-gray-light">{t('totalAmount')}:</div>
                   <div className="font-sans">${(parseFloat(selectedInvestment.principal.toString()) + parseFloat(selectedInvestment.accrued_interest.toString())).toFixed(2)}</div>
                 </div>
               </div>
@@ -288,7 +290,7 @@ export default function AdminInvestmentsPage() {
               try {
                 const result = await api.adminUpdateInvestment(selectedInvestment.id, formData)
                 if (result.success) {
-                  alert('Інвестиція оновлена')
+                  alert(t('investmentUpdated'))
                   setShowModal(false)
                   refreshInvestments()
                 } else {
@@ -301,7 +303,7 @@ export default function AdminInvestmentsPage() {
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium mb-2">
-                    Місячний % (поточний: {selectedInvestment.rate_monthly}%)
+                    {t('monthlyPercentLabel', {current: selectedInvestment.rate_monthly})}
                   </label>
                   <input
                     type="number"
@@ -315,21 +317,21 @@ export default function AdminInvestmentsPage() {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium mb-2">Статус</label>
+                  <label className="block text-sm font-medium mb-2">{t('status')}</label>
                   <select
                     value={formData.status}
                     onChange={(e) => setFormData({ ...formData, status: e.target.value as 'active' | 'closed' })}
                     className="w-full px-4 py-2 bg-blur border border-gray-medium rounded-lg focus:outline-none focus:border-silver"
                   >
-                    <option value="active">Активна</option>
-                    <option value="closed">Закрита</option>
+                    <option value="active">{t('statusActive')}</option>
+                    <option value="closed">{t('statusClosed')}</option>
                   </select>
                 </div>
               </div>
 
               <div>
                 <label className="block text-sm font-medium mb-2">
-                  Заморожено (макс: ${(parseFloat(selectedInvestment.principal.toString()) + parseFloat(selectedInvestment.accrued_interest.toString())).toFixed(2)})
+                  {t('frozenLabel', {max: (parseFloat(selectedInvestment.principal.toString()) + parseFloat(selectedInvestment.accrued_interest.toString())).toFixed(2)})}
                 </label>
                 <input
                   type="number"
@@ -341,7 +343,7 @@ export default function AdminInvestmentsPage() {
                   className="w-full px-4 py-2 bg-blur border border-gray-medium rounded-lg focus:outline-none focus:border-silver font-sans"
                 />
                 <p className="text-xs text-gray-light mt-1">
-                  Доступно буде: ${((parseFloat(selectedInvestment.principal.toString()) + parseFloat(selectedInvestment.accrued_interest.toString())) - formData.locked_amount).toFixed(2)}
+                  {t('availableWillBe')}: ${((parseFloat(selectedInvestment.principal.toString()) + parseFloat(selectedInvestment.accrued_interest.toString())) - formData.locked_amount).toFixed(2)}
                 </p>
               </div>
 
@@ -350,7 +352,7 @@ export default function AdminInvestmentsPage() {
                   type="submit"
                   className="flex-1 px-4 py-3 bg-silver/10 border border-silver/30 text-silver font-bold rounded-lg hover:bg-silver/20 transition-all"
                 >
-                  Зберегти зміни
+                  {t('saveChanges')}
                 </button>
                 <button
                   type="button"
@@ -360,7 +362,7 @@ export default function AdminInvestmentsPage() {
                   }}
                   className="flex-1 px-4 py-3 bg-blur border border-gray-medium rounded-lg hover:border-silver/30 transition-all"
                 >
-                  Скасувати
+                  {t('cancel')}
                 </button>
               </div>
             </form>
