@@ -598,7 +598,22 @@ export async function handleUpdateEmail(request: Request, env: Env): Promise<Res
       return errorResponse('VALIDATION_ERROR', 'Email is required', 400);
     }
     
-    const token = request.headers.get('Authorization')?.replace('Bearer ', '');
+    // Get token from Authorization header OR cookie
+    let token: string | null = null;
+    const authHeader = request.headers.get('Authorization');
+    if (authHeader && authHeader.startsWith('Bearer ')) {
+      token = authHeader.substring(7);
+    } else {
+      const cookieHeader = request.headers.get('Cookie');
+      if (cookieHeader) {
+        const cookies = cookieHeader.split(';').map(c => c.trim());
+        const accessTokenCookie = cookies.find(c => c.startsWith('access_token='));
+        if (accessTokenCookie) {
+          token = accessTokenCookie.split('=')[1];
+        }
+      }
+    }
+    
     if (!token) {
       return errorResponse('UNAUTHORIZED', 'No token provided', 401);
     }
@@ -631,7 +646,22 @@ export async function handleUpdatePhone(request: Request, env: Env): Promise<Res
       return errorResponse('VALIDATION_ERROR', 'Phone is required', 400);
     }
     
-    const token = request.headers.get('Authorization')?.replace('Bearer ', '');
+    // Get token from Authorization header OR cookie
+    let token: string | null = null;
+    const authHeader = request.headers.get('Authorization');
+    if (authHeader && authHeader.startsWith('Bearer ')) {
+      token = authHeader.substring(7);
+    } else {
+      const cookieHeader = request.headers.get('Cookie');
+      if (cookieHeader) {
+        const cookies = cookieHeader.split(';').map(c => c.trim());
+        const accessTokenCookie = cookies.find(c => c.startsWith('access_token='));
+        if (accessTokenCookie) {
+          token = accessTokenCookie.split('=')[1];
+        }
+      }
+    }
+    
     if (!token) {
       return errorResponse('UNAUTHORIZED', 'No token provided', 401);
     }
@@ -668,7 +698,22 @@ export async function handleUpdatePassword(request: Request, env: Env): Promise<
       return errorResponse('VALIDATION_ERROR', 'Password must be at least 6 characters', 400);
     }
     
-    const token = request.headers.get('Authorization')?.replace('Bearer ', '');
+    // Get token from Authorization header OR cookie
+    let token: string | null = null;
+    const authHeader = request.headers.get('Authorization');
+    if (authHeader && authHeader.startsWith('Bearer ')) {
+      token = authHeader.substring(7);
+    } else {
+      const cookieHeader = request.headers.get('Cookie');
+      if (cookieHeader) {
+        const cookies = cookieHeader.split(';').map(c => c.trim());
+        const accessTokenCookie = cookies.find(c => c.startsWith('access_token='));
+        if (accessTokenCookie) {
+          token = accessTokenCookie.split('=')[1];
+        }
+      }
+    }
+    
     if (!token) {
       return errorResponse('UNAUTHORIZED', 'No token provided', 401);
     }
