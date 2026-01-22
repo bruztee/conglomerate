@@ -454,7 +454,8 @@
       "approveText": "After approval, funds will be deducted from user balance. Then you need to send funds manually.",
       "withdrawalApproved": "Withdrawal Approved",
       "withdrawalRejected": "Withdrawal Rejected",
-      "cancel": "Cancel"
+      "cancel": "Cancel",
+      "frozen": "Frozen"
     },
     "investmentsPage": {
       "title": "User Investments",
