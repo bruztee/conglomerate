@@ -296,7 +296,7 @@ function WithdrawPageContent() {
                           id="amount"
                           value={withdrawAmount}
                           onChange={(e) => setWithdrawAmount(e.target.value)}
-                          className="w-full px-4 py-3 bg-blur border border-gray-medium rounded-lg focus:outline-none focus:border-silver transition-colors font-sans"
+                          className="w-full px-4 py-3 bg-gray-dark/20 border border-gray-medium/30 rounded-lg focus:outline-none focus:border-silver transition-colors font-sans"
                           placeholder={t('enterAmount')}
                         />
                         <p className="text-xs text-gray-light mt-1">
@@ -328,7 +328,7 @@ function WithdrawPageContent() {
                       id="wallet"
                       value={walletAddress}
                       onChange={(e) => setWalletAddress(e.target.value)}
-                      className="w-full px-4 py-3 bg-blur border border-gray-medium rounded-lg focus:outline-none focus:border-silver transition-colors font-sans"
+                      className="w-full px-4 py-3 bg-gray-dark/20 border border-gray-medium/30 rounded-lg focus:outline-none focus:border-silver transition-colors font-sans"
                       placeholder={t('walletPlaceholder')}
                     />
                   </div>
@@ -405,7 +405,7 @@ function WithdrawPageContent() {
               </div>
 
               <div className="bg-blur-dark border border-gray-medium rounded-lg p-6">
-                <h2 className="text-xl font-bold mb-4">Історія виводів</h2>
+                <h2 className="text-xl font-bold mb-4">{t('withdrawHistory')}</h2>
 
                 {withdrawalHistory.length > 0 ? (
                   <>
@@ -465,7 +465,7 @@ function WithdrawPageContent() {
                     />
                   </>
                 ) : (
-                  <div className="text-center py-8 text-gray-light">Історія виводів порожня</div>
+                  <div className="text-center py-8 text-gray-light">{t('withdrawHistoryEmpty')}</div>
                 )}
               </div>
             </div>

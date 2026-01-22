@@ -93,7 +93,7 @@ export function useDeposits() {
           }
 
           const totalAmount = parseFloat(investment.principal || d.amount)
-          const withdrawn = parseFloat(investment.withdrawn_amount || 0)
+          const withdrawn = parseFloat(investment.total_withdrawn || 0)
           const locked = parseFloat(investment.locked_amount || 0)
           const profit = parseFloat(investment.accrued_interest || 0)
 

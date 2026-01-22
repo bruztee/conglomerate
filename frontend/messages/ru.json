@@ -175,6 +175,7 @@
     "available": "доступно",
     "networkNote": "Вывод возможен только в той же сети, в которой был сделан депозит",
     "selectedDeposit": "Выбранный депозит",
+    "selectType": "Выберите тип вывода",
     "withdrawType": "Выберите тип вывода",
     "partialWithdraw": "Снять часть",
     "fullWithdraw": "Снять все",
@@ -450,7 +451,8 @@
       "approveConfirmation": "Одобрение",
       "approveText": "После одобрения средства будут списаны с баланса пользователя. Далее нужно отправить средства вручную.",
       "withdrawalApproved": "Вывод подтвержден",
-      "withdrawalRejected": "Вывод отклонен"
+      "withdrawalRejected": "Вывод отклонен",
+      "cancel": "Отменить"
     },
     "investmentsPage": {
       "title": "Инвестиции пользователей",

@@ -175,6 +175,7 @@
     "available": "available",
     "networkNote": "Withdrawal is only possible in the same network where the deposit was made",
     "selectedDeposit": "Selected Deposit",
+    "selectType": "Select withdrawal type",
     "withdrawType": "Select withdrawal type",
     "partialWithdraw": "Withdraw Partial",
     "fullWithdraw": "Withdraw All",
@@ -450,7 +451,8 @@
       "approveConfirmation": "Approval",
       "approveText": "After approval, funds will be deducted from user balance. Then you need to send funds manually.",
       "withdrawalApproved": "Withdrawal Approved",
-      "withdrawalRejected": "Withdrawal Rejected"
+      "withdrawalRejected": "Withdrawal Rejected",
+      "cancel": "Cancel"
     },
     "investmentsPage": {
       "title": "User Investments",

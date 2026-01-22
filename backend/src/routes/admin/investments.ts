@@ -5,6 +5,60 @@ import { createServiceSupabaseClient } from '../../utils/supabase';
 import { logAudit } from '../../utils/audit';
 
 /**
+ * GET /admin/investments
+ * Отримати всі інвестиції
+ */
+export async function handleGetInvestments(request: Request, env: Env): Promise<Response> {
+  const adminCheck = await requireAdmin(request, env);
+  if (!adminCheck.isAdmin) {
+    return adminCheck.error!;
+  }
+
+  try {
+    const supabase = createServiceSupabaseClient(env);
+
+    const { data: investments, error } = await supabase
+      .from('investments')
+      .select(`
+        *,
+        profiles!investments_user_id_fkey(id, email, full_name, phone)
+      `)
+      .order('opened_at', { ascending: false });
+
+    if (error) {
+      console.error('Failed to fetch investments:', error);
+      return errorResponse('DATABASE_ERROR', 'Failed to fetch investments', 500);
+    }
+
+    // Обчислюємо додаткові поля для кожної інвестиції
+    const enrichedInvestments = (investments || []).map((inv: any) => {
+      const principal = parseFloat(inv.principal || 0);
+      const accruedInterest = parseFloat(inv.accrued_interest || 0);
+      const withdrawnAmount = parseFloat(inv.withdrawn_amount || 0);
+      const lockedAmount = parseFloat(inv.locked_amount || 0);
+      
+      const totalValue = principal + accruedInterest;
+      const available = totalValue - lockedAmount;
+      const realProfit = accruedInterest - withdrawnAmount;
+      
+      return {
+        ...inv,
+        initial_amount: principal,
+        total_value: totalValue,
+        available: available,
+        real_profit: realProfit,
+        total_withdrawn: withdrawnAmount,
+      };
+    });
+
+    return jsonResponse({ investments: enrichedInvestments });
+  } catch (error: any) {
+    console.error('Get investments error:', error);
+    return errorResponse('SERVER_ERROR', error.message, 500);
+  }
+}
+
+/**
  * PUT /admin/investments/:investmentId
  * Update investment - change rate, status, lock amount
  */

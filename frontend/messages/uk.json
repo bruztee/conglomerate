@@ -175,6 +175,7 @@
     "available": "доступно",
     "networkNote": "Вивід можливий тільки в тій же мережі, в якій був зроблений депозит",
     "selectedDeposit": "Обраний депозит",
+    "selectType": "Оберіть тип виводу",
     "withdrawType": "Оберіть тип виводу",
     "partialWithdraw": "Зняти частину",
     "fullWithdraw": "Зняти все",
@@ -450,7 +451,8 @@
       "approveConfirmation": "Схвалення",
       "approveText": "Після схвалення кошти будуть списані з балансу користувача. Далі потрібно відправити кошти вручну.",
       "withdrawalApproved": "Вивід підтверджено",
-      "withdrawalRejected": "Вивід відхилено"
+      "withdrawalRejected": "Вивід відхилено",
+      "cancel": "Скасувати"
     },
     "investmentsPage": {
       "title": "Інвестиції користувачів",
