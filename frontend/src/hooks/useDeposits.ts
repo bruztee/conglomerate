@@ -92,14 +92,14 @@ export function useDeposits() {
             }
           }
 
-          const totalAmount = parseFloat(investment.principal || d.amount)
+          const initialAmount = parseFloat(d.amount)
           const withdrawn = parseFloat(investment.total_withdrawn || 0)
           const locked = parseFloat(investment.locked_amount || 0)
           const profit = parseFloat(investment.accrued_interest || 0)
 
           return {
             id: d.id,
-            amount: totalAmount,
+            amount: initialAmount,
             percentage: d.monthly_percentage || 5,
             profit: profit,
             withdrawn: withdrawn,
