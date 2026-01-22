@@ -208,7 +208,33 @@
     "selectTypeError": "Выберите тип вывода",
     "enterAmountError": "Введите сумму для вывода",
     "enterWalletError": "Введите адрес кошелька",
-    "withdrawNetwork": "Сеть вывода"
+    "withdrawNetwork": "Сеть вывода",
+    "withdrawType": "Выберите тип вывода",
+    "partialWithdrawal": "Снять часть",
+    "fullWithdrawal": "Снять все",
+    "withdrawAmount": "Сумма вывода",
+    "enterAmount": "Введите сумму",
+    "maxAmount": "Можно вывести любую сумму до",
+    "fullWithdrawalNote": "Ваш депозит будет закрыт и все средства будут выведены на указанный кошелек.",
+    "walletAddress": "Адрес кошелька",
+    "walletPlaceholder": "Введите адрес вашего криптокошелька",
+    "walletWarning": "Проверьте правильность адреса кошелька. Средства, отправленные на неверный адрес, не могут быть возвращены.",
+    "submitRequest": "Подать заявку на вывод",
+    "submitting": "Создание заявки...",
+    "withdrawTerms": "Условия вывода",
+    "noFees": "Без комиссий",
+    "noFeesText": "Мы не взимаем комиссию за вывод средств",
+    "noMinimum": "Без минимальной суммы",
+    "noMinimumText": "Выводите любую сумму до вашего баланса",
+    "processingTime": "Время обработки",
+    "processingTimeText": "24-48 часов для проверки заявки",
+    "availability": "Доступность",
+    "availabilityText": "Выводы доступны 24/7",
+    "withdrawHistory": "История выводов",
+    "withdrawHistoryEmpty": "История выводов пуста",
+    "amount": "Сумма",
+    "created": "Создано",
+    "withdrawnOn": "Выведено"
   },
   "referral": {
     "title": "Реферальная программа",
@@ -279,6 +305,10 @@
   },
   "settings": {
     "title": "Настройки",
-    "subtitle": "Управляйте настройками своего аккаунта"
+    "subtitle": "Управляйте настройками своего аккаунта",
+    "currentInfo": "Текущая информация",
+    "changeEmail": "Изменить Email",
+    "changePhone": "Изменить Телефон",
+    "changePassword": "Изменить Пароль"
   }
 }

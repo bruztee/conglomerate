@@ -208,7 +208,33 @@
     "selectTypeError": "Оберіть тип виводу",
     "enterAmountError": "Введіть суму для виводу",
     "enterWalletError": "Введіть адресу гаманця",
-    "withdrawNetwork": "Мережа виводу"
+    "withdrawNetwork": "Мережа виводу",
+    "withdrawType": "Оберіть тип виводу",
+    "partialWithdrawal": "Зняти частину",
+    "fullWithdrawal": "Зняти все",
+    "withdrawAmount": "Сума виводу",
+    "enterAmount": "Введіть суму",
+    "maxAmount": "Можна вивести будь-яку суму до",
+    "fullWithdrawalNote": "Ваш депозит буде закритий і всі кошти будуть виведені на вказаний гаманець.",
+    "walletAddress": "Адреса гаманця",
+    "walletPlaceholder": "Введіть адресу вашого криптогаманця",
+    "walletWarning": "Перевірте правильність адреси гаманця. Кошти, відправлені на невірну адресу, не можуть бути повернені.",
+    "submitRequest": "Подати заявку на вивід",
+    "submitting": "Створення заявки...",
+    "withdrawTerms": "Умови виводу",
+    "noFees": "Без комісій",
+    "noFeesText": "Ми не стягуємо комісію за вивід коштів",
+    "noMinimum": "Без мінімальної суми",
+    "noMinimumText": "Виводьте будь-яку суму до вашого балансу",
+    "processingTime": "Час обробки",
+    "processingTimeText": "24-48 годин для перевірки заявки",
+    "availability": "Доступність",
+    "availabilityText": "Виводи доступні 24/7",
+    "withdrawHistory": "Історія виводів",
+    "withdrawHistoryEmpty": "Історія виводів порожня",
+    "amount": "Сума",
+    "created": "Створено",
+    "withdrawnOn": "Виведено"
   },
   "referral": {
     "title": "Реферальна програма",
@@ -279,6 +305,10 @@
   },
   "settings": {
     "title": "Налаштування",
-    "subtitle": "Керуйте налаштуваннями свого акаунту"
+    "subtitle": "Керуйте налаштуваннями свого акаунту",
+    "currentInfo": "Поточна інформація",
+    "changeEmail": "Змінити Email",
+    "changePhone": "Змінити Телефон",
+    "changePassword": "Змінити Пароль"
   }
 }

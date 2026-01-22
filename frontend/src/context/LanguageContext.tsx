@@ -1,6 +1,7 @@
 "use client"
 
 import React, { createContext, useContext, useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import type { Locale } from '@/i18n/request';
 
 interface LanguageContextType {
@@ -11,6 +12,7 @@ interface LanguageContextType {
 const LanguageContext = createContext<LanguageContextType | undefined>(undefined);
 
 export function LanguageProvider({ children }: { children: React.ReactNode }) {
+  const router = useRouter();
   const [locale, setLocaleState] = useState<Locale>('uk');
 
   useEffect(() => {
@@ -39,7 +41,9 @@ export function LanguageProvider({ children }: { children: React.ReactNode }) {
   const setLocale = (newLocale: Locale) => {
     setLocaleState(newLocale);
     document.cookie = `NEXT_LOCALE=${newLocale}; path=/; max-age=31536000`;
-    window.location.reload();
+    // Використовуємо router.refresh() замість window.location.reload()
+    // Це перезавантажує серверні компоненти без втрати клієнтського стану
+    router.refresh();
   };
 
   return (

@@ -208,7 +208,33 @@
     "selectTypeError": "Select withdrawal type",
     "enterAmountError": "Enter amount for withdrawal",
     "enterWalletError": "Enter wallet address",
-    "withdrawNetwork": "Withdrawal Network"
+    "withdrawNetwork": "Withdrawal Network",
+    "withdrawType": "Select withdrawal type",
+    "partialWithdrawal": "Withdraw Partial",
+    "fullWithdrawal": "Withdraw All",
+    "withdrawAmount": "Withdrawal Amount",
+    "enterAmount": "Enter amount",
+    "maxAmount": "You can withdraw any amount up to",
+    "fullWithdrawalNote": "Your deposit will be closed and all funds will be withdrawn to the specified wallet.",
+    "walletAddress": "Wallet Address",
+    "walletPlaceholder": "Enter your crypto wallet address",
+    "walletWarning": "Check the wallet address carefully. Funds sent to an incorrect address cannot be returned.",
+    "submitRequest": "Submit withdrawal request",
+    "submitting": "Creating request...",
+    "withdrawTerms": "Withdrawal Terms",
+    "noFees": "No Fees",
+    "noFeesText": "We do not charge fees for withdrawals",
+    "noMinimum": "No Minimum Amount",
+    "noMinimumText": "Withdraw any amount up to your balance",
+    "processingTime": "Processing Time",
+    "processingTimeText": "24-48 hours for request verification",
+    "availability": "Availability",
+    "availabilityText": "Withdrawals available 24/7",
+    "withdrawHistory": "Withdrawal History",
+    "withdrawHistoryEmpty": "Withdrawal history is empty",
+    "amount": "Amount",
+    "created": "Created",
+    "withdrawnOn": "Withdrawn"
   },
   "referral": {
     "title": "Referral Program",
@@ -279,6 +305,10 @@
   },
   "settings": {
     "title": "Settings",
-    "subtitle": "Manage your account settings"
+    "subtitle": "Manage your account settings",
+    "currentInfo": "Current Information",
+    "changeEmail": "Change Email",
+    "changePhone": "Change Phone",
+    "changePassword": "Change Password"
   }
 }

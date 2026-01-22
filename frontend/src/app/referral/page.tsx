@@ -13,6 +13,7 @@ import BoltIcon from "@/components/icons/BoltIcon"
 import RefreshIcon from "@/components/icons/RefreshIcon"
 import Header from "@/components/Header"
 import Loading from "@/components/Loading"
+import { useTranslations } from 'next-intl'
 
 interface Referral {
   id: string
@@ -25,6 +26,7 @@ interface Referral {
 }
 
 export default function ReferralPage() {
+  const t = useTranslations('referral')
   const router = useRouter()
   const { user } = useAuth()
   
@@ -79,30 +81,30 @@ export default function ReferralPage() {
       {/* Success message при копіюванні */}
       {copiedMessage && (
         <div className="fixed top-4 right-4 z-50 bg-green-900/90 border border-green-500 text-green-400 px-6 py-4 rounded-lg shadow-lg">
-          Посилання скопійовано!
+          {t('linkCopied')}
         </div>
       )}
 
       <main className="min-h-screen px-4 py-8 sm:px-6 lg:px-8">
         <div className="container mx-auto max-w-6xl">
           <div className="mb-8">
-            <h1 className="text-3xl font-bold mb-2">Реферальна програма</h1>
-            <p className="text-gray-light">Запрошуйте друзів та заробляйте додатковий дохід</p>
+            <h1 className="text-3xl font-bold mb-2">{t('title')}</h1>
+            <p className="text-gray-light">{t('subtitle')}</p>
           </div>
 
           <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4 mb-8">
             <div className="bg-blur-dark border border-gray-medium rounded-lg p-6">
-              <div className="text-gray-light text-sm mb-2">Всього рефералів</div>
+              <div className="text-gray-light text-sm mb-2">{t('totalReferrals')}</div>
               <div className="text-3xl font-bold text-foreground font-sans">{totalReferrals}</div>
             </div>
 
             <div className="bg-blur-dark border border-gray-medium rounded-lg p-6">
-              <div className="text-gray-light text-sm mb-2">Активні реферали</div>
+              <div className="text-gray-light text-sm mb-2">{t('activeReferrals')}</div>
               <div className="text-3xl font-bold text-silver font-sans">{activeReferrals}</div>
             </div>
 
             <div className="bg-blur-dark border border-gray-medium rounded-lg p-6">
-              <div className="text-gray-light text-sm mb-2">Загальний заробіток</div>
+              <div className="text-gray-light text-sm mb-2">{t('totalEarnings')}</div>
               <div className="text-3xl font-bold text-foreground font-sans">${totalEarnings.toFixed(2)}</div>
             </div>
 
@@ -114,7 +116,7 @@ export default function ReferralPage() {
 
           <div className="grid lg:grid-cols-3 gap-6 mb-8">
             <div className="lg:col-span-2 bg-blur-dark border border-gray-medium rounded-lg p-6">
-              <h2 className="text-xl font-bold mb-4">Ваше реферальне посилання</h2>
+              <h2 className="text-xl font-bold mb-4">{t('referralCode')}</h2>
 
               <div className="bg-blur border border-gray-medium rounded-lg p-4 mb-6">
                 <div className="flex flex-col sm:flex-row gap-3">
@@ -126,72 +128,62 @@ export default function ReferralPage() {
                   />
                   <button
                     onClick={copyToClipboard}
-                    className="btn-gradient-primary px-6 py-3 text-foreground font-medium rounded-lg transition-all whitespace-nowrap font-sans"
+                    className="btn-gradient-primary px-4 py-2 text-foreground font-bold rounded-lg transition-colors font-sans"
                   >
-                    Копіювати
+                    {t('copyLink')}
                   </button>
                 </div>
               </div>
 
               <div className="grid sm:grid-cols-3 gap-4">
-                <button className="btn-gradient-secondary p-4 rounded-lg transition-all text-center">
-                  <div className="flex justify-center mb-2">
-                    <EmailIcon className="w-8 h-8 text-silver" />
-                  </div>
-                  <div className="text-sm font-medium font-sans">Email</div>
+                <button className="flex items-center gap-2 px-4 py-2 bg-gray-dark border border-gray-medium rounded-lg hover:border-silver transition-colors">
+                  <EmailIcon className="w-5 h-5" />
+                  <span className="text-sm">{t('shareEmail')}</span>
                 </button>
-                <button className="btn-gradient-secondary p-4 rounded-lg transition-all text-center">
-                  <div className="flex justify-center mb-2">
-                    <TelegramIcon className="w-8 h-8 text-silver" />
-                  </div>
-                  <div className="text-sm font-medium font-sans">Telegram</div>
+                <button className="flex items-center gap-2 px-4 py-2 bg-gray-dark border border-gray-medium rounded-lg hover:border-silver transition-colors">
+                  <TelegramIcon className="w-5 h-5" />
+                  <span className="text-sm">{t('shareTelegram')}</span>
                 </button>
-                <button className="btn-gradient-secondary p-4 rounded-lg transition-all text-center">
-                  <div className="flex justify-center mb-2">
-                    <ShareIcon className="w-8 h-8 text-silver" />
-                  </div>
-                  <div className="text-sm font-medium font-sans">Соцмережі</div>
+                <button className="flex items-center gap-2 px-4 py-2 bg-gray-dark border border-gray-medium rounded-lg hover:border-silver transition-colors">
+                  <ShareIcon className="w-5 h-5" />
+                  <span className="text-sm">{t('shareSocial')}</span>
                 </button>
               </div>
             </div>
 
             <div className="bg-blur-dark border border-gray-medium rounded-lg p-6">
-              <h2 className="text-xl font-bold mb-4">Умови програми</h2>
+              <h2 className="text-xl font-bold mb-6">{t('programTerms')}</h2>
 
               <div className="space-y-4 text-sm">
                 <div className="flex gap-3">
                   <MoneyIcon className="w-5 h-5 text-silver flex-shrink-0 mt-0.5" />
                   <div>
-                    <div className="font-medium mb-1">
-                      <span className="font-sans">5%</span> від депозитів
-                    </div>
-                    <div className="text-gray-light">
-                      Отримуйте <span className="font-sans">5%</span> від кожного депозиту вашого реферала
-                    </div>
+                    <div className="font-bold mb-2">{t('term1Title')}</div>
+                    <div className="text-sm text-gray-light">{t('term1Text')}</div>
                   </div>
                 </div>
 
                 <div className="flex gap-3">
                   <RefreshIcon className="w-5 h-5 text-silver flex-shrink-0 mt-0.5" />
                   <div>
-                    <div className="font-medium mb-1">Довічна винагорода</div>
-                    <div className="text-gray-light">Заробляйте з кожного депозиту без обмежень</div>
+                    <div className="font-bold mb-2">{t('term2Title')}</div>
+                    <div className="text-sm text-gray-light">{t('term2Text')}</div>
                   </div>
                 </div>
 
                 <div className="flex gap-3">
                   <BoltIcon className="w-5 h-5 text-silver flex-shrink-0 mt-0.5" />
                   <div>
-                    <div className="font-medium mb-1">Миттєве нарахування</div>
-                    <div className="text-gray-light">Бонус нараховується автоматично</div>
+                    <div className="font-bold mb-2">{t('term3Title')}</div>
+                    <div className="text-sm text-gray-light">{t('term3Text')}</div>
                   </div>
                 </div>
 
                 <div className="flex gap-3">
                   <MoneyIcon className="w-5 h-5 text-silver flex-shrink-0 mt-0.5" />
                   <div>
-                    <div className="font-medium mb-1">Вільний вивід</div>
-                    <div className="text-gray-light">Виводьте заробіток у будь-який час</div>
+                    <div className="font-bold mb-2">{t('term4Title')}</div>
+                    <div className="text-sm text-gray-light">{t('term4Text')}</div>
                   </div>
                 </div>
               </div>
@@ -200,9 +192,9 @@ export default function ReferralPage() {
 
           <div className="bg-blur-dark border border-gray-medium rounded-lg p-6">
             <div className="flex items-center justify-between mb-6">
-              <h2 className="text-xl font-bold">Ваші реферали</h2>
+              <h2 className="text-xl font-bold">{t('yourReferrals')}</h2>
               <div className="text-sm text-gray-light">
-                Показано: {referrals.length} з {totalReferrals}
+                {t('showing', { count: referrals.length, total: totalReferrals })}
               </div>
             </div>
 
@@ -211,11 +203,11 @@ export default function ReferralPage() {
                 <table className="w-full">
                   <thead>
                     <tr className="border-b border-gray-medium">
-                      <th className="text-left py-3 px-4 text-sm font-medium text-gray-light">Користувач</th>
-                      <th className="text-left py-3 px-4 text-sm font-medium text-gray-light">Депозитів</th>
-                      <th className="text-left py-3 px-4 text-sm font-medium text-gray-light">Ваш заробіток</th>
+                      <th className="text-left py-3 px-4 text-sm font-medium text-gray-light">{t('user')}</th>
+                      <th className="text-left py-3 px-4 text-sm font-medium text-gray-light">{t('deposits')}</th>
+                      <th className="text-left py-3 px-4 text-sm font-medium text-gray-light">{t('yourEarnings')}</th>
                       <th className="text-left py-3 px-4 text-sm font-medium text-gray-light">Статус</th>
-                      <th className="text-left py-3 px-4 text-sm font-medium text-gray-light">Дата реєстрації</th>
+                      <th className="text-left py-3 px-4 text-sm font-medium text-gray-light">{t('registrationDate')}</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -259,8 +251,8 @@ export default function ReferralPage() {
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
                   </svg>
                 </div>
-                <p className="mb-2">У вас поки немає рефералів</p>
-                <p className="text-sm">Поділіться своїм посиланням, щоб почати заробляти</p>
+                <p className="mb-2 font-medium">{t('noReferrals')}</p>
+                <p className="text-sm">{t('shareLink')}</p>
               </div>
             )}
           </div>

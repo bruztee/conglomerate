@@ -12,6 +12,7 @@ import Pagination from "@/components/Pagination"
 import { useWallet } from "@/hooks/useWallet"
 import { useDeposits } from "@/hooks/useDeposits"
 import { useWithdrawals } from "@/hooks/useWithdrawals"
+import { useTranslations } from 'next-intl'
 
 interface WithdrawalRequest {
   id: string
@@ -41,6 +42,8 @@ interface Deposit {
 }
 
 function WithdrawPageContent() {
+  const t = useTranslations('withdraw')
+  const tCommon = useTranslations('common')
   const router = useRouter()
   const searchParams = useSearchParams()
   const { user } = useAuth()
@@ -92,34 +95,32 @@ function WithdrawPageContent() {
 
     try {
       if (!selectedDepositId) {
-        setError('Оберіть депозит для виводу')
+        setError(t('selectDepositError'))
         setSubmitting(false)
         return
       }
 
       if (!withdrawalType) {
-        setError('Оберіть тип виводу')
+        setError(t('selectTypeError'))
         setSubmitting(false)
         return
       }
 
-      const amount = withdrawalType === 'full' ? maxWithdrawAmount : parseFloat(withdrawAmount)
-      
-      if (withdrawalType === 'partial' && (!amount || amount <= 0)) {
-        setError('Введіть суму для виводу')
+      if (withdrawalType === 'partial' && !withdrawAmount) {
+        setError(t('enterAmountError'))
         setSubmitting(false)
         return
       }
 
-      if (!walletAddress) {
-        setError('Введіть адресу гаманця')
+      if (!walletAddress.trim()) {
+        setError(t('enterWalletError'))
         setSubmitting(false)
         return
       }
 
       // Створити withdrawal request - backend валідує доступну суму
       const result = await api.createWithdrawal({
-        amount: amount,
+        amount: withdrawalType === 'full' ? maxWithdrawAmount : parseFloat(withdrawAmount),
         close: withdrawalType === 'full', // Якщо full withdrawal - сервер сам візьме всю суму
         destination: {
           wallet_address: walletAddress,
@@ -129,20 +130,21 @@ function WithdrawPageContent() {
       })
 
       if (result.success) {
-        setMessage('Заявка на вивід успішно створена! Очікуйте обробки протягом 24-48 годин.')
+        setMessage(t('requestSuccess'))
         setWalletAddress('')
         setWithdrawAmount('')
         setWithdrawalType(null)
         setSelectedDepositId('')
         
-        // SWR автоматично оновить всі дані
-        await Promise.all([refreshWallet(), refreshDeposits(), refreshWithdrawals()])
+        // Refresh data
+        await refreshWallet()
+        await refreshDeposits()
+        await refreshWithdrawals()
       } else {
-        const errorMsg = result.error?.message || 'Помилка при створенні заявки на вивід'
-        setError(errorMsg)
+        setError(result.error?.message || t('requestError'))
       }
     } catch (err: any) {
-      setError(err?.message || 'Помилка при створенні заявки на вивід')
+      setError(err?.message || t('requestError'))
     } finally {
       setSubmitting(false)
     }
@@ -175,17 +177,17 @@ function WithdrawPageContent() {
       <main className="min-h-screen px-4 py-8 sm:px-6 lg:px-8">
         <div className="container mx-auto max-w-5xl">
           <div className="mb-8">
-            <h1 className="text-3xl font-bold mb-2">Вивід коштів</h1>
-            <p className="text-gray-light">Виведіть свій прибуток на криптогаманець</p>
+            <h1 className="text-3xl font-bold mb-2">{t('title')}</h1>
+            <p className="text-gray-light">{t('subtitle')}</p>
           </div>
 
           <div className="grid lg:grid-cols-2 gap-6 mb-8">
             <div className="bg-blur-dark border border-gray-medium rounded-lg p-6">
-              <h2 className="text-xl font-bold mb-4">Створити заявку на вивід</h2>
+              <h2 className="text-xl font-bold mb-6">{t('createRequest')}</h2>
 
               <form onSubmit={handleSubmit} className="space-y-4">
                 <div>
-                  <label className="block text-sm font-medium mb-3">Оберіть депозит для виводу</label>
+                  <label className="block text-sm font-medium mb-3">{t('selectDeposit')}</label>
                   {activeDeposits.length > 0 ? (
                     <div className="space-y-2">
                       {activeDeposits.map((deposit) => (
@@ -204,27 +206,27 @@ function WithdrawPageContent() {
                                 ${deposit.amount.toFixed(2)}
                               </div>
                               <div className="text-xs text-gray-light">
-                                Профіт: <span className="font-sans text-silver">${deposit.profit.toFixed(2)}</span>
+                                {t('profit')}: <span className="font-sans text-silver">${deposit.profit.toFixed(2)}</span>
                               </div>
                               <div className="text-xs text-gray-light mt-1">
-                                Мережа: <span className="font-sans text-silver">{deposit.coin} ({deposit.network})</span>
+                                {t('network')}: <span className="font-sans text-silver">{deposit.coin} ({deposit.network})</span>
                               </div>
                             </div>
                             <div className="text-right">
                               <div className="text-sm font-bold text-silver font-sans">
                                 ${(deposit.amount + deposit.profit - (deposit.frozen || 0)).toFixed(2)}
                               </div>
-                              <div className="text-xs text-gray-light">доступно</div>
+                              <div className="text-xs text-gray-light">{t('available')}</div>
                             </div>
                           </div>
                         </div>
                       ))}
                     </div>
                   ) : (
-                    <div className="text-center py-8 text-gray-light">Немає активних депозитів</div>
+                    <p className="text-sm text-gray-light text-center py-4">{t('noActiveDeposits')}</p>
                   )}
                   <p className="text-xs text-gray-light mt-2">
-                    Вивід можливий тільки в тій же мережі, в якій був зроблений депозит
+                    {t('networkNote')}
                   </p>
                 </div>
 
@@ -232,28 +234,24 @@ function WithdrawPageContent() {
                   <>
                     <div className="bg-blur border border-gray-medium rounded-lg p-4">
                       <div className="text-sm space-y-2">
-                        <div className="flex justify-between">
-                          <span className="text-gray-light">Обраний депозит:</span>
-                          <span className="font-sans font-medium">${selectedDeposit.amount.toFixed(2)}</span>
+                        <div className="flex justify-between text-sm">
+                          <span className="text-gray-light">{t('balance')}:</span>
+                          <span className="font-bold text-silver font-sans">${selectedDeposit.amount.toFixed(2)}</span>
                         </div>
-                        <div className="flex justify-between">
-                          <span className="text-gray-light">Профіт:</span>
-                          <span className="font-sans font-medium text-silver">${selectedDeposit.profit.toFixed(2)}</span>
+                        <div className="flex justify-between text-sm">
+                          <span className="text-gray-light">{t('profit')}:</span>
+                          <span className="font-bold text-green-400 font-sans">+${selectedDeposit.profit.toFixed(2)}</span>
                         </div>
-                        <div className="flex justify-between pt-2 border-t border-gray-medium">
-                          <span className="font-medium">Доступно:</span>
-                          <span className="font-sans font-bold text-silver">${maxWithdrawAmount.toFixed(2)}</span>
-                        </div>
-                        <div className="flex justify-between">
-                          <span className="text-gray-light">Мережа виводу:</span>
-                          <span className="font-sans font-medium text-silver">{selectedDeposit.coin} ({selectedDeposit.network})</span>
+                        <div className="flex justify-between text-sm">
+                          <span className="text-gray-light">{t('withdrawNetwork')}:</span>
+                          <span className="font-medium text-white font-sans">{selectedNetwork}</span>
                         </div>
                       </div>
                     </div>
 
                     {/* Тип виводу */}
                     <div>
-                      <label className="block text-sm font-medium mb-3">Оберіть тип виводу</label>
+                      <label className="block text-sm font-medium mb-3">{t('selectType')}</label>
                       <div className="grid grid-cols-2 gap-3">
                         <button
                           type="button"
@@ -263,11 +261,11 @@ function WithdrawPageContent() {
                           }}
                           className={`px-4 py-3 border-2 rounded-lg font-medium transition-all ${
                             withdrawalType === 'partial'
-                              ? 'border-silver bg-silver/10 text-silver'
-                              : 'border-gray-medium hover:border-gray-light text-gray-light hover:text-foreground'
+                              ? "border-silver bg-silver/10 text-silver"
+                              : "border-gray-medium hover:border-gray-light text-gray-light hover:text-foreground"
                           }`}
                         >
-                          Зняти частину
+                          {t('partialWithdrawal')}
                         </button>
                         <button
                           type="button"
@@ -277,11 +275,11 @@ function WithdrawPageContent() {
                           }}
                           className={`px-4 py-3 border-2 rounded-lg font-medium transition-all ${
                             withdrawalType === 'full'
-                              ? 'border-silver bg-silver/10 text-silver'
-                              : 'border-gray-medium hover:border-gray-light text-gray-light hover:text-foreground'
+                              ? "border-silver bg-silver/10 text-silver"
+                              : "border-gray-medium hover:border-gray-light text-gray-light hover:text-foreground"
                           }`}
                         >
-                          Зняти все
+                          {t('fullWithdrawal')}
                         </button>
                       </div>
                     </div>
@@ -290,7 +288,7 @@ function WithdrawPageContent() {
                     {withdrawalType === 'partial' && (
                       <div>
                         <label htmlFor="amount" className="block text-sm font-medium mb-2">
-                          Сума виводу
+                          {t('amount')}
                         </label>
                         <input
                           type="text"
@@ -298,25 +296,20 @@ function WithdrawPageContent() {
                           value={withdrawAmount}
                           onChange={(e) => setWithdrawAmount(e.target.value)}
                           className="w-full px-4 py-3 bg-blur border border-gray-medium rounded-lg focus:outline-none focus:border-silver transition-colors font-sans"
-                          placeholder="Введіть суму"
+                          placeholder={t('enterAmount')}
                         />
                         <p className="text-xs text-gray-light mt-1">
-                          Можна вивести будь-яку суму до ${maxWithdrawAmount.toFixed(2)}
+                          {t('maxAmount')}: ${maxWithdrawAmount.toFixed(2)}
                         </p>
                       </div>
                     )}
 
                     {/* Показати повідомлення якщо обрано full */}
                     {withdrawalType === 'full' && (
-                      <div className="bg-orange-900/20 border border-orange-500/30 rounded-lg p-4">
-                        <div className="flex gap-2">
-                          <WarningIcon className="w-5 h-5 text-orange-400 flex-shrink-0 mt-0.5" />
-                          <div>
-                            <p className="font-medium text-orange-400 mb-1">Повний вивід</p>
-                            <p className="text-sm text-gray-light">
-                              Ваш депозит буде закритий і всі кошти (${maxWithdrawAmount.toFixed(2)}) будуть виведені на вказаний гаманець.
-                            </p>
-                          </div>
+                      <div className="bg-blue-500/10 border border-blue-500/30 rounded-lg p-3 text-sm text-blue-400">
+                        <div className="flex items-start gap-2">
+                          <WarningIcon className="w-4 h-4 flex-shrink-0 mt-0.5" />
+                          <p>{t('fullWithdrawalNote')}</p>
                         </div>
                       </div>
                     )}
@@ -327,7 +320,7 @@ function WithdrawPageContent() {
                 {withdrawalType && (
                   <div>
                     <label htmlFor="wallet" className="block text-sm font-medium mb-2">
-                      Адреса гаманця
+                      {t('walletAddress')}
                     </label>
                     <input
                       type="text"
@@ -335,7 +328,7 @@ function WithdrawPageContent() {
                       value={walletAddress}
                       onChange={(e) => setWalletAddress(e.target.value)}
                       className="w-full px-4 py-3 bg-blur border border-gray-medium rounded-lg focus:outline-none focus:border-silver transition-colors font-sans"
-                      placeholder="Введіть адресу вашого криптогаманця"
+                      placeholder={t('walletPlaceholder')}
                     />
                   </div>
                 )}
@@ -346,8 +339,7 @@ function WithdrawPageContent() {
                       <div className="flex gap-2 text-xs">
                         <WarningIcon className="w-4 h-4 text-silver flex-shrink-0 mt-0.5" />
                         <p className="text-gray-light">
-                          Перевірте правильність адреси гаманця. Кошти, відправлені на невірну адресу, не можуть бути
-                          повернені.
+                          {t('walletWarning')}
                         </p>
                       </div>
                     </div>
@@ -357,7 +349,7 @@ function WithdrawPageContent() {
                       disabled={!selectedDepositId || (withdrawalType === 'partial' && !withdrawAmount) || !walletAddress || submitting}
                       className="btn-gradient-primary w-full px-4 py-3 disabled:bg-gray-medium disabled:cursor-not-allowed disabled:border-gray-medium disabled:shadow-none text-foreground font-bold rounded-lg transition-all font-sans"
                     >
-                      {submitting ? 'Створення заявки...' : 'Подати заявку на вивід'}
+                      {submitting ? t('submitting') : t('submitRequest')}
                     </button>
                   </>
                 )}
@@ -366,15 +358,15 @@ function WithdrawPageContent() {
 
             <div className="space-y-6">
               <div className="bg-blur-dark border border-gray-medium rounded-lg p-6">
-                <h2 className="text-xl font-bold mb-4">Умови виводу</h2>
+                <h2 className="text-xl font-bold mb-4">{t('withdrawTerms')}</h2>
 
                 <div className="space-y-4 text-sm">
                   <div className="flex gap-3">
                     <span className="text-silver">✓</span>
                     <div>
-                      <div className="font-medium mb-1">Без комісій</div>
+                      <div className="font-medium mb-1">{t('noFees')}</div>
                       <div className="text-gray-light">
-                        Ми не стягуємо комісію за вивід коштів
+                        {t('noFeesText')}
                       </div>
                     </div>
                   </div>
@@ -382,9 +374,9 @@ function WithdrawPageContent() {
                   <div className="flex gap-3">
                     <span className="text-silver">✓</span>
                     <div>
-                      <div className="font-medium mb-1">Без мінімальної суми</div>
+                      <div className="font-medium mb-1">{t('noMinimum')}</div>
                       <div className="text-gray-light">
-                        Виводьте будь-яку суму до вашого балансу
+                        {t('noMinimumText')}
                       </div>
                     </div>
                   </div>
@@ -392,9 +384,9 @@ function WithdrawPageContent() {
                   <div className="flex gap-3">
                     <span className="text-silver">✓</span>
                     <div>
-                      <div className="font-medium mb-1">Час обробки</div>
+                      <div className="font-medium mb-1">{t('processingTime')}</div>
                       <div className="text-gray-light">
-                        <span className="font-sans">24-48</span> годин для перевірки заявки
+                        {t('processingTimeText')}
                       </div>
                     </div>
                   </div>
@@ -402,7 +394,7 @@ function WithdrawPageContent() {
                   <div className="flex gap-3">
                     <span className="text-silver">✓</span>
                     <div>
-                      <div className="font-medium mb-1">Доступність</div>
+                      <div className="font-medium mb-1">{t('availability')}</div>
                       <div className="text-gray-light">
                         Виводи доступні <span className="font-sans">24/7</span>
                       </div>

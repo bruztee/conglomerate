@@ -9,8 +9,10 @@ import WarningIcon from "@/components/icons/WarningIcon"
 import Header from "@/components/Header"
 import Loading from "@/components/Loading"
 import PhoneVerificationPopup from "@/components/PhoneVerificationPopup"
+import { useTranslations } from 'next-intl'
 
 export default function SettingsPage() {
+  const t = useTranslations('settings')
   const router = useRouter()
   const { user } = useAuth()
   
@@ -158,11 +160,11 @@ export default function SettingsPage() {
       
       <main className="min-h-screen px-4 py-12">
         <div className="container mx-auto max-w-4xl">
-          <h1 className="text-3xl font-bold mb-8">Налаштування</h1>
+          <h1 className="text-3xl font-bold mb-8">{t('title')}</h1>
 
           {/* Current user info */}
           <div className="bg-blur-dark border border-gray-medium rounded-lg p-6 mb-8">
-            <h2 className="text-xl font-bold mb-4">Поточна інформація</h2>
+            <h2 className="text-xl font-bold mb-4">{t('currentInfo')}</h2>
             <div className="space-y-2 text-gray-light">
               <p><strong>Ім'я:</strong> {userProfile?.full_name || user.full_name || 'Не вказано'}</p>
               <p><strong>Email:</strong> {userProfile?.email || user.email}</p>
@@ -182,7 +184,7 @@ export default function SettingsPage() {
                   : 'text-gray-light hover:text-foreground'
               }`}
             >
-              Змінити Email
+              {t('changeEmail')}
             </button>
             <button
               onClick={() => setActiveTab('phone')}
@@ -192,7 +194,7 @@ export default function SettingsPage() {
                   : 'text-gray-light hover:text-foreground'
               }`}
             >
-              Змінити Телефон
+              {t('changePhone')}
             </button>
             <button
               onClick={() => setActiveTab('password')}
@@ -202,7 +204,7 @@ export default function SettingsPage() {
                   : 'text-gray-light hover:text-foreground'
               }`}
             >
-              Змінити Пароль
+              {t('changePassword')}
             </button>
           </div>
 
