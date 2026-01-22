@@ -8,6 +8,9 @@ import { AuthProvider } from "@/context/AuthContext"
 import PhoneVerificationWrapper from "@/components/PhoneVerificationWrapper"
 import RootLayoutClient from "@/components/RootLayoutClient"
 import ReferralCookieHandler from "@/components/ReferralCookieHandler"
+import { NextIntlClientProvider } from 'next-intl'
+import { getMessages } from 'next-intl/server'
+import { LanguageProvider } from "@/context/LanguageContext"
 
 const orbitron = Orbitron({
   variable: "--font-heading",
@@ -39,20 +42,26 @@ export const metadata: Metadata = {
   },
 }
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode
 }>) {
+  const messages = await getMessages()
+  
   return (
     <html lang="uk">
       <body className={`${orbitron.variable} ${spaceGrotesk.variable} ${playfair.variable} antialiased`}>
-        <AuthProvider>
-          <ReferralCookieHandler />
-          <RootLayoutClient>
-            {children}
-          </RootLayoutClient>
-        </AuthProvider>
+        <NextIntlClientProvider messages={messages}>
+          <LanguageProvider>
+            <AuthProvider>
+              <ReferralCookieHandler />
+              <RootLayoutClient>
+                {children}
+              </RootLayoutClient>
+            </AuthProvider>
+          </LanguageProvider>
+        </NextIntlClientProvider>
       </body>
     </html>
   )

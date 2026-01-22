@@ -8,8 +8,11 @@ import Header from "@/components/Header"
 import { useAuth } from "@/context/AuthContext"
 import EmailIcon from "@/components/icons/EmailIcon"
 import Loading from "@/components/Loading"
+import { useTranslations } from 'next-intl'
 
 function RegisterForm() {
+  const t = useTranslations('auth')
+  const tCommon = useTranslations('common')
   const router = useRouter()
   const searchParams = useSearchParams()
   const { register, user, initialized } = useAuth()
@@ -52,12 +55,12 @@ function RegisterForm() {
     e.preventDefault()
     
     if (formData.password !== formData.confirmPassword) {
-      setError("Паролі не співпадають")
+      setError(t('passwordsNotMatch'))
       return
     }
     
     if (formData.password.length < 8) {
-      setError("Пароль має містити мінімум 8 символів")
+      setError(t('passwordTooShort'))
       return
     }
     
@@ -70,11 +73,11 @@ function RegisterForm() {
       if (result.success) {
         router.push(`/auth/verify-email?email=${encodeURIComponent(formData.email)}`)
       } else {
-        const errMsg = result.error?.message || "Помилка реєстрації"
+        const errMsg = result.error?.message || t('errorRegister')
         setError(errMsg)
       }
     } catch (err: any) {
-      const errMsg = err?.message || 'Помилка підключення. Спробуйте ще раз.'
+      const errMsg = err?.message || t('errorConnection')
       setError(errMsg)
     } finally {
       setLoading(false)
@@ -85,8 +88,8 @@ function RegisterForm() {
     <main className="min-h-screen flex items-center justify-center px-4 py-12">
         <div className="w-full max-w-md">
           <div className="text-center mb-8">
-            <h1 className="text-3xl font-bold mb-2">Реєстрація</h1>
-            <p className="text-gray-light">Приєднуйтесь до платформи</p>
+            <h1 className="text-3xl font-bold mb-2">{t('registerTitle')}</h1>
+            <p className="text-gray-light">{t('registerSubtitle')}</p>
           </div>
 
           {showVerificationMessage ? (
@@ -95,18 +98,18 @@ function RegisterForm() {
                 <div className="flex justify-center mb-4">
                   <EmailIcon className="w-16 h-16 text-silver" />
                 </div>
-                <h2 className="text-xl font-bold mb-2">Перевірте email</h2>
+                <h2 className="text-xl font-bold mb-2">{t('verifyEmail')}</h2>
                 <p className="text-gray-light text-sm mb-4">
-                  Ми відправили листа з підтвердженням на {formData.email}
+                  {t('verifyEmailText', { email: formData.email })}
                 </p>
                 <p className="text-gray-light text-xs mb-6">
-                  Після підтвердження email ви зможете увійти в систему
+                  {t('verifyEmailInfo')}
                 </p>
                 <Link 
                   href="/auth/login"
                   className="btn-gradient-primary inline-block px-6 py-3 text-foreground font-bold rounded-lg transition-all"
                 >
-                  Перейти до входу
+                  {t('goToLogin')}
                 </Link>
               </div>
             </div>
@@ -120,7 +123,7 @@ function RegisterForm() {
               
               <div>
                 <label htmlFor="email" className="block text-sm font-medium mb-2 font-sans">
-                  Email
+                  {tCommon('email')}
                 </label>
                 <input
                   type="email"
@@ -129,13 +132,13 @@ function RegisterForm() {
                   value={formData.email}
                   onChange={handleChange}
                   className="w-full px-4 py-3 bg-blur border border-gray-medium rounded-lg focus:outline-none focus:border-silver transition-colors font-sans"
-                  placeholder="your@email.com"
+                  placeholder={t('emailPlaceholder')}
                 />
               </div>
 
               <div>
                 <label htmlFor="referralCode" className="block text-sm font-medium mb-2">
-                  Реферальний код (опціонально)
+                  {t('referralCode')}
                 </label>
                 <input
                   type="text"
@@ -144,13 +147,13 @@ function RegisterForm() {
                   value={formData.referralCode}
                   onChange={handleChange}
                   className="w-full px-4 py-3 bg-blur border border-gray-medium rounded-lg focus:outline-none focus:border-silver transition-colors"
-                  placeholder="Введіть код, якщо маєте"
+                  placeholder={t('referralCodePlaceholder')}
                 />
               </div>
 
               <div>
                 <label htmlFor="password" className="block text-sm font-medium mb-2">
-                  Пароль
+                  {tCommon('password')}
                 </label>
                 <input
                   type="password"
@@ -159,13 +162,13 @@ function RegisterForm() {
                   value={formData.password}
                   onChange={handleChange}
                   className="w-full px-4 py-3 bg-blur border border-gray-medium rounded-lg focus:outline-none focus:border-silver transition-colors"
-                  placeholder="Мінімум 8 символів"
+                  placeholder={t('minCharacters')}
                 />
               </div>
 
               <div>
                 <label htmlFor="confirmPassword" className="block text-sm font-medium mb-2">
-                  Підтвердіть пароль
+                  {t('confirmPassword')}
                 </label>
                 <input
                   type="password"
@@ -174,7 +177,7 @@ function RegisterForm() {
                   value={formData.confirmPassword}
                   onChange={handleChange}
                   className="w-full px-4 py-3 bg-blur border border-gray-medium rounded-lg focus:outline-none focus:border-silver transition-colors"
-                  placeholder="Повторіть пароль"
+                  placeholder={t('confirmPasswordPlaceholder')}
                 />
               </div>
 
@@ -183,22 +186,22 @@ function RegisterForm() {
                 disabled={loading}
                 className="btn-gradient-primary w-full px-4 py-3 text-foreground font-bold rounded-lg transition-all font-sans disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                {loading ? "Реєстрація..." : "Зареєструватися"}
+                {loading ? t('registering') : t('registerButton')}
               </button>
 
               <p className="text-center text-sm text-gray-light mt-4">
-                Вже є акаунт?{" "}
+                {t('haveAccount')}{" "}
                 <Link href="/auth/login" className="text-silver hover:text-foreground transition-colors font-sans">
-                  Увійти
+                  {t('loginButton')}
                 </Link>
               </p>
             </form>
           )}
 
           <div className="mt-6 text-center text-xs text-gray-light">
-            Реєструючись, ви погоджуєтесь з{" "}
+            {t('agreeToTerms')}{" "}
             <Link href="/rules" className="text-silver hover:text-foreground transition-colors font-sans">
-              правилами та умовами
+              {t('termsAndConditions')}
             </Link>
           </div>
         </div>

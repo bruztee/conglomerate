@@ -6,6 +6,7 @@ import { api } from '@/lib/api'
 import CopyIcon from '@/components/icons/CopyIcon'
 import ArrowLeftIcon from '@/components/icons/ArrowLeftIcon'
 import WarningIcon from '@/components/icons/WarningIcon'
+import { useTranslations } from 'next-intl'
 
 interface PaymentMethod {
   id: string
@@ -23,6 +24,8 @@ interface DepositFlowProps {
 type Step = 'amount' | 'currency' | 'network' | 'wallet' | 'confirm' | 'success'
 
 export default function DepositFlow({ onSuccess, userRate }: DepositFlowProps) {
+  const t = useTranslations('deposit')
+  const tCommon = useTranslations('common')
   const { user } = useAuth()
   const [step, setStep] = useState<Step>('amount')
   const [amount, setAmount] = useState('')
@@ -124,14 +127,14 @@ export default function DepositFlow({ onSuccess, userRate }: DepositFlowProps) {
   return (
     <div className="bg-gray-dark/20 border border-gray-medium/30 rounded-lg p-6 h-fit">
       <div className="flex items-center justify-between mb-6">
-        <h2 className="text-xl font-bold">Створити депозит</h2>
+        <h2 className="text-xl font-bold">{t('createDeposit')}</h2>
         {step !== 'amount' && (
           <button
             onClick={goBack}
             className="flex items-center gap-2 text-sm text-gray-light hover:text-white transition-colors"
           >
             <ArrowLeftIcon className="w-4 h-4" />
-            Назад
+            {tCommon('back')}
           </button>
         )}
       </div>
@@ -139,7 +142,7 @@ export default function DepositFlow({ onSuccess, userRate }: DepositFlowProps) {
       {step === 'amount' && (
         <div className="max-w-md mx-auto">
           <div className="mb-4">
-            <label className="block text-sm font-medium mb-2">Сума депозиту</label>
+            <label className="block text-sm font-medium mb-2">{t('depositAmount')}</label>
             <div className="relative">
               <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-light font-sans">$</span>
               <input
@@ -166,7 +169,7 @@ export default function DepositFlow({ onSuccess, userRate }: DepositFlowProps) {
               ))}
             </div>
             <p className="text-xs text-gray-light mt-2">
-              Від <span className="font-sans">${minAmount}</span> до <span className="font-sans">${maxAmount}</span>
+              {t('minMax', { min: minAmount, max: maxAmount })}
             </p>
           </div>
 
@@ -175,11 +178,11 @@ export default function DepositFlow({ onSuccess, userRate }: DepositFlowProps) {
             disabled={!amount || parseFloat(amount) < minAmount || parseFloat(amount) > maxAmount}
             className="btn-gradient-primary w-full px-4 py-3 disabled:bg-gray-medium disabled:cursor-not-allowed text-foreground font-bold rounded-lg transition-colors font-sans"
           >
-            Продовжити
+            {tCommon('continue')}
           </button>
           
           <div className="text-center mt-4 pt-4 border-t border-gray-medium/30">
-            <p className="text-sm text-gray-light mb-1">Ваша місячна ставка</p>
+            <p className="text-sm text-gray-light mb-1">{t('yourMonthlyRate')}</p>
             <p className="text-2xl font-bold text-white">{userRate}%</p>
           </div>
         </div>
@@ -188,7 +191,7 @@ export default function DepositFlow({ onSuccess, userRate }: DepositFlowProps) {
       {step === 'currency' && (
         <div className="space-y-4">
           <div>
-            <p className="text-base font-medium text-center mb-6">Оберіть криптовалюту для депозиту</p>
+            <p className="text-base font-medium text-center mb-6">{t('selectCurrency')}</p>
             <div className="grid grid-cols-2 gap-3 max-w-md mx-auto">
               {availableCurrencies.map((currency) => (
                 <button
@@ -201,7 +204,7 @@ export default function DepositFlow({ onSuccess, userRate }: DepositFlowProps) {
               ))}
             </div>
             {availableCurrencies.length === 0 && (
-              <p className="text-sm text-gray-light text-center py-4">Немає доступних методів оплати</p>
+              <p className="text-sm text-gray-light text-center py-4">{t('noPaymentMethods')}</p>
             )}
           </div>
         </div>
@@ -210,7 +213,7 @@ export default function DepositFlow({ onSuccess, userRate }: DepositFlowProps) {
       {step === 'network' && selectedCurrency && (
         <div className="space-y-4">
           <div>
-            <p className="text-base font-medium text-center mb-6">Оберіть мережу для {selectedCurrency}</p>
+            <p className="text-base font-medium text-center mb-6">{t('selectNetwork', { currency: selectedCurrency })}</p>
             <div className="grid grid-cols-2 gap-3 max-w-md mx-auto">
               {availableNetworks.map((network) => (
                 <button
@@ -229,7 +232,7 @@ export default function DepositFlow({ onSuccess, userRate }: DepositFlowProps) {
       {step === 'wallet' && selectedCurrency && selectedNetwork && (
         <div className="space-y-4">
           <div>
-            <p className="text-base font-medium text-center mb-6">Підтвердіть вибір гаманця</p>
+            <p className="text-base font-medium text-center mb-6">{t('confirmWallet')}</p>
             <div className="space-y-3 max-w-md mx-auto">
               {availableWallets.map((wallet) => (
                 <button
@@ -240,7 +243,7 @@ export default function DepositFlow({ onSuccess, userRate }: DepositFlowProps) {
                   <div className="flex justify-between items-center">
                     <span>{wallet.currency} ({wallet.network})</span>
                     {wallet.min_amount > 0 && (
-                      <span className="text-xs">Мін: ${wallet.min_amount}</span>
+                      <span className="text-xs">{t('minAmount', { amount: wallet.min_amount })}</span>
                     )}
                   </div>
                 </button>
@@ -252,23 +255,23 @@ export default function DepositFlow({ onSuccess, userRate }: DepositFlowProps) {
 
       {step === 'confirm' && selectedWallet && (
         <div className="space-y-4 max-w-md mx-auto">
-          <p className="text-base font-medium text-center mb-4">Реквізити для оплати</p>
+          <p className="text-base font-medium text-center mb-4">{t('paymentDetails')}</p>
           <div className="bg-silver/10 border border-silver/30 rounded-lg p-4">
             <div className="space-y-3">
               <div className="flex justify-between items-center">
-                <span className="text-sm text-gray-light">Сума:</span>
+                <span className="text-sm text-gray-light">{t('amount')}:</span>
                 <span className="font-bold text-silver font-sans">${amount}</span>
               </div>
               <div className="flex justify-between items-center">
-                <span className="text-sm text-gray-light">Валюта:</span>
+                <span className="text-sm text-gray-light">{t('currency')}:</span>
                 <span className="font-bold text-silver font-sans">{selectedWallet.currency}</span>
               </div>
               <div className="flex justify-between items-center">
-                <span className="text-sm text-gray-light">Мережа:</span>
+                <span className="text-sm text-gray-light">{t('network')}:</span>
                 <span className="font-medium font-sans">{selectedWallet.network}</span>
               </div>
               <div className="pt-3 border-t border-gray-medium/30">
-                <div className="text-xs text-gray-light mb-2">Адреса гаманця:</div>
+                <div className="text-xs text-gray-light mb-2">{t('walletAddress')}:</div>
                 <div className="font-mono text-sm bg-blur p-3 rounded break-all text-white">
                   {selectedWallet.wallet_address}
                 </div>
@@ -278,7 +281,7 @@ export default function DepositFlow({ onSuccess, userRate }: DepositFlowProps) {
                   className="flex items-center gap-1 text-xs text-silver hover:text-foreground mt-2"
                 >
                   <CopyIcon className="w-4 h-4" />
-                  Копіювати адресу
+                  {t('copyAddress')}
                 </button>
               </div>
             </div>
@@ -288,12 +291,12 @@ export default function DepositFlow({ onSuccess, userRate }: DepositFlowProps) {
             <div className="flex items-start gap-2">
               <WarningIcon className="w-5 h-5 text-yellow-500 flex-shrink-0 mt-0.5" />
               <div className="text-sm text-yellow-500">
-                <p className="font-bold mb-1">Важливо!</p>
+                <p className="font-bold mb-1">{t('important')}</p>
                 <ul className="list-disc list-inside space-y-1 text-xs">
-                  <li>Відправляйте кошти СТРОГО в мережі {selectedWallet.network}</li>
-                  <li>Перевірте адресу перед відправкою</li>
-                  <li>Мінімальна сума: ${selectedWallet.min_amount || minAmount}</li>
-                  <li>Депозит буде зараховано після підтвердження транзакції</li>
+                  <li>{t('warning1', { network: selectedWallet.network })}</li>
+                  <li>{t('warning2')}</li>
+                  <li>{t('warning3', { amount: selectedWallet.min_amount || minAmount })}</li>
+                  <li>{t('warning4')}</li>
                 </ul>
               </div>
             </div>
@@ -304,12 +307,12 @@ export default function DepositFlow({ onSuccess, userRate }: DepositFlowProps) {
             disabled={loading}
             className="btn-gradient-primary w-full px-4 py-3 disabled:bg-gray-medium disabled:cursor-not-allowed text-foreground font-bold rounded-lg transition-colors font-sans"
           >
-            {loading ? 'Обробка...' : 'Я оплатив - Підтвердити'}
+            {loading ? t('processing') : t('confirmPayment')}
           </button>
 
           <p className="flex items-center justify-center gap-1 text-xs text-gray-light">
             <WarningIcon className="w-4 h-4" />
-            Натисніть кнопку ТІЛЬКИ після відправки коштів на вказану адресу
+            {t('clickAfterPayment')}
           </p>
         </div>
       )}
@@ -322,9 +325,9 @@ export default function DepositFlow({ onSuccess, userRate }: DepositFlowProps) {
                 <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
               </svg>
             </div>
-            <h3 className="text-xl font-bold text-green-500 mb-2">Депозит створено</h3>
+            <h3 className="text-xl font-bold text-green-500 mb-2">{t('depositCreated')}</h3>
             <p className="text-gray-light">
-              Ваш депозит очікує підтвердження адміністратором. Ви отримаєте повідомлення після обробки.
+              {t('depositCreatedText')}
             </p>
           </div>
 
@@ -332,7 +335,7 @@ export default function DepositFlow({ onSuccess, userRate }: DepositFlowProps) {
             onClick={resetFlow}
             className="btn-gradient-primary w-full px-4 py-3 text-foreground font-bold rounded-lg transition-colors font-sans"
           >
-            OK
+            {t('ok')}
           </button>
         </div>
       )}

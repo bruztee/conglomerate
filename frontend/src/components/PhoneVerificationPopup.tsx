@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react"
 import { api } from "@/lib/api"
+import { useTranslations } from 'next-intl'
 
 interface PhoneVerificationPopupProps {
   onVerified: () => void
@@ -9,6 +10,7 @@ interface PhoneVerificationPopupProps {
 }
 
 export default function PhoneVerificationPopup({ onVerified, onClose }: PhoneVerificationPopupProps) {
+  const t = useTranslations('phone')
   const [step, setStep] = useState<'phone' | 'code'>('phone')
   const [phone, setPhone] = useState('')
   const [code, setCode] = useState('')
@@ -30,7 +32,7 @@ export default function PhoneVerificationPopup({ onVerified, onClose }: PhoneVer
     setError('')
 
     if (!phone.trim()) {
-      setError('Введіть номер телефону')
+      setError(t('enterPhone'))
       setLoading(false)
       return
     }
@@ -45,7 +47,7 @@ export default function PhoneVerificationPopup({ onVerified, onClose }: PhoneVer
         setError('') // Очищуємо помилку при переотправці
       }
     } else {
-      setError(result.error?.message || 'Помилка відправки коду')
+      setError(result.error?.message || t('errorSending'))
     }
 
     setLoading(false)
@@ -57,7 +59,7 @@ export default function PhoneVerificationPopup({ onVerified, onClose }: PhoneVer
     setError('')
 
     if (code.length !== 6) {
-      setError('Код має містити 6 цифр')
+      setError(t('codeLength'))
       setLoading(false)
       return
     }
@@ -67,11 +69,11 @@ export default function PhoneVerificationPopup({ onVerified, onClose }: PhoneVer
     if (result.success) {
       onVerified()
     } else {
-      const errorMessage = result.error?.message || 'Невірний код'
+      const errorMessage = result.error?.message || t('invalidCode')
       
       // Обробка expired token
       if (errorMessage.includes('expired') || errorMessage.includes('invalid')) {
-        setError('Код застарів або недійсний. Натисніть "Переотправити код"')
+        setError(t('codeExpired'))
       } else {
         setError(errorMessage)
       }
@@ -101,9 +103,9 @@ export default function PhoneVerificationPopup({ onVerified, onClose }: PhoneVer
           )}
           
           <div className="text-center mb-6">
-            <h2 className="text-2xl font-bold mb-2">Верифікація телефону</h2>
+            <h2 className="text-2xl font-bold mb-2">{t('verificationTitle')}</h2>
             <p className="text-gray-light text-sm">
-              Для безпеки вашого акаунту підтвердіть номер телефону
+              {t('verificationSubtitle')}
             </p>
           </div>
 
@@ -117,7 +119,7 @@ export default function PhoneVerificationPopup({ onVerified, onClose }: PhoneVer
             <form onSubmit={handleSendOTP} className="space-y-6">
               <div>
                 <label htmlFor="phone" className="block text-sm font-medium mb-2">
-                  Номер телефону
+                  {t('phoneNumber')}
                 </label>
                 <input
                   id="phone"
@@ -125,12 +127,12 @@ export default function PhoneVerificationPopup({ onVerified, onClose }: PhoneVer
                   value={phone}
                   onChange={(e) => setPhone(e.target.value)}
                   className="w-full px-4 py-3 bg-blur border border-gray-medium rounded-lg focus:outline-none focus:border-silver transition-colors"
-                  placeholder="+380123456789"
+                  placeholder={t('phonePlaceholder')}
                   disabled={loading}
                   autoFocus
                 />
                 <p className="text-xs text-gray-light mt-2">
-                  Введіть номер у форматі: +380XXXXXXXXX
+                  {t('phoneFormat')}
                 </p>
               </div>
 
@@ -139,14 +141,14 @@ export default function PhoneVerificationPopup({ onVerified, onClose }: PhoneVer
                 disabled={loading}
                 className="btn-gradient-primary w-full px-6 py-3 text-foreground font-bold rounded-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                {loading ? "Відправка..." : "Надіслати код"}
+                {loading ? t('sending') : t('sendCode')}
               </button>
             </form>
           ) : (
             <form onSubmit={handleVerifyOTP} className="space-y-6">
               <div>
                 <label htmlFor="code" className="block text-sm font-medium mb-2">
-                  Код підтвердження
+                  {t('verificationCode')}
                 </label>
                 <input
                   id="code"
@@ -157,13 +159,13 @@ export default function PhoneVerificationPopup({ onVerified, onClose }: PhoneVer
                     setCode(value)
                   }}
                   className="w-full px-4 py-3 bg-blur border border-gray-medium rounded-lg focus:outline-none focus:border-silver transition-colors text-center text-2xl tracking-widest font-mono"
-                  placeholder="000000"
+                  placeholder={t('codePlaceholder')}
                   disabled={loading}
                   autoFocus
                   maxLength={6}
                 />
                 <p className="text-xs text-gray-light mt-2 text-center">
-                  Введіть 6-значний код з SMS на номер {phone}
+                  {t('codeInfo', { phone })}
                 </p>
               </div>
 
@@ -179,14 +181,14 @@ export default function PhoneVerificationPopup({ onVerified, onClose }: PhoneVer
                     disabled={loading}
                     className="flex-1 px-6 py-3 bg-gray-medium text-foreground font-bold rounded-lg transition-all hover:bg-gray-medium/80 disabled:opacity-50 disabled:cursor-not-allowed"
                   >
-                    Назад
+                    {t('back')}
                   </button>
                   <button
                     type="submit"
                     disabled={loading || code.length !== 6}
                     className="flex-1 btn-gradient-primary px-6 py-3 text-foreground font-bold rounded-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                   >
-                    {loading ? "Перевірка..." : "Підтвердити"}
+                    {loading ? t('verifying') : t('verify')}
                   </button>
                 </div>
 
@@ -198,8 +200,8 @@ export default function PhoneVerificationPopup({ onVerified, onClose }: PhoneVer
                   className="w-full px-6 py-2 text-sm text-silver hover:text-white transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   {resendCooldown > 0 
-                    ? `Переотправити код (${resendCooldown} сек)` 
-                    : 'Переотправити код'}
+                    ? t('resendCodeTimer', { seconds: resendCooldown })
+                    : t('resendCode')}
                 </button>
               </div>
             </form>

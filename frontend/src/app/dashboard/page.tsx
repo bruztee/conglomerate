@@ -18,6 +18,7 @@ import { useRouter } from "next/navigation"
 import Loading from "@/components/Loading"
 import { useWallet } from "@/hooks/useWallet"
 import { useDeposits } from "@/hooks/useDeposits"
+import { useTranslations } from 'next-intl'
 
 interface Deposit {
   id: string
@@ -34,6 +35,8 @@ interface Deposit {
 }
 
 export default function DashboardPage() {
+  const t = useTranslations('dashboard')
+  const tCommon = useTranslations('common')
   const router = useRouter()
   const { user } = useAuth()
   
@@ -61,15 +64,15 @@ export default function DashboardPage() {
   const getStatusLabel = (status: string) => {
     switch (status) {
       case "active":
-        return "Активний"
+        return tCommon('active')
       case "frozen":
-        return "Заморожено"
+        return tCommon('frozen')
       case "closed":
-        return "Закрито"
+        return tCommon('closed')
       case "pending":
-        return "Очікує"
+        return tCommon('pending')
       case "rejected":
-        return "Відхилено"
+        return tCommon('rejected')
       default:
         return status
     }
@@ -108,8 +111,8 @@ export default function DashboardPage() {
       <main className="min-h-screen px-4 py-8 sm:px-6 lg:px-8">
         <div className="container mx-auto max-w-7xl">
           <div className="mb-8">
-            <h1 className="text-3xl font-bold mb-2">Особистий кабінет</h1>
-            <p className="text-gray-light">Керуйте своїми інвестиціями та депозитами</p>
+            <h1 className="text-3xl font-bold mb-2">{t('title')}</h1>
+            <p className="text-gray-light">{t('subtitle')}</p>
           </div>
 
           {/* Stats Grid */}
@@ -118,7 +121,7 @@ export default function DashboardPage() {
               <div className="mb-2 md:mb-4 text-silver">
                 <BoltIcon className="w-8 md:w-10 h-8 md:h-10" />
               </div>
-              <div className="text-gray-light text-xs md:text-sm mb-1 md:mb-2">Інвестиції</div>
+              <div className="text-gray-light text-xs md:text-sm mb-1 md:mb-2">{t('investments')}</div>
               <div className="text-xl md:text-3xl font-bold text-foreground font-sans">${totalInvestments.toFixed(2)}</div>
             </div>
 
@@ -126,7 +129,7 @@ export default function DashboardPage() {
               <div className="mb-2 md:mb-4 text-silver">
                 <ChartIcon className="w-8 md:w-10 h-8 md:h-10" />
               </div>
-              <div className="text-gray-light text-xs md:text-sm mb-1 md:mb-2">Профіт</div>
+              <div className="text-gray-light text-xs md:text-sm mb-1 md:mb-2">{t('profit')}</div>
               <div className="text-xl md:text-3xl font-bold text-silver font-sans">${userProfit.toFixed(2)}</div>
             </div>
 
@@ -134,10 +137,10 @@ export default function DashboardPage() {
               <div className="mb-2 md:mb-4 text-silver">
                 <UserIcon className="w-8 md:w-10 h-8 md:h-10" />
               </div>
-              <div className="text-gray-light text-xs md:text-sm mb-1 md:mb-2">Загальний баланс</div>
+              <div className="text-gray-light text-xs md:text-sm mb-1 md:mb-2">{t('totalBalance')}</div>
               <div className="text-xl md:text-3xl font-bold text-foreground font-sans">${userBalance.toFixed(2)}</div>
               {frozenAmount > 0 && (
-                <div className="text-xs text-orange-400 mt-1 md:mt-2">Заморожено: ${frozenAmount.toFixed(2)}</div>
+                <div className="text-xs text-orange-400 mt-1 md:mt-2">{t('frozen')}: ${frozenAmount.toFixed(2)}</div>
               )}
             </div>
 
@@ -145,7 +148,7 @@ export default function DashboardPage() {
               <div className="mb-2 md:mb-4 text-silver">
                 <NetworkIcon className="w-8 md:w-10 h-8 md:h-10" />
               </div>
-              <div className="text-gray-light text-xs md:text-sm mb-1 md:mb-2">Активні депозити</div>
+              <div className="text-gray-light text-xs md:text-sm mb-1 md:mb-2">{t('activeDeposits')}</div>
               <div className="text-xl md:text-3xl font-bold text-silver font-sans">{activeDeposits.length}</div>
             </div>
           </div>
@@ -155,7 +158,7 @@ export default function DashboardPage() {
             <DepositFlow onSuccess={handleDepositSuccess} userRate={profitPercentage} />
 
             <div className="bg-gray-dark/20 border border-gray-medium/30 rounded-lg p-6">
-              <h2 className="text-xl font-bold mb-4">Активні депозити</h2>
+              <h2 className="text-xl font-bold mb-4">{t('activeDeposits')}</h2>
 
               {activeDeposits.length > 0 ? (
                 <>
@@ -169,21 +172,21 @@ export default function DashboardPage() {
                     >
                       <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-3 mb-3">
                         <div className="flex-1 min-w-0">
-                          <div className="text-xs text-gray-light mb-1">Депозит</div>
+                          <div className="text-xs text-gray-light mb-1">{t('deposit')}</div>
                           <div className="text-xl sm:text-2xl font-bold text-silver font-sans break-words">${deposit.amount.toFixed(2)}</div>
                           {deposit.frozen > 0 && (
                             <div className="text-xs text-gray-light mt-1">
-                              Заморожено: ${deposit.frozen.toFixed(2)}
+                              {t('frozen')}: ${deposit.frozen.toFixed(2)}
                             </div>
                           )}
                           {deposit.frozen > 0 && (
                             <div className="text-xs text-white mt-1">
-                              Доступно: ${(deposit.available || 0).toFixed(2)}
+                              {t('available')}: ${(deposit.available || 0).toFixed(2)}
                             </div>
                           )}
                         </div>
                         <div className="text-left sm:text-right">
-                          <div className="text-xs text-gray-light mb-1">Прибуток</div>
+                          <div className="text-xs text-gray-light mb-1">{t('profit')}</div>
                           <div className="text-lg font-bold text-foreground font-sans break-words">+${deposit.profit.toFixed(2)}</div>
                         </div>
                       </div>
@@ -201,7 +204,7 @@ export default function DashboardPage() {
                             onClick={() => handleWithdraw(deposit.id)}
                             className="btn-gradient-primary w-full sm:w-auto px-4 py-2 text-foreground font-bold text-sm rounded-lg transition-colors font-sans whitespace-nowrap"
                           >
-                            Вивести
+                            {t('withdrawButton')}
                           </button>
                         )}
                       </div>
@@ -220,8 +223,8 @@ export default function DashboardPage() {
                   <div className="mb-4">
                     <ChartIcon className="w-16 h-16 mx-auto opacity-50" />
                   </div>
-                  <p className="mb-2 font-medium">У вас поки немає активних депозитів</p>
-                  <p className="text-sm">Створіть перший депозит для початку інвестування</p>
+                  <p className="mb-2 font-medium">{t('noActiveDeposits')}</p>
+                  <p className="text-sm">{t('createFirstDeposit')}</p>
                 </div>
               )}
             </div>
@@ -229,7 +232,7 @@ export default function DashboardPage() {
 
           <div className="mb-8">
             <div className="bg-gray-dark/20 border border-gray-medium/30 rounded-lg p-6">
-              <h2 className="text-xl font-bold mb-4">Історія депозитів</h2>
+              <h2 className="text-xl font-bold mb-4">{t('depositHistory')}</h2>
 
               {depositHistory.length > 0 ? (
                 <>
@@ -255,42 +258,42 @@ export default function DashboardPage() {
                         
                         <div className="grid grid-cols-2 gap-3 text-sm">
                           <div>
-                            <div className="text-xs text-gray-light mb-1">Сума</div>
+                            <div className="text-xs text-gray-light mb-1">{t('deposit')}</div>
                             <div className="font-medium font-sans">${deposit.amount.toFixed(2)}</div>
                           </div>
                           <div>
-                            <div className="text-xs text-gray-light mb-1">Профіт</div>
+                            <div className="text-xs text-gray-light mb-1">{t('profit')}</div>
                             <div className="font-medium text-silver font-sans">+${deposit.profit.toFixed(2)}</div>
                           </div>
                           {(deposit.locked || 0) > 0 && (
                             <div>
-                              <div className="text-xs text-gray-light mb-1">Заморожено</div>
+                              <div className="text-xs text-gray-light mb-1">{t('frozen')}</div>
                               <div className="font-medium font-sans text-gray-light">${(deposit.locked || 0).toFixed(2)}</div>
                             </div>
                           )}
                           {(deposit.locked || 0) > 0 && (
                             <div>
-                              <div className="text-xs text-gray-light mb-1">Доступно</div>
+                              <div className="text-xs text-gray-light mb-1">{t('available')}</div>
                               <div className="font-medium font-sans">${(deposit.available || 0).toFixed(2)}</div>
                             </div>
                           )}
                           <div>
-                            <div className="text-xs text-gray-light mb-1">Процент</div>
+                            <div className="text-xs text-gray-light mb-1">{t('percentage')}</div>
                             <div className="font-medium text-silver font-sans">{deposit.percentage}%</div>
                           </div>
                           <div>
-                            <div className="text-xs text-gray-light mb-1">Дата</div>
+                            <div className="text-xs text-gray-light mb-1">{t('createdDate')}</div>
                             <div className="font-medium text-gray-light">{new Date(deposit.date).toLocaleDateString("uk-UA")}</div>
                           </div>
                           {(deposit.withdrawn || 0) > 0 && (
                             <div className="col-span-2">
-                              <div className="text-xs text-gray-light mb-1">Виведено</div>
+                              <div className="text-xs text-gray-light mb-1">{t('withdrawn')}</div>
                               <div className="font-medium font-sans text-orange-400">-${(deposit.withdrawn || 0).toFixed(2)}</div>
                             </div>
                           )}
                           {deposit.withdrawDate && (
                             <div className="col-span-2">
-                              <div className="text-xs text-gray-light mb-1">Дата виводу</div>
+                              <div className="text-xs text-gray-light mb-1">{t('withdrawDate')}</div>
                               <div className="font-medium text-gray-light">{new Date(deposit.withdrawDate).toLocaleDateString("uk-UA")}</div>
                             </div>
                           )}
@@ -305,14 +308,14 @@ export default function DashboardPage() {
                       <thead>
                         <tr className="border-b border-gray-medium/30">
                           <th className="text-left py-3 px-4 text-sm font-medium text-gray-light font-sans">ID</th>
-                          <th className="text-left py-3 px-4 text-sm font-medium text-gray-light">Початкова сума</th>
-                          <th className="text-left py-3 px-4 text-sm font-medium text-gray-light">Виведено</th>
-                          <th className="text-left py-3 px-4 text-sm font-medium text-gray-light">Заморожено</th>
-                          <th className="text-left py-3 px-4 text-sm font-medium text-gray-light">Процент</th>
-                          <th className="text-left py-3 px-4 text-sm font-medium text-gray-light">Профіт</th>
-                          <th className="text-left py-3 px-4 text-sm font-medium text-gray-light">Дата створення</th>
-                          <th className="text-left py-3 px-4 text-sm font-medium text-gray-light">Дата виводу</th>
-                          <th className="text-center py-3 px-4 text-sm font-medium text-gray-light">Статус</th>
+                          <th className="text-left py-3 px-4 text-sm font-medium text-gray-light">{t('initialAmount')}</th>
+                          <th className="text-left py-3 px-4 text-sm font-medium text-gray-light">{t('withdrawn')}</th>
+                          <th className="text-left py-3 px-4 text-sm font-medium text-gray-light">{t('frozen')}</th>
+                          <th className="text-left py-3 px-4 text-sm font-medium text-gray-light">{t('percentage')}</th>
+                          <th className="text-left py-3 px-4 text-sm font-medium text-gray-light">{t('profit')}</th>
+                          <th className="text-left py-3 px-4 text-sm font-medium text-gray-light">{t('createdDate')}</th>
+                          <th className="text-left py-3 px-4 text-sm font-medium text-gray-light">{t('withdrawDate')}</th>
+                          <th className="text-center py-3 px-4 text-sm font-medium text-gray-light">{t('status')}</th>
                         </tr>
                       </thead>
                       <tbody>
@@ -362,7 +365,7 @@ export default function DashboardPage() {
                 </>
               ) : (
                 <div className="text-center py-8 text-gray-light">
-                  <p>Історія депозитів пуста</p>
+                  <p>{t('depositHistoryEmpty')}</p>
                 </div>
               )}
             </div>
@@ -377,8 +380,8 @@ export default function DashboardPage() {
               <div className="text-silver mb-4 group-hover:scale-110 transition-transform">
                 <BoltIcon className="w-10 h-10" />
               </div>
-              <div className="font-bold mb-1">Вивести кошти</div>
-              <div className="text-sm text-gray-light">Зняти прибуток на гаманець</div>
+              <div className="font-bold mb-1">{t('withdrawFunds')}</div>
+              <div className="text-sm text-gray-light">{t('withdrawFundsText')}</div>
             </Link>
 
             <Link
@@ -388,8 +391,8 @@ export default function DashboardPage() {
               <div className="text-silver mb-4 group-hover:scale-110 transition-transform">
                 <NetworkIcon className="w-10 h-10" />
               </div>
-              <div className="font-bold mb-1">Реферальна програма</div>
-              <div className="text-sm text-gray-light">Запросити друзів і отримати бонус</div>
+              <div className="font-bold mb-1">{t('referralProgram')}</div>
+              <div className="text-sm text-gray-light">{t('referralProgramText')}</div>
             </Link>
 
             <Link
@@ -399,8 +402,8 @@ export default function DashboardPage() {
               <div className="text-silver mb-4 group-hover:scale-110 transition-transform">
                 <UserIcon className="w-10 h-10" />
               </div>
-              <div className="font-bold mb-1">Правила платформи</div>
-              <div className="text-sm text-gray-light">Ознайомтесь з умовами</div>
+              <div className="font-bold mb-1">{t('platformRules')}</div>
+              <div className="text-sm text-gray-light">{t('platformRulesText')}</div>
             </Link>
           </div>
         </div>

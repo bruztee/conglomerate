@@ -7,8 +7,11 @@ import { useRouter, useSearchParams } from "next/navigation"
 import Header from "@/components/Header"
 import Loading from "@/components/Loading"
 import { useAuth } from "@/context/AuthContext"
+import { useTranslations } from 'next-intl'
 
 function LoginForm() {
+  const t = useTranslations('auth')
+  const tCommon = useTranslations('common')
   const router = useRouter()
   const searchParams = useSearchParams()
   const { login, user, initialized, refreshUser } = useAuth()
@@ -29,7 +32,7 @@ function LoginForm() {
     // Перевірити чи email верифікований
     const verified = searchParams.get('verified')
     if (verified === 'true') {
-      setVerificationMessage('Ваш email підтверджено. Тепер ви можете увійти.')
+      setVerificationMessage(t('emailVerified'))
     }
   }, [searchParams])
 
@@ -82,10 +85,10 @@ function LoginForm() {
       }
       
       // Handle error
-      const errorMessage = result.error?.message || result.error?.error || "Невірний email або пароль"
+      const errorMessage = result.error?.message || result.error?.error || t('errorLogin')
       setError(errorMessage)
     } catch (err: any) {
-      const errMsg = err?.message || 'Помилка підключення. Спробуйте ще раз.'
+      const errMsg = err?.message || t('errorConnection')
       setError(errMsg)
     } finally {
       setLoading(false)
@@ -99,8 +102,8 @@ function LoginForm() {
       <main className="min-h-screen flex items-center justify-center px-4 py-12">
         <div className="w-full max-w-md">
           <div className="text-center mb-8">
-            <h1 className="text-3xl font-bold mb-2">Вхід</h1>
-            <p className="text-gray-light">Увійдіть до свого акаунту</p>
+            <h1 className="text-3xl font-bold mb-2">{t('loginTitle')}</h1>
+            <p className="text-gray-light">{t('loginSubtitle')}</p>
           </div>
 
           <form onSubmit={handleSubmit} className="bg-blur-dark border border-gray-medium rounded-lg p-6 space-y-4">
@@ -118,7 +121,7 @@ function LoginForm() {
             
             <div>
               <label htmlFor="email" className="block text-sm font-medium mb-2 font-sans">
-                Email
+                {tCommon('email')}
               </label>
               <input
                 type="email"
@@ -127,13 +130,13 @@ function LoginForm() {
                 value={email}
                 onChange={handleChange}
                 className="w-full px-4 py-3 bg-blur border border-gray-medium rounded-lg focus:outline-none focus:border-silver transition-colors font-sans"
-                placeholder="your@email.com"
+                placeholder={t('emailPlaceholder')}
               />
             </div>
 
             <div>
               <label htmlFor="password" className="block text-sm font-medium mb-2">
-                Пароль
+                {tCommon('password')}
               </label>
               <input
                 type="password"
@@ -142,17 +145,17 @@ function LoginForm() {
                 value={password}
                 onChange={handleChange}
                 className="w-full px-4 py-3 bg-blur border border-gray-medium rounded-lg focus:outline-none focus:border-silver transition-colors"
-                placeholder="Введіть пароль"
+                placeholder={t('passwordPlaceholder')}
               />
             </div>
 
             <div className="flex items-center justify-between text-sm">
               <label className="flex items-center gap-2 cursor-pointer">
                 <input type="checkbox" className="w-4 h-4 bg-blur border border-gray-medium rounded" />
-                <span className="text-gray-light">Запам'ятати мене</span>
+                <span className="text-gray-light">{t('rememberMe')}</span>
               </label>
               <Link href="/auth/forgot-password" className="text-silver hover:text-foreground transition-colors">
-                Забули пароль?
+                {t('forgotPassword')}
               </Link>
             </div>
 
@@ -161,14 +164,14 @@ function LoginForm() {
               disabled={loading}
               className="btn-gradient-primary w-full px-4 py-3 text-foreground font-bold rounded-lg transition-colors font-sans disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              {loading ? 'Завантаження...' : 'Увійти'}
+              {loading ? t('loggingIn') : t('loginButton')}
             </button>
           </form>
 
           <div className="mt-6 text-center text-sm">
-            <span className="text-gray-light">Немає акаунту? </span>
+            <span className="text-gray-light">{t('noAccount')} </span>
             <Link href="/auth/register" className="text-silver hover:text-foreground transition-colors font-medium">
-              Зареєструватися
+              {t('registerButton')}
             </Link>
           </div>
         </div>

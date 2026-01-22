@@ -11,8 +11,10 @@ import NetworkIcon from "@/components/icons/NetworkIcon"
 import BoltIcon from "@/components/icons/BoltIcon"
 import { useAuth } from "@/context/AuthContext"
 import Loading from "@/components/Loading"
+import { useTranslations } from 'next-intl'
 
 export default function Home() {
+  const t = useTranslations('home')
   const router = useRouter()
   const { user } = useAuth()
 
@@ -47,11 +49,11 @@ export default function Home() {
             </div>
 
             <p className="text-2xl sm:text-3xl text-silver font-medium mb-8 tracking-wide">
-              Білий трафік — чорні цифри
+              {t('tagline')}
             </p>
 
             <p className="text-lg sm:text-xl text-gray-light mb-10 max-w-2xl mx-auto leading-relaxed">
-              Закрита інвестиційна платформа для заробітку. Інвестуйте кошти та отримуйте стабільний прибуток.
+              {t('description')}
             </p>
 
             <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
@@ -59,13 +61,13 @@ export default function Home() {
                 href="/auth/register"
                 className="btn-gradient-primary px-8 py-4 text-foreground text-lg font-bold rounded-lg transition-all w-full sm:w-auto font-sans"
               >
-                Почати інвестувати
+                {t('startInvesting')}
               </Link>
               <Link
                 href="/auth/login"
                 className="btn-gradient-secondary px-8 py-4 text-foreground text-lg font-bold rounded-lg transition-all w-full sm:w-auto font-sans"
               >
-                Увійти
+                {t('login')}
               </Link>
             </div>
           </div>
@@ -73,39 +75,37 @@ export default function Home() {
 
         <section className="py-20 px-4 sm:px-6 lg:px-8">
           <div className="container mx-auto max-w-6xl">
-            <h2 className="text-3xl sm:text-4xl font-bold text-center mb-16">Про платформу</h2>
+            <h2 className="text-3xl sm:text-4xl font-bold text-center mb-16">{t('aboutPlatform')}</h2>
 
             <div className="grid md:grid-cols-2 gap-12 mb-16">
               <div className="space-y-6">
-                <h3 className="text-2xl font-bold text-silver">Що це за платформа</h3>
+                <h3 className="text-2xl font-bold text-silver">{t('whatIsPlatform')}</h3>
                 <p className="text-gray-light leading-relaxed">
-                  Conglomerate Group — це закрита інвестиційна платформа для роботи з цифровими активами. 
-                  Ми дозволяємо користувачам інвестувати кошти та заробляти.
+                  {t('whatIsPlatformText1')}
                 </p>
                 <p className="text-gray-light leading-relaxed">
-                  Розрахунки здійснюються виключно в криптовалюті — це забезпечує швидкі транзакції, мінімальні комісії, 
-                  глобальну доступність та максимальну конфіденційність для наших інвесторів.
+                  {t('whatIsPlatformText2')}
                 </p>
               </div>
 
               <div className="space-y-6">
-                <h3 className="text-2xl font-bold text-silver">Як працює інвестування</h3>
+                <h3 className="text-2xl font-bold text-silver">{t('howItWorks')}</h3>
                 <ol className="space-y-4 text-gray-light">
                   <li className="flex gap-3">
                     <span className="text-silver font-bold">1.</span>
-                    <span>Реєстрація та верифікація через email та номер телефону</span>
+                    <span>{t('howItWorksStep1')}</span>
                   </li>
                   <li className="flex gap-3">
                     <span className="text-silver font-bold">2.</span>
-                    <span>Поповнення балансу через криптовалюту</span>
+                    <span>{t('howItWorksStep2')}</span>
                   </li>
                   <li className="flex gap-3">
                     <span className="text-silver font-bold">3.</span>
-                    <span>Автоматичне нарахування прибутку</span>
+                    <span>{t('howItWorksStep3')}</span>
                   </li>
                   <li className="flex gap-3">
                     <span className="text-silver font-bold">4.</span>
-                    <span>Вивід коштів через криптовалюту</span>
+                    <span>{t('howItWorksStep4')}</span>
                   </li>
                 </ol>
               </div>
@@ -115,16 +115,16 @@ export default function Home() {
 
         <section className="py-20 px-4 sm:px-6 lg:px-8">
           <div className="container mx-auto max-w-6xl">
-            <h2 className="text-3xl sm:text-4xl font-bold text-center mb-16">Переваги платформи</h2>
+            <h2 className="text-3xl sm:text-4xl font-bold text-center mb-16">{t('advantages')}</h2>
 
             <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-8">
               <div className="p-6 bg-gray-dark/20 rounded-lg border border-gray-medium/30 hover:border-silver/50 hover:bg-gray-dark/30 transition-all">
                 <div className="text-silver mb-4">
                   <ChartIcon className="w-10 h-10" />
                 </div>
-                <h3 className="text-xl font-bold mb-3">Прозорі цифри</h3>
+                <h3 className="text-xl font-bold mb-3">{t('advantage1Title')}</h3>
                 <p className="text-gray-light text-sm">
-                  Вся статистика та історія операцій у вашому особистому кабінеті
+                  {t('advantage1Text')}
                 </p>
               </div>
 
@@ -132,24 +132,24 @@ export default function Home() {
                 <div className="text-silver mb-4">
                   <UserIcon className="w-10 h-10" />
                 </div>
-                <h3 className="text-xl font-bold mb-3">Особистий кабінет</h3>
-                <p className="text-gray-light text-sm">Повний контроль над інвестиціями та прибутком</p>
+                <h3 className="text-xl font-bold mb-3">{t('advantage2Title')}</h3>
+                <p className="text-gray-light text-sm">{t('advantage2Text')}</p>
               </div>
 
               <div className="p-6 bg-gray-dark/20 rounded-lg border border-gray-medium/30 hover:border-silver/50 hover:bg-gray-dark/30 transition-all">
                 <div className="text-silver mb-4">
                   <NetworkIcon className="w-10 h-10" />
                 </div>
-                <h3 className="text-xl font-bold mb-3">Реферальна система</h3>
-                <p className="text-gray-light text-sm">Додатковий дохід від залучення нових користувачів</p>
+                <h3 className="text-xl font-bold mb-3">{t('advantage3Title')}</h3>
+                <p className="text-gray-light text-sm">{t('advantage3Text')}</p>
               </div>
 
               <div className="p-6 bg-gray-dark/20 rounded-lg border border-gray-medium/30 hover:border-silver/50 hover:bg-gray-dark/30 transition-all">
                 <div className="text-silver mb-4">
                   <BoltIcon className="w-10 h-10" />
                 </div>
-                <h3 className="text-xl font-bold mb-3">Швидкий вивід</h3>
-                <p className="text-gray-light text-sm">Виводьте кошти швидко та безпечно через криптовалюту</p>
+                <h3 className="text-xl font-bold mb-3">{t('advantage4Title')}</h3>
+                <p className="text-gray-light text-sm">{t('advantage4Text')}</p>
               </div>
             </div>
           </div>
@@ -157,20 +157,20 @@ export default function Home() {
 
         <section className="py-20 px-4 sm:px-6 lg:px-8">
           <div className="container mx-auto max-w-4xl text-center">
-            <h2 className="text-3xl sm:text-4xl font-bold mb-8">Готові почати?</h2>
-            <p className="text-xl text-gray-light mb-12">Приєднуйтесь до закритої спільноти інвесторів</p>
+            <h2 className="text-3xl sm:text-4xl font-bold mb-8">{t('readyToStart')}</h2>
+            <p className="text-xl text-gray-light mb-12">{t('joinCommunity')}</p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <Link
                 href="/auth/register"
                 className="btn-gradient-primary px-8 py-4 text-foreground text-lg font-bold rounded-lg transition-all font-sans"
               >
-                Зареєструватися
+                {t('registerNow')}
               </Link>
               <Link
                 href="/dashboard"
                 className="btn-gradient-secondary px-8 py-4 text-foreground text-lg font-bold rounded-lg transition-all font-sans"
               >
-                Поповнити депозит
+                {t('makeDeposit')}
               </Link>
             </div>
           </div>

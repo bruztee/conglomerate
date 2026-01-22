@@ -6,12 +6,14 @@ import Image from 'next/image';
 import { useRouter } from "next/navigation"
 import { useAuth } from "@/context/AuthContext"
 import { api } from '@/lib/api';
+import { useTranslations } from 'next-intl';
 
 interface HeaderProps {
   isAuthenticated?: boolean
 }
 
 export default function Header({ isAuthenticated = false }: HeaderProps) {
+  const t = useTranslations('header')
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const [userBalance, setUserBalance] = useState(0)
   const [userProfit, setUserProfit] = useState(0)
@@ -55,12 +57,12 @@ export default function Header({ isAuthenticated = false }: HeaderProps) {
               <div className="hidden md:flex items-center gap-3 lg:gap-6">
                 <div className="flex items-center gap-2 lg:gap-4 px-3 lg:px-4 py-1.5 lg:py-2 bg-blur-dark rounded-lg">
                   <div className="text-xs lg:text-sm font-sans">
-                    <div className="text-gray-light text-xs">Інвестиції</div>
+                    <div className="text-gray-light text-xs">{t('investments')}</div>
                     <div className="font-bold text-foreground">${userBalance.toFixed(2)}</div>
                   </div>
                   <div className="w-px h-6 lg:h-8 bg-gray-medium"></div>
                   <div className="text-xs lg:text-sm font-sans">
-                    <div className="text-gray-light text-xs">Профіт</div>
+                    <div className="text-gray-light text-xs">{t('profit')}</div>
                     <div className="font-bold text-silver">${userProfit.toFixed(2)}</div>
                   </div>
                 </div>
@@ -70,19 +72,19 @@ export default function Header({ isAuthenticated = false }: HeaderProps) {
                     href="/dashboard"
                     className="btn-gradient-primary px-2 lg:px-4 py-1.5 lg:py-2 text-sm lg:text-base text-foreground font-medium rounded transition-colors font-sans"
                   >
-                    Депозити
+                    {t('deposits')}
                   </Link>
                   <Link
                     href="/withdraw"
                     className="btn-gradient-secondary px-2 lg:px-4 py-1.5 lg:py-2 text-sm lg:text-base text-foreground font-medium rounded transition-colors font-sans"
                   >
-                    Вивід
+                    {t('withdraw')}
                   </Link>
                   <Link
                     href="/referral"
                     className="btn-gradient-secondary px-2 lg:px-4 py-1.5 lg:py-2 text-sm lg:text-base text-foreground font-medium rounded transition-colors font-sans"
                   >
-                    Рефералка
+                    {t('referral')}
                   </Link>
                   {user?.role === 'admin' && (
                     <Link
@@ -96,13 +98,13 @@ export default function Header({ isAuthenticated = false }: HeaderProps) {
                     href="/dashboard/settings"
                     className="btn-gradient-secondary px-2 lg:px-4 py-1.5 lg:py-2 text-sm lg:text-base text-foreground font-medium rounded transition-colors font-sans"
                   >
-                    Налаштування
+                    {t('settings')}
                   </Link>
                   <button
                     onClick={handleLogout}
                     className="btn-gradient-secondary px-4 py-2 text-foreground font-medium rounded transition-all font-sans cursor-pointer"
                   >
-                    Вихід
+                    {t('logout')}
                   </button>
                 </nav>
               </div>
@@ -121,13 +123,13 @@ export default function Header({ isAuthenticated = false }: HeaderProps) {
                 href="/auth/login"
                 className="px-4 py-2 text-foreground font-medium hover:text-gray-light transition-colors font-sans"
               >
-                Вхід
+                {t('login')}
               </Link>
               <Link
                 href="/auth/register"
                 className="btn-gradient-primary px-4 py-2 text-foreground font-medium rounded transition-colors font-sans"
               >
-                Реєстрація
+                {t('register')}
               </Link>
             </div>
           )}
@@ -137,12 +139,12 @@ export default function Header({ isAuthenticated = false }: HeaderProps) {
           <div className="md:hidden py-4 border-t border-gray-dark">
             <div className="flex items-center gap-4 mb-4 p-3 bg-blur-dark rounded-lg font-sans">
               <div className="text-sm">
-                <div className="text-gray-light text-xs">Інвестиції</div>
+                <div className="text-gray-light text-xs">{t('investments')}</div>
                 <div className="font-bold text-foreground">${userBalance.toFixed(2)}</div>
               </div>
               <div className="w-px h-8 bg-gray-medium"></div>
               <div className="text-sm">
-                <div className="text-gray-light text-xs">Профіт</div>
+                <div className="text-gray-light text-xs">{t('profit')}</div>
                 <div className="font-bold text-silver">${userProfit.toFixed(2)}</div>
               </div>
             </div>
@@ -151,19 +153,19 @@ export default function Header({ isAuthenticated = false }: HeaderProps) {
                 href="/dashboard"
                 className="btn-gradient-primary px-4 py-2 text-foreground font-medium rounded transition-colors text-center font-sans"
               >
-                Депозити
+                {t('deposits')}
               </Link>
               <Link
                 href="/withdraw"
                 className="btn-gradient-secondary px-4 py-2 text-foreground font-medium rounded transition-colors text-center font-sans"
               >
-                Вивід
+                {t('withdraw')}
               </Link>
               <Link
                 href="/referral"
                 className="btn-gradient-secondary px-4 py-2 text-foreground font-medium rounded transition-colors text-center font-sans"
               >
-                Рефералка
+                {t('referral')}
               </Link>
               {user?.role === 'admin' && (
                 <Link
@@ -177,13 +179,13 @@ export default function Header({ isAuthenticated = false }: HeaderProps) {
                 href="/dashboard/settings"
                 className="btn-gradient-secondary px-4 py-2 text-foreground font-medium rounded transition-colors text-center font-sans"
               >
-                Налаштування
+                {t('settings')}
               </Link>
               <button
                 onClick={handleLogout}
                 className="btn-gradient-secondary px-4 py-2 text-foreground font-medium rounded transition-all text-center font-sans cursor-pointer"
               >
-                Вихід
+                {t('logout')}
               </button>
             </nav>
           </div>
