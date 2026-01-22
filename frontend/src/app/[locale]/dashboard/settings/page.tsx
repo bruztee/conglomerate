@@ -37,7 +37,7 @@ export default function SettingsPage() {
     setMessage('')
 
     if (!emailForm.email) {
-      setError('Email обов\'язковий')
+      setError(t('emailRequired'))
       setLoading(false)
       return
     }
@@ -45,10 +45,10 @@ export default function SettingsPage() {
     const result = await api.updateEmail(emailForm.email)
 
     if (result.success) {
-      setMessage('Перевірте новий email для підтвердження')
+      setMessage(t('checkNewEmail'))
       setEmailForm({ email: '' })
     } else {
-      setError(result.error?.message || 'Помилка оновлення email')
+      setError(result.error?.message || t('emailUpdateError'))
     }
 
     setLoading(false)
@@ -65,7 +65,7 @@ export default function SettingsPage() {
 
   const handlePhoneVerified = async () => {
     setShowPhoneVerification(false)
-    setMessage('Телефон успішно верифіковано')
+    setMessage(t('phoneVerified'))
     
     // Перезавантажити дані профілю
     const profileResult = await api.me()
@@ -82,7 +82,7 @@ export default function SettingsPage() {
     setMessage('')
 
     if (!user?.email) {
-      setError('Email не знайдено')
+      setError(t('emailNotFound'))
       setLoading(false)
       return
     }
@@ -90,7 +90,7 @@ export default function SettingsPage() {
     const result = await api.forgotPassword(user.email)
 
     if (result.success) {
-      setMessage('Посилання для зміни пароля відправлено на ваш email')
+      setMessage(t('passwordLinkSent'))
       
       // Встановити cooldown 60 секунд
       setPasswordCooldown(60)
@@ -107,7 +107,7 @@ export default function SettingsPage() {
         })
       }, 1000)
     } else {
-      setError(result.error?.message || 'Помилка відправки посилання')
+      setError(result.error?.message || t('linkSendError'))
     }
 
     setLoading(false)
@@ -166,11 +166,11 @@ export default function SettingsPage() {
           <div className="bg-blur-dark border border-gray-medium rounded-lg p-6 mb-8">
             <h2 className="text-xl font-bold mb-4">{t('currentInfo')}</h2>
             <div className="space-y-2 text-gray-light">
-              <p><strong>Ім'я:</strong> {userProfile?.full_name || user.full_name || 'Не вказано'}</p>
-              <p><strong>Email:</strong> {userProfile?.email || user.email}</p>
-              <p className="flex items-center gap-2"><strong>Телефон:</strong> {userProfile?.phone || user.phone || 'Не вказано'} {userProfile?.phone && (userProfile?.phone_verified ? <CheckCircleIcon className="w-4 h-4 text-green-400" /> : <span className="flex items-center gap-1 text-yellow-500"><WarningIcon className="w-4 h-4" /> Не верифіковано</span>)}</p>
-              <p><strong>Ваш план:</strong> {userProfile?.plan || 'Стандарт'}</p>
-              <p><strong>% місячних:</strong> {userProfile?.monthly_percentage || '0'}%</p>
+              <p><strong>{t('name')}</strong> {userProfile?.full_name || user.full_name || t('notSpecified')}</p>
+              <p><strong>{t('email')}</strong> {userProfile?.email || user.email}</p>
+              <p className="flex items-center gap-2"><strong>{t('phone')}</strong> {userProfile?.phone || user.phone || t('notSpecified')} {userProfile?.phone && (userProfile?.phone_verified ? <CheckCircleIcon className="w-4 h-4 text-green-400" /> : <span className="flex items-center gap-1 text-yellow-500"><WarningIcon className="w-4 h-4" /> {t('notVerified')}</span>)}</p>
+              <p><strong>{t('yourPlan')}</strong> {userProfile?.plan || t('standard')}</p>
+              <p><strong>{t('monthlyPercentage')}</strong> {userProfile?.monthly_percentage || '0'}%</p>
             </div>
           </div>
 
@@ -224,11 +224,11 @@ export default function SettingsPage() {
           {/* Email Tab */}
           {activeTab === 'email' && (
             <div className="bg-blur-dark border border-gray-medium rounded-lg p-6">
-              <h2 className="text-xl font-bold mb-4">Змінити Email</h2>
+              <h2 className="text-xl font-bold mb-4">{t('changeEmail')}</h2>
               <form onSubmit={handleUpdateEmail} className="space-y-6">
                 <div>
                   <label htmlFor="email" className="block text-sm font-medium mb-2">
-                    Новий Email
+                    {t('newEmail')}
                   </label>
                   <input
                     id="email"
@@ -236,11 +236,11 @@ export default function SettingsPage() {
                     value={emailForm.email}
                     onChange={(e) => setEmailForm({ email: e.target.value })}
                     className="w-full px-4 py-3 bg-blur border border-gray-medium rounded-lg focus:outline-none focus:border-silver transition-colors"
-                    placeholder="new@email.com"
+                    placeholder={t('newEmailPlaceholder')}
                     disabled={loading}
                   />
                   <p className="text-sm text-gray-light mt-2">
-                    Після зміни email вам буде надіслано лист для підтвердження
+                    {t('emailChangeNote')}
                   </p>
                 </div>
 
@@ -249,7 +249,7 @@ export default function SettingsPage() {
                   disabled={loading}
                   className="btn-gradient-primary px-6 py-3 text-foreground font-bold rounded-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  {loading ? 'Оновлення...' : 'Оновити Email'}
+                  {loading ? t('updating') : t('updateEmail')}
                 </button>
               </form>
             </div>
@@ -258,19 +258,19 @@ export default function SettingsPage() {
           {/* Phone Tab */}
           {activeTab === 'phone' && (
             <div className="bg-blur-dark border border-gray-medium rounded-lg p-6">
-              <h2 className="text-xl font-bold mb-4">Змінити Телефон</h2>
+              <h2 className="text-xl font-bold mb-4">{t('changePhone')}</h2>
               
               {userProfile?.phone && (
                 <div className="mb-6 p-4 bg-blur/50 rounded-lg border border-gray-medium">
-                  <p className="text-sm text-gray-light mb-1">Поточний телефон:</p>
-                  <p className="flex items-center gap-2 text-lg font-medium">{userProfile.phone} {userProfile.phone_verified ? <span className="flex items-center gap-1 text-green-400"><CheckCircleIcon className="w-5 h-5" /> Верифіковано</span> : <span className="flex items-center gap-1 text-yellow-500"><WarningIcon className="w-5 h-5" /> Не верифіковано</span>}</p>
+                  <p className="text-sm text-gray-light mb-1">{t('currentPhone')}</p>
+                  <p className="flex items-center gap-2 text-lg font-medium">{userProfile.phone} {userProfile.phone_verified ? <span className="flex items-center gap-1 text-green-400"><CheckCircleIcon className="w-5 h-5" /> {t('verified')}</span> : <span className="flex items-center gap-1 text-yellow-500"><WarningIcon className="w-5 h-5" /> {t('notVerified')}</span>}</p>
                 </div>
               )}
               
               <form onSubmit={handleUpdatePhone} className="space-y-6">
                 <div>
                   <p className="text-sm text-gray-light mb-4">
-                    Натисніть кнопку нижче для {userProfile?.phone ? 'зміни' : 'додавання'} номера телефону. Вам буде відправлено SMS з кодом підтвердження.
+                    {t('phoneChangeNote', { action: userProfile?.phone ? t('phoneChangeAction') : t('phoneAddAction') })}
                   </p>
                 </div>
 
@@ -279,7 +279,7 @@ export default function SettingsPage() {
                   disabled={loading}
                   className="btn-gradient-primary px-6 py-3 text-foreground font-bold rounded-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  {loading ? 'Оновлення...' : 'Оновити Телефон'}
+                  {loading ? t('updating') : t('updatePhone')}
                 </button>
               </form>
             </div>
@@ -288,9 +288,9 @@ export default function SettingsPage() {
           {/* Password Tab */}
           {activeTab === 'password' && (
             <div className="bg-blur-dark border border-gray-medium rounded-lg p-6">
-              <h2 className="text-xl font-bold mb-4">Змінити Пароль</h2>
+              <h2 className="text-xl font-bold mb-4">{t('changePassword')}</h2>
               <p className="text-gray-light mb-6">
-                Натисніть кнопку нижче, щоб отримати посилання для зміни пароля на ваш email
+                {t('passwordChangeNote')}
               </p>
               
               <div className="flex items-center gap-4">
@@ -299,7 +299,7 @@ export default function SettingsPage() {
                   disabled={loading || passwordCooldown > 0}
                   className="btn-gradient-primary px-6 py-3 text-foreground font-bold rounded-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  {loading ? 'Відправка...' : 'Відправити посилання'}
+                  {loading ? t('sending') : t('sendLink')}
                 </button>
                 
                 {passwordCooldown > 0 && (
@@ -308,7 +308,7 @@ export default function SettingsPage() {
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                     </svg>
                     <span className="font-medium">
-                      Наступне посилання через {passwordCooldown}с
+                      {t('nextLinkIn', { seconds: passwordCooldown })}
                     </span>
                   </div>
                 )}

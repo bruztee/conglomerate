@@ -34,6 +34,7 @@ export default function DepositFlow({ onSuccess, userRate }: DepositFlowProps) {
   const [selectedNetwork, setSelectedNetwork] = useState<string | null>(null)
   const [selectedWallet, setSelectedWallet] = useState<PaymentMethod | null>(null)
   const [loading, setLoading] = useState(false)
+  const [copied, setCopied] = useState(false)
   
   // Get deposit limits from user context
   const minAmount = user?.deposit_limits?.min_deposit || 10
@@ -115,6 +116,18 @@ export default function DepositFlow({ onSuccess, userRate }: DepositFlowProps) {
     setSelectedCurrency(null)
     setSelectedNetwork(null)
     setSelectedWallet(null)
+    setCopied(false)
+  }
+
+  const handleCopyAddress = async () => {
+    if (!selectedWallet) return
+    try {
+      await navigator.clipboard.writeText(selectedWallet.wallet_address)
+      setCopied(true)
+      setTimeout(() => setCopied(false), 2000)
+    } catch (error) {
+      console.error('Failed to copy address:', error)
+    }
   }
 
   const goBack = () => {
@@ -272,16 +285,16 @@ export default function DepositFlow({ onSuccess, userRate }: DepositFlowProps) {
               </div>
               <div className="pt-3 border-t border-gray-medium/30">
                 <div className="text-xs text-gray-light mb-2">{t('walletAddress')}:</div>
-                <div className="font-mono text-sm bg-blur p-3 rounded break-all text-white">
+                <div className="font-mono text-sm bg-gray-dark/20 border border-gray-medium/30 p-3 rounded break-all text-white">
                   {selectedWallet.wallet_address}
                 </div>
                 <button
                   type="button"
-                  onClick={() => navigator.clipboard.writeText(selectedWallet.wallet_address)}
-                  className="flex items-center gap-1 text-xs text-silver hover:text-foreground mt-2"
+                  onClick={handleCopyAddress}
+                  className="flex items-center gap-1 text-xs text-silver hover:text-foreground mt-2 transition-colors"
                 >
                   <CopyIcon className="w-4 h-4" />
-                  {t('copyAddress')}
+                  {copied ? tCommon('copied') : t('copyAddress')}
                 </button>
               </div>
             </div>
