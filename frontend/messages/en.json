@@ -310,5 +310,35 @@
     "changeEmail": "Change Email",
     "changePhone": "Change Phone",
     "changePassword": "Change Password"
+  },
+  "metadata": {
+    "title": "White Traffic — Black Numbers",
+    "description": "Private investment online platform for cryptocurrency asset management"
+  },
+  "admin": {
+    "title": "Admin Panel",
+    "dashboard": "Dashboard",
+    "users": "Users",
+    "deposits": "Deposits",
+    "withdrawals": "Withdrawals",
+    "paymentMethods": "Payment Methods",
+    "investments": "Investments",
+    "security": "Security",
+    "totalUsers": "Total Users",
+    "pendingDeposits": "Pending Deposits",
+    "pendingWithdrawals": "Pending Withdrawals",
+    "activePaymentMethods": "Active Payment Methods",
+    "totalInvestments": "Total Investments",
+    "currentBalances": "Current User Balances",
+    "totalInvested": "Total User Investments",
+    "totalEarned": "Total Earned",
+    "lockedFunds": "Locked Funds",
+    "totalWithdrawn": "Total Withdrawn",
+    "quickActions": "Quick Actions",
+    "viewManage": "View and Manage",
+    "manageWallets": "Manage Wallets",
+    "manageWithdrawals": "Manage Withdrawals",
+    "toWebsite": "To Website",
+    "logout": "Logout"
   }
 }

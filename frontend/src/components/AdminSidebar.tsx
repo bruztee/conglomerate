@@ -1,9 +1,11 @@
 "use client"
 
 import { useState } from "react"
-import Link from "next/link"
-import { usePathname, useRouter } from "next/navigation"
+import { usePathname } from "next/navigation"
+import { useRouter } from "@/lib/navigation"
+import LocaleLink from "@/components/LocaleLink"
 import { useAuth } from "@/context/AuthContext"
+import { useTranslations } from 'next-intl'
 import { 
   DashboardIcon, 
   WalletIcon, 
@@ -16,19 +18,20 @@ import {
 } from "@/components/icons/AdminIcons"
 
 export default function AdminSidebar() {
+  const t = useTranslations('admin')
   const pathname = usePathname()
   const router = useRouter()
   const { logout, user } = useAuth()
   const [isOpen, setIsOpen] = useState(false)
 
   const navItems = [
-    { href: "/admin", label: "Огляд", icon: DashboardIcon },
-    { href: "/admin/payment-methods", label: "Реквізити", icon: WalletIcon },
-    { href: "/admin/users", label: "Користувачі", icon: UsersIcon },
-    { href: "/admin/deposits", label: "Депозити", icon: DepositIcon },
-    { href: "/admin/investments", label: "Інвестиції", icon: DashboardIcon },
-    { href: "/admin/withdrawals", label: "Виводи", icon: WithdrawIcon },
-    { href: "/admin/security", label: "Безпека", icon: SecurityIcon },
+    { href: "/admin", label: t('dashboard'), icon: DashboardIcon },
+    { href: "/admin/payment-methods", label: t('paymentMethods'), icon: WalletIcon },
+    { href: "/admin/users", label: t('users'), icon: UsersIcon },
+    { href: "/admin/deposits", label: t('deposits'), icon: DepositIcon },
+    { href: "/admin/investments", label: t('investments'), icon: DashboardIcon },
+    { href: "/admin/withdrawals", label: t('withdrawals'), icon: WithdrawIcon },
+    { href: "/admin/security", label: t('security'), icon: SecurityIcon },
   ]
 
   const handleLogout = async () => {
@@ -65,7 +68,7 @@ export default function AdminSidebar() {
         isOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'
       }`}>
         <div className="p-6">
-          <h1 className="text-xl font-bold text-silver mb-1">Адмін-панель</h1>
+          <h1 className="text-xl font-bold text-silver mb-1">{t('title')}</h1>
         </div>
 
         <nav className="px-3 flex-1">
@@ -73,7 +76,7 @@ export default function AdminSidebar() {
             const isActive = pathname === item.href
             const IconComponent = item.icon
             return (
-              <Link
+              <LocaleLink
                 key={item.href}
                 href={item.href}
                 onClick={() => setIsOpen(false)}
@@ -87,7 +90,7 @@ export default function AdminSidebar() {
               >
                 <IconComponent />
                 <span className="text-sm font-medium">{item.label}</span>
-              </Link>
+              </LocaleLink>
             )
           })}
         </nav>
@@ -99,20 +102,20 @@ export default function AdminSidebar() {
             {user?.email || 'Loading...'}
           </div>
           
-          <Link
+          <LocaleLink
             href="/dashboard"
             className="flex items-center gap-3 px-4 py-3 mb-2 rounded-lg text-gray-light hover:bg-gray-medium/30 hover:text-foreground transition-all"
           >
             <HomeIcon />
-            <span className="text-sm font-medium">На сайт</span>
-          </Link>
+            <span className="text-sm font-medium">{t('toWebsite')}</span>
+          </LocaleLink>
           
           <button
             onClick={handleLogout}
             className="w-full flex items-center gap-3 px-4 py-3 rounded-lg text-gray-light hover:bg-red-500/10 hover:text-red-500 transition-all cursor-pointer"
           >
             <LogoutIcon />
-            <span className="text-sm font-medium">Вихід</span>
+            <span className="text-sm font-medium">{t('logout')}</span>
           </button>
         </div>
       </div>

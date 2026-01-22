@@ -1,7 +1,8 @@
 "use client"
 
 import { useAuth } from "@/context/AuthContext"
-import { usePathname, useRouter } from "next/navigation"
+import { usePathname } from "next/navigation"
+import { useRouter } from "@/lib/navigation"
 import { useEffect } from "react"
 import Loading from "./Loading"
 import AnimatedBackground from '@/components/AnimatedBackground'
@@ -15,13 +16,16 @@ export default function RootLayoutClient({ children }: { children: React.ReactNo
   const pathname = usePathname()
   const router = useRouter()
 
-  const isAdminPage = pathname.startsWith('/admin')
+  // Видаляємо locale з pathname для перевірок (/uk/dashboard -> /dashboard)
+  const pathWithoutLocale = pathname.replace(/^\/(uk|ru|en)/, '')
+  
+  const isAdminPage = pathWithoutLocale.startsWith('/admin')
 
   useEffect(() => {
     if (!initialized) return
 
-    const isPublicPath = publicPaths.some(path => pathname.startsWith(path))
-    const isSetNamePage = pathname === '/auth/set-name'
+    const isPublicPath = publicPaths.some(path => pathWithoutLocale.startsWith(path))
+    const isSetNamePage = pathWithoutLocale === '/auth/set-name'
 
     // Якщо це публічний шлях - не редиректимо
     if (isPublicPath) {
@@ -34,10 +38,10 @@ export default function RootLayoutClient({ children }: { children: React.ReactNo
       return
     }
 
-    const isProtectedPage = pathname.startsWith('/dashboard') || 
-                           pathname.startsWith('/admin') ||
-                           pathname.startsWith('/withdraw') ||
-                           pathname.startsWith('/referral')
+    const isProtectedPage = pathWithoutLocale.startsWith('/dashboard') || 
+                           pathWithoutLocale.startsWith('/admin') ||
+                           pathWithoutLocale.startsWith('/withdraw') ||
+                           pathWithoutLocale.startsWith('/referral')
 
     if (!isProtectedPage) return; // Не protected - нічого не робимо
 
@@ -46,7 +50,7 @@ export default function RootLayoutClient({ children }: { children: React.ReactNo
       const returnUrl = encodeURIComponent(pathname)
       router.replace(`/auth/login?returnUrl=${returnUrl}`)
     }
-  }, [initialized, user, pathname, router])
+  }, [initialized, user, pathname, pathWithoutLocale, router])
 
   if (!initialized) {
     return <Loading fullScreen />

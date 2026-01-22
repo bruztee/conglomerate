@@ -1,6 +1,6 @@
 "use client"
 
-import Link from "next/link"
+import LocaleLink from "@/components/LocaleLink"
 import { useLanguage } from "@/context/LanguageContext"
 import { useTranslations } from 'next-intl'
 import type { Locale } from '@/i18n/request'
@@ -24,9 +24,9 @@ export default function Footer() {
             {t('copyright')}
           </div>
           <div className="flex items-center gap-6">
-            <Link href="/rules" className="text-gray-light hover:text-foreground transition-colors text-sm font-sans">
+            <LocaleLink href="/rules" className="text-gray-light hover:text-foreground transition-colors text-sm font-sans">
               {t('terms')}
-            </Link>
+            </LocaleLink>
             <div className="flex gap-2">
               {languages.map((lang) => (
                 <button

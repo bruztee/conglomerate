@@ -310,5 +310,35 @@
     "changeEmail": "Змінити Email",
     "changePhone": "Змінити Телефон",
     "changePassword": "Змінити Пароль"
+  },
+  "metadata": {
+    "title": "Білий трафік — чорні цифри",
+    "description": "Закрита інвестиційна онлайн-платформа для роботи з криптовалютними активами"
+  },
+  "admin": {
+    "title": "Адмін-панель",
+    "dashboard": "Дашборд",
+    "users": "Користувачі",
+    "deposits": "Депозити",
+    "withdrawals": "Виводи",
+    "paymentMethods": "Реквізити",
+    "investments": "Інвестиції",
+    "security": "Безпека",
+    "totalUsers": "Всього користувачів",
+    "pendingDeposits": "Депозити на підтвердженні",
+    "pendingWithdrawals": "Виводи на підтвердженні",
+    "activePaymentMethods": "Активні реквізити",
+    "totalInvestments": "Всього інвестицій",
+    "currentBalances": "Поточний баланс користувачів",
+    "totalInvested": "Всього проінвестували користувачі",
+    "totalEarned": "Всього заробили",
+    "lockedFunds": "Заморожено на виводі",
+    "totalWithdrawn": "Всього виведено",
+    "quickActions": "Швидкі дії",
+    "viewManage": "Перегляд та управління",
+    "manageWallets": "Управління гаманцями",
+    "manageWithdrawals": "Управління виводами",
+    "toWebsite": "На сайт",
+    "logout": "Вихід"
   }
 }

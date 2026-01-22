@@ -1,7 +1,7 @@
 "use client"
 
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, usePathname } from 'next/navigation';
 import type { Locale } from '@/i18n/request';
 
 interface LanguageContextType {
@@ -13,37 +13,27 @@ const LanguageContext = createContext<LanguageContextType | undefined>(undefined
 
 export function LanguageProvider({ children }: { children: React.ReactNode }) {
   const router = useRouter();
+  const pathname = usePathname();
   const [locale, setLocaleState] = useState<Locale>('uk');
 
   useEffect(() => {
-    const savedLocale = document.cookie
-      .split('; ')
-      .find(row => row.startsWith('NEXT_LOCALE='))
-      ?.split('=')[1] as Locale | undefined;
-
-    if (savedLocale) {
-      setLocaleState(savedLocale);
-    } else {
-      const browserLang = navigator.language.toLowerCase();
-      if (browserLang.startsWith('ru')) {
-        setLocaleState('ru');
-        document.cookie = `NEXT_LOCALE=ru; path=/; max-age=31536000`;
-      } else if (browserLang.startsWith('en')) {
-        setLocaleState('en');
-        document.cookie = `NEXT_LOCALE=en; path=/; max-age=31536000`;
-      } else {
-        setLocaleState('uk');
-        document.cookie = `NEXT_LOCALE=uk; path=/; max-age=31536000`;
-      }
+    // Витягуємо locale з URL
+    const urlLocale = pathname.split('/')[1] as Locale;
+    if (['uk', 'ru', 'en'].includes(urlLocale)) {
+      setLocaleState(urlLocale);
     }
-  }, []);
+  }, [pathname]);
 
   const setLocale = (newLocale: Locale) => {
     setLocaleState(newLocale);
+    
+    // Зберігаємо вибір в cookie
     document.cookie = `NEXT_LOCALE=${newLocale}; path=/; max-age=31536000`;
-    // Використовуємо router.refresh() замість window.location.reload()
-    // Це перезавантажує серверні компоненти без втрати клієнтського стану
-    router.refresh();
+    
+    // Змінюємо locale в URL через router.replace
+    const segments = pathname.split('/');
+    segments[1] = newLocale; // замінюємо locale
+    router.replace(segments.join('/'));
   };
 
   return (

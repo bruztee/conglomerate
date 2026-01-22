@@ -310,5 +310,35 @@
     "changeEmail": "Изменить Email",
     "changePhone": "Изменить Телефон",
     "changePassword": "Изменить Пароль"
+  },
+  "metadata": {
+    "title": "Белый трафик — чёрные цифры",
+    "description": "Закрытая инвестиционная онлайн-платформа для работы с криптовалютными активами"
+  },
+  "admin": {
+    "title": "Админ-панель",
+    "dashboard": "Дашборд",
+    "users": "Пользователи",
+    "deposits": "Депозиты",
+    "withdrawals": "Выводы",
+    "paymentMethods": "Реквизиты",
+    "investments": "Инвестиции",
+    "security": "Безопасность",
+    "totalUsers": "Всего пользователей",
+    "pendingDeposits": "Депозиты на подтверждении",
+    "pendingWithdrawals": "Выводы на подтверждении",
+    "activePaymentMethods": "Активные реквизиты",
+    "totalInvestments": "Всего инвестиций",
+    "currentBalances": "Текущий баланс пользователей",
+    "totalInvested": "Всего проинвестировали пользователи",
+    "totalEarned": "Всего заработали",
+    "lockedFunds": "Заморожено на выводе",
+    "totalWithdrawn": "Всего выведено",
+    "quickActions": "Быстрые действия",
+    "viewManage": "Просмотр и управление",
+    "manageWallets": "Управление кошельками",
+    "manageWithdrawals": "Управление выводами",
+    "toWebsite": "На сайт",
+    "logout": "Выход"
   }
 }

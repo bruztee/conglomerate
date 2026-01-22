@@ -1,12 +1,12 @@
 "use client"
 
 import { useState, useEffect } from 'react';
-import Link from 'next/link';
 import Image from 'next/image';
-import { useRouter } from "next/navigation"
+import { useRouter } from "@/lib/navigation"
 import { useAuth } from "@/context/AuthContext"
 import { api } from '@/lib/api';
 import { useTranslations } from 'next-intl';
+import LocaleLink from '@/components/LocaleLink';
 
 interface HeaderProps {
   isAuthenticated?: boolean
@@ -47,9 +47,9 @@ export default function Header({ isAuthenticated = false }: HeaderProps) {
       <div className="container mx-auto px-4 sm:px-6 lg:px-8 relative">
         <div className="flex h-14 md:h-16 items-center justify-between">
           <div className="flex items-center gap-8">
-            <Link href="/" className="flex items-center gap-3 hover:opacity-80 transition-opacity">
+            <LocaleLink href="/" className="flex items-center gap-3 hover:opacity-80 transition-opacity">
               <Image src="/image.png" alt="Conglomerate Group" width={180} height={60} className="object-contain" />
-            </Link>
+            </LocaleLink>
           </div>
 
           {isLoggedIn && (
@@ -68,38 +68,38 @@ export default function Header({ isAuthenticated = false }: HeaderProps) {
                 </div>
 
                 <nav className="flex items-center gap-1 lg:gap-2">
-                  <Link
+                  <LocaleLink
                     href="/dashboard"
                     className="btn-gradient-primary px-2 lg:px-4 py-1.5 lg:py-2 text-sm lg:text-base text-foreground font-medium rounded transition-colors font-sans"
                   >
                     {t('deposits')}
-                  </Link>
-                  <Link
+                  </LocaleLink>
+                  <LocaleLink
                     href="/withdraw"
                     className="btn-gradient-secondary px-2 lg:px-4 py-1.5 lg:py-2 text-sm lg:text-base text-foreground font-medium rounded transition-colors font-sans"
                   >
                     {t('withdraw')}
-                  </Link>
-                  <Link
+                  </LocaleLink>
+                  <LocaleLink
                     href="/referral"
                     className="btn-gradient-secondary px-2 lg:px-4 py-1.5 lg:py-2 text-sm lg:text-base text-foreground font-medium rounded transition-colors font-sans"
                   >
                     {t('referral')}
-                  </Link>
+                  </LocaleLink>
                   {user?.role === 'admin' && (
-                    <Link
+                    <LocaleLink
                       href="/admin"
                       className="btn-gradient-primary px-2 lg:px-4 py-1.5 lg:py-2 text-sm lg:text-base text-foreground font-medium rounded transition-colors font-sans"
                     >
                       CRM
-                    </Link>
+                    </LocaleLink>
                   )}
-                  <Link
+                  <LocaleLink
                     href="/dashboard/settings"
                     className="btn-gradient-secondary px-2 lg:px-4 py-1.5 lg:py-2 text-sm lg:text-base text-foreground font-medium rounded transition-colors font-sans"
                   >
                     {t('settings')}
-                  </Link>
+                  </LocaleLink>
                   <button
                     onClick={handleLogout}
                     className="btn-gradient-secondary px-4 py-2 text-foreground font-medium rounded transition-all font-sans cursor-pointer"
@@ -119,18 +119,18 @@ export default function Header({ isAuthenticated = false }: HeaderProps) {
 
           {!isLoggedIn && (
             <div className="flex items-center gap-3">
-              <Link
+              <LocaleLink
                 href="/auth/login"
                 className="px-4 py-2 text-foreground font-medium hover:text-gray-light transition-colors font-sans"
               >
                 {t('login')}
-              </Link>
-              <Link
+              </LocaleLink>
+              <LocaleLink
                 href="/auth/register"
                 className="btn-gradient-primary px-4 py-2 text-foreground font-medium rounded transition-colors font-sans"
               >
                 {t('register')}
-              </Link>
+              </LocaleLink>
             </div>
           )}
         </div>
@@ -149,38 +149,38 @@ export default function Header({ isAuthenticated = false }: HeaderProps) {
               </div>
             </div>
             <nav className="flex flex-col gap-2">
-              <Link
+              <LocaleLink
                 href="/dashboard"
                 className="btn-gradient-primary px-4 py-2 text-foreground font-medium rounded transition-colors text-center font-sans"
               >
                 {t('deposits')}
-              </Link>
-              <Link
+              </LocaleLink>
+              <LocaleLink
                 href="/withdraw"
                 className="btn-gradient-secondary px-4 py-2 text-foreground font-medium rounded transition-colors text-center font-sans"
               >
                 {t('withdraw')}
-              </Link>
-              <Link
+              </LocaleLink>
+              <LocaleLink
                 href="/referral"
                 className="btn-gradient-secondary px-4 py-2 text-foreground font-medium rounded transition-colors text-center font-sans"
               >
                 {t('referral')}
-              </Link>
+              </LocaleLink>
               {user?.role === 'admin' && (
-                <Link
+                <LocaleLink
                   href="/admin"
                   className="btn-gradient-primary px-4 py-2 text-foreground font-medium rounded transition-colors text-center font-sans"
                 >
                   CRM
-                </Link>
+                </LocaleLink>
               )}
-              <Link
+              <LocaleLink
                 href="/dashboard/settings"
                 className="btn-gradient-secondary px-4 py-2 text-foreground font-medium rounded transition-colors text-center font-sans"
               >
                 {t('settings')}
-              </Link>
+              </LocaleLink>
               <button
                 onClick={handleLogout}
                 className="btn-gradient-secondary px-4 py-2 text-foreground font-medium rounded transition-all text-center font-sans cursor-pointer"

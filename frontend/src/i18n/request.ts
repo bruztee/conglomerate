@@ -1,17 +1,16 @@
 import { getRequestConfig } from 'next-intl/server';
-import { cookies } from 'next/headers';
 
 export const locales = ['uk', 'ru', 'en'] as const;
-export const defaultLocale = 'uk' as const;
+export type Locale = (typeof locales)[number];
 
-export type Locale = typeof locales[number];
+export const defaultLocale: Locale = 'uk';
 
-export default getRequestConfig(async () => {
-  const cookieStore = await cookies();
-  const locale = (cookieStore.get('NEXT_LOCALE')?.value || defaultLocale) as Locale;
-
+export default getRequestConfig(async ({ locale }) => {
+  // Використовуємо fallback на defaultLocale якщо locale undefined
+  const validLocale = (locale || defaultLocale) as Locale;
+  
   return {
-    locale,
-    messages: (await import(`../../messages/${locale}.json`)).default
+    locale: validLocale,
+    messages: (await import(`../../messages/${validLocale}.json`)).default
   };
 });

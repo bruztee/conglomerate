@@ -1,0 +1,485 @@
+"use client"
+
+import type React from "react"
+import { useState, useEffect, Suspense } from "react"
+import { useSearchParams } from "next/navigation"
+import { useRouter } from "@/lib/navigation"
+import { useAuth } from "@/context/AuthContext"
+import { api } from "@/lib/api"
+import Header from "@/components/Header"
+import Loading from "@/components/Loading"
+import WarningIcon from "@/components/icons/WarningIcon"
+import Pagination from "@/components/Pagination"
+import { useWallet } from "@/hooks/useWallet"
+import { useDeposits } from "@/hooks/useDeposits"
+import { useWithdrawals } from "@/hooks/useWithdrawals"
+import { useTranslations } from 'next-intl'
+
+interface WithdrawalRequest {
+  id: string
+  depositId: string
+  amount: number
+  percentage: number
+  method: string
+  status: "pending" | "completed" | "rejected"
+  createdDate: string
+  withdrawDate: string | null
+  balanceBefore?: number
+  balanceAfter?: number
+  depositBefore?: number
+  depositAfter?: number
+}
+
+interface Deposit {
+  id: string
+  amount: number
+  frozen?: number
+  percentage: number
+  profit: number
+  available?: number
+  createdDate: string
+  network?: string
+  coin?: string
+}
+
+function WithdrawPageContent() {
+  const t = useTranslations('withdraw')
+  const tCommon = useTranslations('common')
+  const router = useRouter()
+  const searchParams = useSearchParams()
+  const { user } = useAuth()
+  
+  // SWR hooks - instant loading
+  const { wallet, isLoading: walletLoading, refresh: refreshWallet } = useWallet()
+  const { activeDeposits, isLoading: depositsLoading, refresh: refreshDeposits } = useDeposits()
+  const { withdrawals, isLoading: withdrawalsLoading, refresh: refreshWithdrawals } = useWithdrawals()
+  
+  // Form state
+  const [walletAddress, setWalletAddress] = useState("")
+  const [withdrawAmount, setWithdrawAmount] = useState("")
+  const [withdrawalType, setWithdrawalType] = useState<'partial' | 'full' | null>(null)
+  const [selectedDepositId, setSelectedDepositId] = useState<string>("")
+  const [submitting, setSubmitting] = useState(false)
+  const [message, setMessage] = useState('')
+  const [error, setError] = useState('')
+  const [withdrawalPage, setWithdrawalPage] = useState(1)
+  const itemsPerPage = 10
+  
+  // Get data from SWR
+  const loading = walletLoading || depositsLoading || withdrawalsLoading
+  const userBalance = wallet?.balance || 0
+  const userProfit = wallet?.total_profit || 0
+  const withdrawalHistory = withdrawals
+
+  // SWR автоматично завантажує дані
+
+  // Автоматичний вибір депозиту з URL параметра
+  useEffect(() => {
+    const depositIdFromUrl = searchParams.get('deposit_id')
+    if (depositIdFromUrl && activeDeposits.length > 0) {
+      const depositExists = activeDeposits.find(d => d.id === depositIdFromUrl)
+      if (depositExists) {
+        setSelectedDepositId(depositIdFromUrl)
+      }
+    }
+  }, [searchParams, activeDeposits])
+
+  const selectedDeposit = activeDeposits.find(d => d.id === selectedDepositId)
+  const selectedNetwork = selectedDeposit?.network || ''
+  const maxWithdrawAmount = selectedDeposit ? selectedDeposit.amount + selectedDeposit.profit - (selectedDeposit.frozen || 0) : 0
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setSubmitting(true)
+    setError('')
+    setMessage('')
+
+    try {
+      if (!selectedDepositId) {
+        setError(t('selectDepositError'))
+        setSubmitting(false)
+        return
+      }
+
+      if (!withdrawalType) {
+        setError(t('selectTypeError'))
+        setSubmitting(false)
+        return
+      }
+
+      if (withdrawalType === 'partial' && !withdrawAmount) {
+        setError(t('enterAmountError'))
+        setSubmitting(false)
+        return
+      }
+
+      if (!walletAddress.trim()) {
+        setError(t('enterWalletError'))
+        setSubmitting(false)
+        return
+      }
+
+      // Створити withdrawal request - backend валідує доступну суму
+      const result = await api.createWithdrawal({
+        amount: withdrawalType === 'full' ? maxWithdrawAmount : parseFloat(withdrawAmount),
+        close: withdrawalType === 'full', // Якщо full withdrawal - сервер сам візьме всю суму
+        destination: {
+          wallet_address: walletAddress,
+          network: selectedNetwork,
+        },
+        selected_deposit_id: selectedDepositId,
+      })
+
+      if (result.success) {
+        setMessage(t('requestSuccess'))
+        setWalletAddress('')
+        setWithdrawAmount('')
+        setWithdrawalType(null)
+        setSelectedDepositId('')
+        
+        // Refresh data
+        await refreshWallet()
+        await refreshDeposits()
+        await refreshWithdrawals()
+      } else {
+        setError(result.error?.message || t('requestError'))
+      }
+    } catch (err: any) {
+      setError(err?.message || t('requestError'))
+    } finally {
+      setSubmitting(false)
+    }
+  }
+
+  if (loading) {
+    return <Loading fullScreen size="lg" />
+  }
+
+  if (!user) {
+    return null
+  }
+
+  return (
+    <>
+      <Header isAuthenticated={true} />
+
+      {/* Success/Error Messages */}
+      {message && (
+        <div className="fixed top-4 right-4 z-50 bg-green-900/90 border border-green-500 text-green-400 px-6 py-4 rounded-lg shadow-lg max-w-md">
+          {message}
+        </div>
+      )}
+      {error && (
+        <div className="fixed top-4 right-4 z-50 bg-red-900/90 border border-red-500 text-red-400 px-6 py-4 rounded-lg shadow-lg max-w-md">
+          {error}
+        </div>
+      )}
+
+      <main className="min-h-screen px-4 py-8 sm:px-6 lg:px-8">
+        <div className="container mx-auto max-w-5xl">
+          <div className="mb-8">
+            <h1 className="text-3xl font-bold mb-2">{t('title')}</h1>
+            <p className="text-gray-light">{t('subtitle')}</p>
+          </div>
+
+          <div className="grid lg:grid-cols-2 gap-6 mb-8">
+            <div className="bg-blur-dark border border-gray-medium rounded-lg p-6">
+              <h2 className="text-xl font-bold mb-6">{t('createRequest')}</h2>
+
+              <form onSubmit={handleSubmit} className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium mb-3">{t('selectDeposit')}</label>
+                  {activeDeposits.length > 0 ? (
+                    <div className="space-y-2">
+                      {activeDeposits.map((deposit) => (
+                        <div
+                          key={deposit.id}
+                          onClick={() => setSelectedDepositId(deposit.id)}
+                          className={`p-4 border-2 rounded-lg cursor-pointer transition-all ${
+                            selectedDepositId === deposit.id
+                              ? "border-silver bg-silver/5"
+                              : "border-gray-medium hover:border-gray-light"
+                          }`}
+                        >
+                          <div className="flex justify-between items-start mb-3">
+                            <div>
+                              <div className="font-medium font-sans">
+                                ${deposit.amount.toFixed(2)}
+                              </div>
+                              <div className="text-xs text-gray-light">
+                                {t('profit')}: <span className="font-sans text-silver">${deposit.profit.toFixed(2)}</span>
+                              </div>
+                              <div className="text-xs text-gray-light mt-1">
+                                {t('network')}: <span className="font-sans text-silver">{deposit.coin} ({deposit.network})</span>
+                              </div>
+                            </div>
+                            <div className="text-right">
+                              <div className="text-sm font-bold text-silver font-sans">
+                                ${(deposit.amount + deposit.profit - (deposit.frozen || 0)).toFixed(2)}
+                              </div>
+                              <div className="text-xs text-gray-light">{t('available')}</div>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="text-sm text-gray-light text-center py-4">{t('noActiveDeposits')}</p>
+                  )}
+                  <p className="text-xs text-gray-light mt-2">
+                    {t('networkNote')}
+                  </p>
+                </div>
+
+                {selectedDeposit && (
+                  <>
+                    <div className="bg-blur border border-gray-medium rounded-lg p-4">
+                      <div className="text-sm space-y-2">
+                        <div className="flex justify-between text-sm">
+                          <span className="text-gray-light">{t('balance')}:</span>
+                          <span className="font-bold text-silver font-sans">${selectedDeposit.amount.toFixed(2)}</span>
+                        </div>
+                        <div className="flex justify-between text-sm">
+                          <span className="text-gray-light">{t('profit')}:</span>
+                          <span className="font-bold text-green-400 font-sans">+${selectedDeposit.profit.toFixed(2)}</span>
+                        </div>
+                        <div className="flex justify-between text-sm">
+                          <span className="text-gray-light">{t('withdrawNetwork')}:</span>
+                          <span className="font-medium text-white font-sans">{selectedNetwork}</span>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Тип виводу */}
+                    <div>
+                      <label className="block text-sm font-medium mb-3">{t('selectType')}</label>
+                      <div className="grid grid-cols-2 gap-3">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setWithdrawalType('partial')
+                            setWithdrawAmount('')
+                          }}
+                          className={`px-4 py-3 border-2 rounded-lg font-medium transition-all ${
+                            withdrawalType === 'partial'
+                              ? "border-silver bg-silver/10 text-silver"
+                              : "border-gray-medium hover:border-gray-light text-gray-light hover:text-foreground"
+                          }`}
+                        >
+                          {t('partialWithdrawal')}
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setWithdrawalType('full')
+                            setWithdrawAmount(maxWithdrawAmount.toFixed(2))
+                          }}
+                          className={`px-4 py-3 border-2 rounded-lg font-medium transition-all ${
+                            withdrawalType === 'full'
+                              ? "border-silver bg-silver/10 text-silver"
+                              : "border-gray-medium hover:border-gray-light text-gray-light hover:text-foreground"
+                          }`}
+                        >
+                          {t('fullWithdrawal')}
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* Показати input суми тільки якщо обрано partial */}
+                    {withdrawalType === 'partial' && (
+                      <div>
+                        <label htmlFor="amount" className="block text-sm font-medium mb-2">
+                          {t('amount')}
+                        </label>
+                        <input
+                          type="text"
+                          id="amount"
+                          value={withdrawAmount}
+                          onChange={(e) => setWithdrawAmount(e.target.value)}
+                          className="w-full px-4 py-3 bg-blur border border-gray-medium rounded-lg focus:outline-none focus:border-silver transition-colors font-sans"
+                          placeholder={t('enterAmount')}
+                        />
+                        <p className="text-xs text-gray-light mt-1">
+                          {t('maxAmount')}: ${maxWithdrawAmount.toFixed(2)}
+                        </p>
+                      </div>
+                    )}
+
+                    {/* Показати повідомлення якщо обрано full */}
+                    {withdrawalType === 'full' && (
+                      <div className="bg-blue-500/10 border border-blue-500/30 rounded-lg p-3 text-sm text-blue-400">
+                        <div className="flex items-start gap-2">
+                          <WarningIcon className="w-4 h-4 flex-shrink-0 mt-0.5" />
+                          <p>{t('fullWithdrawalNote')}</p>
+                        </div>
+                      </div>
+                    )}
+                  </>
+                )}
+
+                {/* Показати wallet input тільки після вибору типу виводу */}
+                {withdrawalType && (
+                  <div>
+                    <label htmlFor="wallet" className="block text-sm font-medium mb-2">
+                      {t('walletAddress')}
+                    </label>
+                    <input
+                      type="text"
+                      id="wallet"
+                      value={walletAddress}
+                      onChange={(e) => setWalletAddress(e.target.value)}
+                      className="w-full px-4 py-3 bg-blur border border-gray-medium rounded-lg focus:outline-none focus:border-silver transition-colors font-sans"
+                      placeholder={t('walletPlaceholder')}
+                    />
+                  </div>
+                )}
+
+                {withdrawalType && (
+                  <>
+                    <div className="bg-silver/10 border border-silver/30 rounded-lg p-4">
+                      <div className="flex gap-2 text-xs">
+                        <WarningIcon className="w-4 h-4 text-silver flex-shrink-0 mt-0.5" />
+                        <p className="text-gray-light">
+                          {t('walletWarning')}
+                        </p>
+                      </div>
+                    </div>
+
+                    <button
+                      type="submit"
+                      disabled={!selectedDepositId || (withdrawalType === 'partial' && !withdrawAmount) || !walletAddress || submitting}
+                      className="btn-gradient-primary w-full px-4 py-3 disabled:bg-gray-medium disabled:cursor-not-allowed disabled:border-gray-medium disabled:shadow-none text-foreground font-bold rounded-lg transition-all font-sans"
+                    >
+                      {submitting ? t('submitting') : t('submitRequest')}
+                    </button>
+                  </>
+                )}
+              </form>
+            </div>
+
+            <div className="space-y-6">
+              <div className="bg-blur-dark border border-gray-medium rounded-lg p-6">
+                <h2 className="text-xl font-bold mb-4">{t('withdrawTerms')}</h2>
+
+                <div className="space-y-4 text-sm">
+                  <div className="flex gap-3">
+                    <span className="text-silver">✓</span>
+                    <div>
+                      <div className="font-medium mb-1">{t('noFees')}</div>
+                      <div className="text-gray-light">
+                        {t('noFeesText')}
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="flex gap-3">
+                    <span className="text-silver">✓</span>
+                    <div>
+                      <div className="font-medium mb-1">{t('noMinimum')}</div>
+                      <div className="text-gray-light">
+                        {t('noMinimumText')}
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="flex gap-3">
+                    <span className="text-silver">✓</span>
+                    <div>
+                      <div className="font-medium mb-1">{t('processingTime')}</div>
+                      <div className="text-gray-light">
+                        {t('processingTimeText')}
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="flex gap-3">
+                    <span className="text-silver">✓</span>
+                    <div>
+                      <div className="font-medium mb-1">{t('availability')}</div>
+                      <div className="text-gray-light">
+                        Виводи доступні <span className="font-sans">24/7</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="bg-blur-dark border border-gray-medium rounded-lg p-6">
+                <h2 className="text-xl font-bold mb-4">Історія виводів</h2>
+
+                {withdrawalHistory.length > 0 ? (
+                  <>
+                    <div className="space-y-3">
+                      {withdrawalHistory
+                        .slice((withdrawalPage - 1) * itemsPerPage, withdrawalPage * itemsPerPage)
+                        .map((request) => (
+                      <div key={request.id} className="bg-blur border border-gray-medium rounded-lg p-4">
+                        <div className="flex justify-between items-start mb-2">
+                          <div>
+                            <div className="text-sm font-bold font-sans">${request.amount.toFixed(2)}</div>
+                            <div className="text-xs text-gray-light">{request.method}</div>
+                          </div>
+                          <div className={`px-2 py-1 rounded text-xs ${
+                            request.status === 'completed' ? 'bg-green-500/20 text-green-400' :
+                            request.status === 'pending' ? 'bg-yellow-500/20 text-yellow-400' :
+                            'bg-red-500/20 text-red-400'
+                          }`}>
+                            {request.status === 'completed' ? 'Виконано' :
+                             request.status === 'pending' ? 'В обробці' :
+                             'Відхилено'}
+                          </div>
+                        </div>
+                        
+                        {(request.balanceBefore || request.depositBefore) && (
+                          <div className="text-xs mb-2 border-t border-gray-medium/30 pt-2 mt-2">
+                            {request.balanceBefore && request.balanceAfter && (
+                              <div className="mb-1 text-gray-light">
+                                Баланс: <span className="font-sans">${request.balanceBefore.toFixed(2)} → ${request.balanceAfter.toFixed(2)}</span>
+                              </div>
+                            )}
+                            {request.depositBefore && (
+                              <div className="text-gray-light">
+                                Депозит: <span className="font-sans">${request.depositBefore.toFixed(2)}</span>
+                                {request.depositAfter !== null && (
+                                  <> → <span className="font-sans">${request.depositAfter.toFixed(2)}</span></>
+                                )}
+                              </div>
+                            )}
+                          </div>
+                        )}
+                        
+                        <div className="text-xs text-gray-light">
+                          <div className="mb-1">Створено: {new Date(request.createdDate).toLocaleDateString('uk-UA')}</div>
+                          {request.withdrawDate && (
+                            <div>Виведено: {new Date(request.withdrawDate).toLocaleDateString('uk-UA')}</div>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                    </div>
+                    
+                    <Pagination
+                      currentPage={withdrawalPage}
+                      totalPages={Math.ceil(withdrawalHistory.length / itemsPerPage)}
+                      onPageChange={setWithdrawalPage}
+                    />
+                  </>
+                ) : (
+                  <div className="text-center py-8 text-gray-light">Історія виводів порожня</div>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+      </main>
+    </>
+  )
+}
+
+export default function WithdrawPage() {
+  return (
+    <Suspense fallback={<Loading fullScreen size="lg" />}>
+      <WithdrawPageContent />
+    </Suspense>
+  )
+}
