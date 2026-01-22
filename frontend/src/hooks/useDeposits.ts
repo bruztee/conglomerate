@@ -72,15 +72,30 @@ export function useDeposits() {
           }
         })
 
-      // History (all deposits)
+      // History (all deposits including pending)
       const history = deposits
-        .filter((d: any) => investmentsMap.has(d.id))
         .map((d: any) => {
           const investment = investmentsMap.get(d.id)
-          const totalAmount = investment ? parseFloat(investment.principal || d.amount) : parseFloat(d.amount)
-          const withdrawn = investment ? parseFloat(investment.withdrawn_amount || 0) : 0
-          const locked = investment ? parseFloat(investment.locked_amount || 0) : 0
-          const profit = investment ? parseFloat(investment.accrued_interest || 0) : 0
+          
+          // Pending deposits don't have investment yet
+          if (!investment) {
+            return {
+              id: d.id,
+              amount: parseFloat(d.amount),
+              percentage: d.monthly_percentage || 5,
+              profit: 0,
+              withdrawn: 0,
+              locked: 0,
+              date: d.created_at,
+              withdrawDate: undefined,
+              status: d.status, // 'pending', 'confirmed', 'rejected'
+            }
+          }
+
+          const totalAmount = parseFloat(investment.principal || d.amount)
+          const withdrawn = parseFloat(investment.withdrawn_amount || 0)
+          const locked = parseFloat(investment.locked_amount || 0)
+          const profit = parseFloat(investment.accrued_interest || 0)
 
           return {
             id: d.id,
